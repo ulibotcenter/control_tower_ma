@@ -1,103 +1,88 @@
-import Image from "next/image";
+import { AppShell } from "@/components/shell/app-shell";
+import { BoardCard } from "@/components/home/board-card";
+import { DealCard } from "@/components/home/deal-card";
+import { Term } from "@/components/ui/term";
+import { folderUrl, DRIVE_FOLDERS } from "@/lib/constants";
+import { alertEmail } from "@/lib/config";
+import { getProgram } from "@/lib/data/provider";
+import { getMode } from "@/lib/mode";
+import { DriveLink } from "@/components/ui/drive-link";
 
-export default function Home() {
+export default async function HomePage() {
+  const mode = await getMode();
+  const program = await getProgram(mode);
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <AppShell>
+      <p className="kicker">Programa de M&amp;A</p>
+      <h1 className="serif mt-1 text-4xl text-navy sm:text-5xl">Go Live</h1>
+      {mode === "target" ? (
+        <p className="mt-3 max-w-3xl text-[17px] leading-relaxed">
+          Programa com duas operações em avaliação. Em cada uma: fase, documentos pedidos e
+          pendências formais. Semáforo no topo da tela.
+        </p>
+      ) : (
+        <>
+          <p className="mt-3 max-w-3xl text-[17px] leading-relaxed">
+            Duas compras buy-side da AD+R (Massa FM, Mix FM, Nova Brasil). Sponsors: Camila
+            Kovacevick (CEO) e Matheus Vasconcelos (CFO). PMO Eleva. Jurídico: Pacta. Financeiro:
+            João Amorim / M12C. A prioridade é a Loopert. Radio Health está congelada.
+          </p>
+          <p className="mt-2 max-w-3xl text-sm text-muted">
+            Cada deal tem <Term id="workstream">workstreams</Term>. Ainda não há{" "}
+            <Term id="loi">LOI</Term> nem <Term id="spa">SPA</Term>. Closing-alvo da Loopert:
+            jan/2027, flexível.
+          </p>
+        </>
+      )}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+      <div className="mt-8">
+        <BoardCard card={program.board} target={mode === "target"} />
+      </div>
+
+      <div className="mt-6 grid gap-5 lg:grid-cols-2">
+        {program.deals.map((deal) => (
+          <DealCard
+            key={deal.id}
+            deal={deal}
+            redCount={deal.redCount}
+            topReds={deal.topReds}
+            modeTarget={mode === "target"}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        ))}
+      </div>
+
+      {mode === "operate" && (
+        <aside className="mt-10 paper p-5 text-sm leading-relaxed">
+          <p className="kicker">Operação da torre</p>
+          <ul className="mt-3 space-y-1.5">
+            <li>
+              Drive:{" "}
+              {program.driveConfigured
+                ? "credencial presente — sync ainda é placeholder, não finja leitura."
+                : "API não configurada. Bandeja é manual."}{" "}
+              <DriveLink href={folderUrl(DRIVE_FOLDERS.root.id)} kind="folder">
+                Pasta raiz
+              </DriveLink>
+            </li>
+            <li>
+              Supabase: {program.supabaseConfigured ? "env presente — a tela ainda lê o seed local" : "não ligado — seed local + .data/"}.
+            </li>
+            <li>
+              Alertas: {program.resendConfigured ? "Resend configurado" : "sem chave — o payload é logado"}{" "}
+              → {alertEmail()}
+            </li>
+            <li>
+              Arquivos não classificados na bandeja: {program.inboxUnclassified}. Arquivo novo ≠ item
+              concluído.
+            </li>
+            <li>
+              Apresentação viva em Apresentacoes/ não é atualizada por esta torre. Pack vai para{" "}
+              Control Tower/Exports/.
+            </li>
+          </ul>
+        </aside>
+      )}
+    </AppShell>
   );
 }
