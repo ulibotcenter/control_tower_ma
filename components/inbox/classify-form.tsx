@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { toast } from "@/lib/toast";
 
 const TYPES = [
-  { id: "nda", label: "NDA" },
+  { id: "nda", label: "NDA — acordo de confidencialidade" },
   { id: "ata", label: "Ata" },
   { id: "transcricao", label: "Transcrição" },
   { id: "contrato", label: "Contrato" },
@@ -59,6 +60,7 @@ export function ClassifyForm({
       setError("Não foi possível classificar.");
       return;
     }
+    toast("Arquivo classificado. O item entra no checklist sem concluir.");
     const slug = deals.find((d) => d.id === String(data.dealId))?.slug ?? "loopert";
     router.push(`/deals/${slug}#checklist`);
     router.refresh();

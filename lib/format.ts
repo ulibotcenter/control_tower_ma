@@ -1,3 +1,10 @@
+export function dueSortKey(due: string) {
+  if (!due || due === "a confirmar") return Number.MAX_SAFE_INTEGER;
+  const day = due.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!day) return Number.MAX_SAFE_INTEGER - 1;
+  return Date.parse(`${day[1]}-${day[2]}-${day[3]}`);
+}
+
 export function formatDate(iso: string) {
   if (!iso || iso === "a confirmar") return "a confirmar";
   const day = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);

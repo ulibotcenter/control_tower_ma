@@ -6,6 +6,7 @@ import { DOC_STATUS_LABEL, DOC_TYPE_LABEL, folderUrl, DRIVE_FOLDERS } from "@/li
 import { formatDate } from "@/lib/format";
 import Link from "next/link";
 import { InboxForm } from "@/components/inbox/inbox-form";
+import { EmptyState } from "@/components/ui/empty-state";
 import { deals } from "@/lib/data/seed";
 
 export default async function InboxPage() {
@@ -49,9 +50,12 @@ export default async function InboxPage() {
       <section className="mt-10">
         <h2 className="serif text-2xl text-navy">A classificar ({open.length})</h2>
         {open.length === 0 ? (
-          <p className="mt-3 text-sm text-muted">
-            Bandeja vazia. Sem sync automático neste corte.
-          </p>
+          <div className="mt-3">
+            <EmptyState
+              title="Bandeja vazia"
+              hint="Sem sync automático neste corte. Registre um arquivo manualmente quando ele entrar no Drive."
+            />
+          </div>
         ) : (
           <ul className="mt-3 divide-y divide-line paper">
             {open.map((f) => (

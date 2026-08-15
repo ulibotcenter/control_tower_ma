@@ -13,10 +13,11 @@ export function SemaphoreBadge({
   tone: Semaphore;
   label?: string;
 }) {
+  const text = label ?? SEMAPHORE_LABEL[tone];
   return (
-    <span className="inline-flex items-center gap-2 text-sm">
+    <span className="inline-flex items-center gap-2 text-sm" aria-label={`Semáforo: ${text}`}>
       <Dot tone={tone} />
-      <span>{label ?? SEMAPHORE_LABEL[tone]}</span>
+      <span>{text}</span>
     </span>
   );
 }

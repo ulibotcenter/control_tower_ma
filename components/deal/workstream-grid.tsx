@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SemaphoreBadge } from "@/components/ui/semaphore";
 import { Term } from "@/components/ui/term";
+import { WithTerms } from "@/components/ui/with-terms";
 import type { DealBundle, MeetingMode } from "@/lib/types";
 
 export function WorkstreamGrid({
@@ -33,7 +34,7 @@ export function WorkstreamGrid({
             </div>
             <p className="mt-1 text-[12px] text-muted">Dono · {ws.owner}</p>
             <p className="mt-2 text-sm leading-relaxed">
-              {mode === "target" ? ws.summaryTarget : ws.summary}
+              <WithTerms text={mode === "target" ? ws.summaryTarget : ws.summary} interactive={false} />
             </p>
           </Link>
         ))}

@@ -1,3 +1,17 @@
+/**
+ * Store dinâmico — o que já tem caminho real para o Supabase.
+ *
+ * Ligado quando NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY
+ * existem (createSupabaseAdmin). Em Vercel sem isso, recusa escrita
+ * local: produção não pode fingir persistência em .data/.
+ *
+ * Coleções aqui (já migráveis / já migradas):
+ *   inbox_files, decisions, documents extras, checklist extras.
+ *
+ * Coleções que AINDA NÃO passam por aqui (seed.ts):
+ *   deals, risks, actions, milestones, metrics, thesis, prices, …
+ *   → ver lib/data/sources.ts
+ */
 import type { Decision, DocumentStatus, DocumentType, InboxFile } from "../types";
 import { forbidLocalStore, isSupabaseConfigured } from "../config";
 import { createSupabaseAdmin } from "../supabase/server";

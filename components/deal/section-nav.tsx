@@ -1,5 +1,7 @@
 "use client";
 
+import { Term } from "@/components/ui/term";
+
 const ITEMS = [
   { id: "visao", label: "Visão" },
   { id: "tese", label: "Tese e preço" },
@@ -20,9 +22,15 @@ export function SectionNav({ hideThesis, hasThesis }: { hideThesis?: boolean; ha
           <li key={item.id}>
             <a
               href={`#${item.id}`}
-              className="block whitespace-nowrap px-3 py-1.5 text-navy hover:bg-cream-2"
+              className="block whitespace-nowrap rounded-sm px-3 py-1.5 text-navy hover:bg-cream-2 hover:text-navy"
             >
-              {item.label}
+              {item.id === "workstreams" ? (
+                <Term id="workstream" interactive={false}>
+                  Workstreams
+                </Term>
+              ) : (
+                item.label
+              )}
             </a>
           </li>
         ))}

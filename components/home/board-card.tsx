@@ -1,19 +1,22 @@
-import type { BoardCard as BoardCardType } from "@/lib/types";
+import { WithTerms } from "@/components/ui/with-terms";
+import { MODE_META } from "@/lib/mode-meta";
+import type { BoardCard as BoardCardType, MeetingMode } from "@/lib/types";
 
 export function BoardCard({
   card,
-  target,
+  mode,
 }: {
   card: BoardCardType;
-  target?: boolean;
+  mode: MeetingMode;
 }) {
+  const target = mode === "target";
   return (
-    <section className="border border-gold bg-navy text-cream px-5 py-5 sm:px-7 sm:py-6">
-      <p className="kicker">Próxima decisão do board</p>
-      <p className="serif mt-2 text-2xl sm:text-3xl leading-snug">
-        {target ? card.sentenceTarget : card.sentence}
+    <section className="border border-gold bg-navy px-5 py-5 text-cream sm:px-7 sm:py-6">
+      <p className="kicker !text-gold">{MODE_META[mode].boardKicker}</p>
+      <p className="serif mt-2 text-2xl leading-snug sm:text-3xl">
+        <WithTerms text={target ? card.sentenceTarget : card.sentence} />
       </p>
-      <div className="mt-4 flex flex-wrap gap-x-8 gap-y-1 text-sm text-cream/75">
+      <div className="mt-4 flex flex-wrap gap-x-8 gap-y-1 text-sm text-cream/85">
         <span>
           <span className="text-gold">Dono</span> · {card.owner}
         </span>

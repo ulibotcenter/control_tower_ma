@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "@/lib/toast";
 
 export function DecisionForm({ deals }: { deals: { id: string; name: string }[] }) {
   const router = useRouter();
@@ -34,6 +35,7 @@ export function DecisionForm({ deals }: { deals: { id: string; name: string }[] 
         setError(data.message || "Não foi possível gravar a decisão no banco.");
         return;
       }
+      toast("Decisão registrada.");
       router.push("/decisions");
       router.refresh();
     } catch {

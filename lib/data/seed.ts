@@ -1,3 +1,20 @@
+/**
+ * SEED / CORTE ESTÁTICO — 14/08/2026
+ *
+ * Este arquivo é a verdade mockada do programa neste corte.
+ * Não inventar LOI, SPA, valuation fechado nem 143 contratos assinados.
+ *
+ * Substituição prevista (ver lib/data/sources.ts):
+ *   deals, boardCard, workstreams, milestones, documents, risks,
+ *   actions, checklist, metrics, notes, thesis, prices, cap, people
+ *   → tabelas Supabase de mesmo nome (snake_case no Postgres).
+ *
+ * NÃO misturar aqui o que já é dinâmico:
+ *   inbox, decisões novas e extras de classificação vivem em store.ts.
+ *
+ * Ao migrar uma coleção: manter o tipo em lib/types.ts e trocar a
+ * leitura em provider.ts. Este arquivo pode ficar como fallback local.
+ */
 import { DRIVE_FOLDERS, fileUrl, folderUrl } from "../constants";
 import type {
   ActionItem,
@@ -20,6 +37,7 @@ import type {
 export const LOOPERT_ID = "deal-loopert";
 export const HEALTH_ID = "deal-radio-health";
 
+/** MOCK → futureTable: program_board */
 export const boardCard: BoardCard = {
   sentence:
     "Fechar tese e envelope de preço com a Pacta — sem isso não há LOI.",
@@ -30,6 +48,7 @@ export const boardCard: BoardCard = {
   dealId: LOOPERT_ID,
 };
 
+/** MOCK → futureTable: deals */
 export const deals: Deal[] = [
   {
     id: LOOPERT_ID,
@@ -80,6 +99,7 @@ export const deals: Deal[] = [
   },
 ];
 
+/** MOCK → futureTable: workstreams */
 export const workstreams: Workstream[] = [
   {
     id: "ws-l-legal",
@@ -220,6 +240,7 @@ export const workstreams: Workstream[] = [
   },
 ];
 
+/** MOCK → futureTable: milestones */
 export const milestones: Milestone[] = [
   {
     id: "ms-l-prep",
@@ -293,35 +314,8 @@ export const milestones: Milestone[] = [
   },
 ];
 
+/** MOCK → futureTable: documents (catálogo do corte; extras vêm do store) */
 export const documents: DriveDocument[] = [
-  {
-    id: "doc-agents",
-    dealId: null,
-    title: "AGENTS.md (raiz do data room)",
-    driveUrl: fileUrl("1VzXp2FeeDU2wXEwGACDOI8QXppS0Sqkq"),
-    driveId: "1VzXp2FeeDU2wXEwGACDOI8QXppS0Sqkq",
-    folderId: DRIVE_FOLDERS.root.id,
-    type: "outro",
-    workstreamSlug: null,
-    status: "vigente",
-    classified: true,
-    visibility: "operate",
-    sensitivities: [],
-  },
-  {
-    id: "doc-comandos",
-    dealId: null,
-    title: "Comandos.xlsx",
-    driveUrl: fileUrl("13RbJJYz-MzC7YPcYJcD2ElR8yJTdCXey"),
-    driveId: "13RbJJYz-MzC7YPcYJcD2ElR8yJTdCXey",
-    folderId: DRIVE_FOLDERS.root.id,
-    type: "outro",
-    workstreamSlug: null,
-    status: "vigente",
-    classified: true,
-    visibility: "operate",
-    sensitivities: [],
-  },
   {
     id: "doc-folder-loopert",
     dealId: LOOPERT_ID,
@@ -333,7 +327,7 @@ export const documents: DriveDocument[] = [
     workstreamSlug: null,
     status: "vigente",
     classified: true,
-    note: "Fonte dos documentos do alvo. Abrir no Drive, não baixar pela torre.",
+    note: "Fonte do alvo. Sem ID de arquivo individual — abre a pasta no Drive.",
     visibility: "target",
     sensitivities: [],
   },
@@ -396,8 +390,8 @@ export const documents: DriveDocument[] = [
   },
   {
     id: "doc-folder-apres",
-    dealId: null,
-    title: "Pasta Apresentacoes (apresentação viva — a torre não atualiza)",
+    dealId: LOOPERT_ID,
+    title: "Pasta Apresentacoes (a torre não atualiza a apresentação viva)",
     driveUrl: folderUrl(DRIVE_FOLDERS.apresentacoes.id),
     driveId: null,
     folderId: DRIVE_FOLDERS.apresentacoes.id,
@@ -423,24 +417,9 @@ export const documents: DriveDocument[] = [
     sensitivities: [],
   },
   {
-    id: "doc-folder-health",
-    dealId: HEALTH_ID,
-    title: "Pasta Doctos HeathData",
-    driveUrl: folderUrl(DRIVE_FOLDERS.health.id),
-    driveId: null,
-    folderId: DRIVE_FOLDERS.health.id,
-    type: "outro",
-    workstreamSlug: "legal",
-    status: "rascunho",
-    classified: true,
-    note: "Docs parciais. Nome da pasta no Drive está grafado HeathData.",
-    visibility: "target",
-    sensitivities: [],
-  },
-  {
     id: "doc-nda-sg",
     dealId: LOOPERT_ID,
-    title: "NDA da DD — Loopert × Souza e Galvão",
+    title: "NDA Souza & Galvão × Loopert (último assinado)",
     driveUrl: folderUrl(DRIVE_FOLDERS.auxiliares.id),
     driveId: null,
     folderId: DRIVE_FOLDERS.auxiliares.id,
@@ -448,9 +427,53 @@ export const documents: DriveDocument[] = [
     workstreamSlug: "legal",
     status: "assinado",
     classified: true,
-    note: "A ADR está fora deste NDA.",
+    note: "Versão vigente da DD. Minutas e reenvios iguais não entram aqui. ADR está fora deste NDA.",
     visibility: "advisors",
     sensitivities: [],
+  },
+  {
+    id: "doc-nda-eleva-l",
+    dealId: LOOPERT_ID,
+    title: "NDA Eleva × Loopert (assinado)",
+    driveUrl: folderUrl(DRIVE_FOLDERS.auxiliares.id),
+    driveId: null,
+    folderId: DRIVE_FOLDERS.auxiliares.id,
+    type: "nda",
+    workstreamSlug: "legal",
+    status: "assinado",
+    classified: true,
+    note: "PDF assinado. A minuta .docx não é listada.",
+    visibility: "operate",
+    sensitivities: ["nda_eleva"],
+  },
+  {
+    id: "doc-nda-pacta-l",
+    dealId: LOOPERT_ID,
+    title: "NDA Pacta × Loopert",
+    driveUrl: folderUrl(DRIVE_FOLDERS.auxiliares.id),
+    driveId: null,
+    folderId: DRIVE_FOLDERS.auxiliares.id,
+    type: "nda",
+    workstreamSlug: "legal",
+    status: "assinado",
+    classified: true,
+    visibility: "advisors",
+    sensitivities: [],
+  },
+  {
+    id: "doc-nda-adr-l",
+    dealId: LOOPERT_ID,
+    title: "NDA ADR ↔ Loopert",
+    driveUrl: folderUrl(DRIVE_FOLDERS.auxiliares.id),
+    driveId: null,
+    folderId: DRIVE_FOLDERS.auxiliares.id,
+    type: "nda",
+    workstreamSlug: "legal",
+    status: "rascunho",
+    classified: true,
+    note: "Há minuta. Não há versão assinada neste corte.",
+    visibility: "operate",
+    sensitivities: ["nda_eleva"],
   },
   {
     id: "doc-targa",
@@ -467,9 +490,9 @@ export const documents: DriveDocument[] = [
     sensitivities: [],
   },
   {
-    id: "doc-dre",
+    id: "doc-targa-comp",
     dealId: LOOPERT_ID,
-    title: "DRE 2025",
+    title: "Comprovantes TARGA (aportes)",
     driveUrl: folderUrl(DRIVE_FOLDERS.loopert.id),
     driveId: null,
     folderId: DRIVE_FOLDERS.loopert.id,
@@ -477,22 +500,8 @@ export const documents: DriveDocument[] = [
     workstreamSlug: "financeiro",
     status: "assinado",
     classified: true,
+    note: "Novos arquivos em Doctos Loopert / Comprovantes Targa.",
     visibility: "advisors",
-    sensitivities: [],
-  },
-  {
-    id: "doc-marca",
-    dealId: LOOPERT_ID,
-    title: "Registro de marca LOOPERT 934520534",
-    driveUrl: folderUrl(DRIVE_FOLDERS.loopert.id),
-    driveId: null,
-    folderId: DRIVE_FOLDERS.loopert.id,
-    type: "outro",
-    workstreamSlug: "pessoas-pi",
-    status: "vigente",
-    classified: true,
-    note: "Titular na razão social antiga SOUNTECH. Vigente até 2036.",
-    visibility: "target",
     sensitivities: [],
   },
   {
@@ -511,9 +520,168 @@ export const documents: DriveDocument[] = [
     sensitivities: [],
   },
   {
+    id: "doc-dre",
+    dealId: LOOPERT_ID,
+    title: "DRE 2025",
+    driveUrl: folderUrl(DRIVE_FOLDERS.loopert.id),
+    driveId: null,
+    folderId: DRIVE_FOLDERS.loopert.id,
+    type: "financeiro",
+    workstreamSlug: "financeiro",
+    status: "assinado",
+    classified: true,
+    visibility: "advisors",
+    sensitivities: [],
+  },
+  {
+    id: "doc-dre-24",
+    dealId: LOOPERT_ID,
+    title: "DRE 2024",
+    driveUrl: folderUrl(DRIVE_FOLDERS.loopert.id),
+    driveId: null,
+    folderId: DRIVE_FOLDERS.loopert.id,
+    type: "financeiro",
+    workstreamSlug: "financeiro",
+    status: "assinado",
+    classified: true,
+    note: "Uma entrada — cópias idênticas no data room não se repetem aqui.",
+    visibility: "advisors",
+    sensitivities: [],
+  },
+  {
+    id: "doc-proj",
+    dealId: LOOPERT_ID,
+    title: "Projeção de faturamento 2026–2027",
+    driveUrl: folderUrl(DRIVE_FOLDERS.loopert.id),
+    driveId: null,
+    folderId: DRIVE_FOLDERS.loopert.id,
+    type: "financeiro",
+    workstreamSlug: "financeiro",
+    status: "rascunho",
+    classified: true,
+    visibility: "advisors",
+    sensitivities: [],
+  },
+  {
+    id: "doc-fat-decl",
+    dealId: LOOPERT_ID,
+    title: "Declaração de faturamento jan–mai/2026",
+    driveUrl: folderUrl(DRIVE_FOLDERS.loopert.id),
+    driveId: null,
+    folderId: DRIVE_FOLDERS.loopert.id,
+    type: "financeiro",
+    workstreamSlug: "financeiro",
+    status: "assinado",
+    classified: true,
+    visibility: "advisors",
+    sensitivities: [],
+  },
+  {
+    id: "doc-clientes",
+    dealId: LOOPERT_ID,
+    title: "Lista de clientes (atualizada 23/04)",
+    driveUrl: folderUrl(DRIVE_FOLDERS.loopert.id),
+    driveId: null,
+    folderId: DRIVE_FOLDERS.loopert.id,
+    type: "contrato",
+    workstreamSlug: "comercial",
+    status: "rascunho",
+    classified: true,
+    note: "Conferir 143 / 32 / 104. Não são 143 contratos assinados.",
+    visibility: "advisors",
+    sensitivities: [],
+  },
+  {
+    id: "doc-107",
+    dealId: LOOPERT_ID,
+    title: "Contrato 107 FM (assinado)",
+    driveUrl: folderUrl(DRIVE_FOLDERS.loopert.id),
+    driveId: null,
+    folderId: DRIVE_FOLDERS.loopert.id,
+    type: "contrato",
+    workstreamSlug: "comercial",
+    status: "assinado",
+    classified: true,
+    visibility: "advisors",
+    sensitivities: [],
+  },
+  {
+    id: "doc-sampaio",
+    dealId: LOOPERT_ID,
+    title: "Contrato Sampaio (assinado · R$ 499)",
+    driveUrl: folderUrl(DRIVE_FOLDERS.loopert.id),
+    driveId: null,
+    folderId: DRIVE_FOLDERS.loopert.id,
+    type: "contrato",
+    workstreamSlug: "comercial",
+    status: "assinado",
+    classified: true,
+    visibility: "advisors",
+    sensitivities: [],
+  },
+  {
+    id: "doc-acert",
+    dealId: LOOPERT_ID,
+    title: "Contrato ACERT",
+    driveUrl: folderUrl(DRIVE_FOLDERS.loopert.id),
+    driveId: null,
+    folderId: DRIVE_FOLDERS.loopert.id,
+    type: "contrato",
+    workstreamSlug: "comercial",
+    status: "assinado",
+    classified: true,
+    visibility: "advisors",
+    sensitivities: [],
+  },
+  {
+    id: "doc-marca",
+    dealId: LOOPERT_ID,
+    title: "Registro de marca LOOPERT 934520534",
+    driveUrl: folderUrl(DRIVE_FOLDERS.loopert.id),
+    driveId: null,
+    folderId: DRIVE_FOLDERS.loopert.id,
+    type: "outro",
+    workstreamSlug: "pessoas-pi",
+    status: "vigente",
+    classified: true,
+    note: "Titular SOUNTECH. Vigente até 2036.",
+    visibility: "target",
+    sensitivities: [],
+  },
+  {
+    id: "doc-rh-funcoes",
+    dealId: LOOPERT_ID,
+    title: "Relação de estagiários, PJ e terceirizados + parecer de funções",
+    driveUrl: folderUrl(DRIVE_FOLDERS.loopert.id),
+    driveId: null,
+    folderId: DRIVE_FOLDERS.loopert.id,
+    type: "outro",
+    workstreamSlug: "pessoas-pi",
+    status: "assinado",
+    classified: true,
+    note: "Uma entrada — PDF e DOCX iguais não se repetem.",
+    visibility: "advisors",
+    sensitivities: [],
+  },
+  {
+    id: "doc-folder-health",
+    dealId: HEALTH_ID,
+    title: "Pasta Doctos HeathData",
+    driveUrl: folderUrl(DRIVE_FOLDERS.health.id),
+    driveId: null,
+    folderId: DRIVE_FOLDERS.health.id,
+    type: "outro",
+    workstreamSlug: "legal",
+    status: "rascunho",
+    classified: true,
+    note: "Docs parciais. Grafia HeathData no Drive. Pasta local Radio Health espelha o mesmo acervo.",
+    visibility: "target",
+    sensitivities: [],
+  },
+  {
     id: "doc-nda-eleva-health",
     dealId: HEALTH_ID,
-    title: "NDA Eleva Projects × HealthData",
+    title: "NDA Eleva × HealthData (assinado)",
     driveUrl: folderUrl(DRIVE_FOLDERS.health.id),
     driveId: null,
     folderId: DRIVE_FOLDERS.health.id,
@@ -521,12 +689,42 @@ export const documents: DriveDocument[] = [
     workstreamSlug: "legal",
     status: "assinado",
     classified: true,
-    note: "ADR não é parte.",
+    note: "Versão assinada. Minutas do mesmo NDA não entram. ADR não é parte.",
     visibility: "advisors",
     sensitivities: ["nda_eleva"],
   },
+  {
+    id: "doc-health-dd",
+    dealId: HEALTH_ID,
+    title: "Planilha Due Diligence DataHealth",
+    driveUrl: folderUrl(DRIVE_FOLDERS.health.id),
+    driveId: null,
+    folderId: DRIVE_FOLDERS.health.id,
+    type: "outro",
+    workstreamSlug: "legal",
+    status: "rascunho",
+    classified: true,
+    note: "Avaliação. Não é DD no mesmo ponto da Loopert.",
+    visibility: "advisors",
+    sensitivities: [],
+  },
+  {
+    id: "doc-agents",
+    dealId: LOOPERT_ID,
+    title: "AGENTS.md (raiz do data room)",
+    driveUrl: fileUrl("1VzXp2FeeDU2wXEwGACDOI8QXppS0Sqkq"),
+    driveId: "1VzXp2FeeDU2wXEwGACDOI8QXppS0Sqkq",
+    folderId: DRIVE_FOLDERS.root.id,
+    type: "outro",
+    workstreamSlug: null,
+    status: "vigente",
+    classified: true,
+    visibility: "operate",
+    sensitivities: [],
+  },
 ];
 
+/** MOCK → futureTable: risks · alimenta o bloco Atenção quando severity = red */
 export const risks: Risk[] = [
   {
     id: "rk-targa",
@@ -686,6 +884,7 @@ export const risks: Risk[] = [
   },
 ];
 
+/** MOCK → futureTable: actions · alimenta o bloco Atenção quando status = late */
 export const actions: ActionItem[] = [
   {
     id: "ac-tese",
@@ -805,6 +1004,7 @@ const inexistentes = [
   "Provisionamento",
 ];
 
+/** MOCK → futureTable: checklist_items (extras da bandeja vêm do store) */
 export const checklist: ChecklistItem[] = [
   {
     id: "ck-targa",
@@ -1071,6 +1271,7 @@ export const checklist: ChecklistItem[] = [
   },
 ];
 
+/** MOCK → futureTable: metrics */
 export const metrics: Metric[] = [
   {
     id: "m-rob",
@@ -1215,6 +1416,7 @@ export const metrics: Metric[] = [
   },
 ];
 
+/** MOCK → futureTable: thesis_steps · oculto no modo Alvo */
 export const thesis: ThesisStep[] = [
   {
     id: "th-1",
@@ -1268,6 +1470,7 @@ export const thesis: ThesisStep[] = [
   },
 ];
 
+/** MOCK → futureTable: price_steps · oculto no modo Alvo */
 export const prices: PriceStep[] = [
   {
     id: "pr-1",
@@ -1418,6 +1621,7 @@ type DealBundlePeople = {
   sensitivities: import("../types").Sensitivity[];
 }[];
 
+/** MOCK → futureTable: notes */
 export const notes: Note[] = [
   {
     id: "nt-prot-1",
@@ -1456,6 +1660,7 @@ export const notes: Note[] = [
   },
 ];
 
+/** Fallback local. Em produção as novas decisões vão para store → decisions. */
 export const decisions: Decision[] = [
   {
     id: "dec-preco-1506",
@@ -1492,12 +1697,15 @@ export const decisions: Decision[] = [
   },
 ];
 
+/** Fallback vazio. Inbox real vive no store (inbox_files). */
 export const inboxSeed: InboxFile[] = [];
 
+/** MOCK → futureTable: cap_rows · oculto no modo Alvo */
 export function capFor(dealId: string): CapRow[] {
   return dealId === HEALTH_ID ? healthCap : loopertCap;
 }
 
+/** MOCK → futureTable: people · oculto no modo Alvo */
 export function peopleFor(dealId: string): DealBundlePeople {
   return dealId === LOOPERT_ID ? people : [];
 }

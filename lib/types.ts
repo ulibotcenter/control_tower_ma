@@ -253,6 +253,33 @@ export interface DealBundle {
   people: { name: string; role: string; note: string; visibility: Visibility; sensitivities: Sensitivity[] }[];
 }
 
+export type ActivityKind = "decision" | "document" | "action" | "risk";
+
+export interface ActivityEvent {
+  id: string;
+  at: string;
+  kind: ActivityKind;
+  title: string;
+  who?: string;
+  dealId: string | null;
+  dealName?: string;
+  href: string;
+  visibility: Visibility;
+  sensitivities: Sensitivity[];
+}
+
+export interface AttentionItem {
+  id: string;
+  kind: "late_action" | "critical_risk";
+  dealId: string;
+  dealSlug: string;
+  dealName: string;
+  dealPriority: number;
+  title: string;
+  href: string;
+  meta?: string;
+}
+
 export interface ProgramView {
   corte: string;
   board: BoardCard;

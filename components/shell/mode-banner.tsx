@@ -1,22 +1,30 @@
+import { MODE_META } from "@/lib/mode-meta";
 import type { MeetingMode } from "@/lib/types";
 
 export function ModeBanner({ mode }: { mode: MeetingMode }) {
-  if (mode === "operate") return null;
+  const meta = MODE_META[mode];
+
+  if (mode === "operate") {
+    return (
+      <div className="no-print border-b border-navy-3 bg-navy-2 px-4 py-1.5 text-center text-[12px] text-cream/90 sm:text-[13px]">
+        <strong className="text-gold">Modo Operar.</strong> {meta.shareLine}
+      </div>
+    );
+  }
 
   if (mode === "advisors") {
     return (
-      <div className="bg-navy-2 text-cream px-4 py-2 text-center text-[13px] sm:text-sm">
-        <strong className="text-gold">Modo Reunião · Assessores.</strong> Bandeja crua, notas de
-        proteção da Eleva e credenciais estão ocultas. O que está na tela pode ser visto por AD+R,
-        Pacta e João Amorim.
+      <div className="no-print bg-navy-2 px-4 py-2 text-center text-[13px] text-cream sm:text-sm">
+        <strong className="text-cyan">Modo Assessores.</strong> {meta.shareLine} {meta.audience}{" "}
+        podem ver o que está na tela.
       </div>
     );
   }
 
   return (
-    <div className="bg-alert text-cream px-4 py-2.5 text-center text-[13px] sm:text-sm font-medium">
-      <strong>MODO ALVO LIGADO.</strong> Só fase, documentos pedidos e pendências formais. Esta
-      tela pode ser vista por quem está sendo avaliado.
+    <div className="no-print bg-alert px-4 py-2.5 text-center text-[13px] font-medium text-cream sm:text-sm">
+      <strong>MODO ALVO LIGADO.</strong> {meta.shareLine} Esta tela pode ser vista por quem está
+      sendo avaliado.
     </div>
   );
 }

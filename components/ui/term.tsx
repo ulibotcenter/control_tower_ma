@@ -1,55 +1,39 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { GLOSSARY } from "@/lib/glossary";
+import { GLOSSARY, type GlossaryId } from "@/lib/glossary";
 
-export function Term({ id, children }: { id: keyof typeof GLOSSARY; children?: React.ReactNode }) {
+/**
+ * Sigla com «?» discreto. A definição é a mesma da página Glossário.
+ * interactive={false} quando o termo está dentro de um <a>/<Link>.
+ */
+export function Term({
+  id,
+  children,
+  interactive = true,
+}: {
+  id: GlossaryId;
+  children?: React.ReactNode;
+  interactive?: boolean;
+}) {
   const entry = GLOSSARY[id];
-  const [first, setFirst] = useState(false);
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const key = `ct-term-${id}`;
-    if (!sessionStorage.getItem(key)) {
-      setFirst(true);
-      sessionStorage.setItem(key, "1");
-    }
-  }, [id]);
-
-  useEffect(() => {
-    if (!first && !open) return;
-    function onDoc(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setFirst(false);
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [first, open]);
-
   if (!entry) return <>{children}</>;
 
   return (
-    <span className="relative inline-block" ref={ref}>
-      <button
-        type="button"
-        className="underline decoration-dotted decoration-gold underline-offset-4"
-        onClick={() => {
-          setOpen((v) => !v);
-          setFirst(false);
-        }}
-        aria-expanded={open || first}
-      >
+    <span
+      className="term-wrap hint-wrap relative inline-flex items-baseline gap-0.5"
+      tabIndex={interactive ? 0 : undefined}
+    >
+      <span className="decoration-[#c2410c]/70 underline decoration-dotted underline-offset-4">
         {children ?? entry.term}
-      </button>
-      {(first || open) && (
-        <span className="absolute left-0 top-[1.45em] z-40 w-64 max-w-[80vw] paper px-3 py-2 text-[13px] leading-snug text-ink shadow-md">
-          <span className="kicker block mb-1">{entry.term}</span>
-          {entry.def}
-        </span>
-      )}
+      </span>
+      <span className="term-q" aria-hidden>
+        ?
+      </span>
+      <span className="sr-only">. {entry.def}</span>
+      <span role="tooltip" className="hint-tip">
+        <span className="mb-0.5 block font-semibold text-cream">{entry.term}</span>
+        {entry.def}
+      </span>
     </span>
   );
 }

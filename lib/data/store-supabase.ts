@@ -1,3 +1,11 @@
+/**
+ * Implementação Postgres do store dinâmico.
+ * Tabelas atuais: inbox_files, decisions, documents (extras), checklist_items (extras).
+ *
+ * Ponto de extensão: novas coleções do seed (risks, actions, deals, …)
+ * entram como funções *Remote neste arquivo, com o mesmo shape de lib/types.ts.
+ * O provider passa a chamá-las no lugar do seed. Ver lib/data/sources.ts.
+ */
 import { randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ChecklistItem, Decision, DocumentStatus, DocumentType, DriveDocument, InboxFile } from "../types";

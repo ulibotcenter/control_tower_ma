@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/shell/app-shell";
+import { DealSwitcher } from "@/components/deal/deal-switcher";
 import { ChecklistTable } from "@/components/deal/checklist-table";
-import { ActionList, DocsList, RiskList } from "@/components/deal/lists";
+import { DocsList } from "@/components/deal/lists";
+import { ActionBoard } from "@/components/deal/action-board";
+import { RisksBoard } from "@/components/deal/risks-board";
 import { SemaphoreBadge } from "@/components/ui/semaphore";
+import { WithTerms } from "@/components/ui/with-terms";
 import { getDealBundle, workstreamOf } from "@/lib/data/provider";
 import { getMode } from "@/lib/mode";
 
@@ -26,7 +30,10 @@ export default async function WorkstreamPage({
 
   return (
     <AppShell>
-      <p className="text-sm">
+      <div className="no-print">
+        <DealSwitcher current={slug} />
+      </div>
+      <p className="no-print text-sm">
         <Link href={`/deals/${slug}`} className="text-muted hover:text-navy">
           ← {bundle.deal.name}
         </Link>
@@ -40,25 +47,27 @@ export default async function WorkstreamPage({
         <SemaphoreBadge tone={ws.health} />
       </div>
       <p className="mt-4 max-w-2xl text-lg leading-relaxed">
-        {mode === "target" ? ws.summaryTarget : ws.summary}
+        <WithTerms text={mode === "target" ? ws.summaryTarget : ws.summary} />
       </p>
 
       <section className="mt-10">
         <h2 className="serif text-2xl text-navy">Checklist desta frente</h2>
         <p className="mb-3 mt-1 text-sm text-muted">
-          Classificar um arquivo na bandeja não marca item como concluído.
+          {mode === "target"
+            ? "Itens formais desta frente. Arquivo novo não conclui o item."
+            : "Classificar um arquivo na bandeja não marca item como concluído."}
         </p>
         <ChecklistTable items={checks} />
       </section>
 
       <section className="mt-10">
         <h2 className="serif mb-3 text-2xl text-navy">Riscos</h2>
-        <RiskList items={rs} />
+        <RisksBoard items={rs} />
       </section>
 
       <section className="mt-10">
         <h2 className="serif mb-3 text-2xl text-navy">Ações</h2>
-        <ActionList items={ac} />
+        <ActionBoard items={ac} />
       </section>
 
       <section className="mt-10">

@@ -1,3 +1,5 @@
+import { Term } from "@/components/ui/term";
+import { WithTerms } from "@/components/ui/with-terms";
 import type { PriceStep, ThesisStep } from "@/lib/types";
 
 export function ThesisPrice({
@@ -16,7 +18,8 @@ export function ThesisPrice({
       <div className="paper p-5">
         <p className="kicker">Evolução da tese</p>
         <p className="mt-1 text-sm text-muted">
-          Histórico falado na sala. Nada disto é LOI. Nada disto é valuation fechado.
+          Histórico falado na sala. Nada disto é <Term id="loi">LOI</Term>. Nada disto é{" "}
+          <Term id="valuation">valuation</Term> fechado.
         </p>
         <ol className="mt-4 space-y-2">
           {thesis.map((t) => (
@@ -27,7 +30,9 @@ export function ThesisPrice({
               }`}
             >
               <span className="font-mono text-[12px] text-muted">{t.date}</span>
-              <span className={t.current ? "font-semibold text-navy" : ""}>{t.label}</span>
+              <span className={t.current ? "font-semibold text-navy" : ""}>
+                <WithTerms text={t.label} />
+              </span>
               {t.current && <span className="stamp text-gold">Atual (10/08)</span>}
             </li>
           ))}
@@ -36,8 +41,8 @@ export function ThesisPrice({
       <div className="paper p-5">
         <p className="kicker">Trajetória de preço — verbal, suspensa desde 15/06</p>
         <p className="mt-1 text-sm text-muted">
-          Não há valuation fechado. Rafaella: pode ser ~R$ 1M / ~R$ 600k. Board ainda não fechou
-          envelope.
+          Não há <Term id="valuation">valuation</Term> fechado. Rafaella: pode ser ~R$ 1M / ~R$ 600k.
+          Board ainda não fechou <Term id="envelope">envelope</Term>.
         </p>
         <ol className="mt-4 flex flex-wrap gap-2">
           {prices.map((p) => (

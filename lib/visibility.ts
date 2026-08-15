@@ -1,3 +1,12 @@
+/**
+ * O que cada modo pode ver. Independente da origem dos dados (seed ou Supabase).
+ *
+ *   operate    — Eleva sozinha. Tudo.
+ *   advisors   — AD+R + Pacta + João. Sem visibility=operate, sem notas/credenciais Eleva.
+ *   target     — só visibility=target e sem sensitivities da lista TARGET_HIDDEN.
+ *
+ * A UI (textos, blocos, cromo) vive em lib/mode-meta.ts. Aqui só o filtro.
+ */
 import type { MeetingMode, Sensitivity, Visible } from "./types";
 
 const ADVISORS_HIDDEN: Sensitivity[] = ["eleva_notes", "credentials"];

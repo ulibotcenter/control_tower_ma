@@ -1,19 +1,20 @@
 "use client";
 
+import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { MODE_META } from "@/lib/mode-meta";
+import { toast } from "@/lib/toast";
 import type { MeetingMode } from "@/lib/types";
 
-const OPTIONS: { id: MeetingMode; label: string; hint: string }[] = [
-  { id: "operate", label: "Operar", hint: "Eleva sozinha" },
-  { id: "advisors", label: "Reunião · Assessores", hint: "AD+R + Pacta + João Amorim" },
-  { id: "target", label: "Reunião · Alvo", hint: "Loopert ou Radio Health na sala" },
-];
+const OPTIONS: MeetingMode[] = ["operate", "advisors", "target"];
 
 export function ModeSwitch({ mode }: { mode: MeetingMode }) {
   const router = useRouter();
   const [pending, setPending] = useState<MeetingMode | null>(null);
   const [busy, setBusy] = useState(false);
+  const [live, setLive] = useState("");
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const confirmId = useId();
 
   async function apply(next: MeetingMode) {
     setBusy(true);
@@ -25,6 +26,9 @@ export function ModeSwitch({ mode }: { mode: MeetingMode }) {
       });
       if (!res.ok) return;
       setPending(null);
+      const line = `Modo ${MODE_META[next].label}.`;
+      setLive(`${line} ${MODE_META[next].shareLine}`);
+      toast(line);
       router.refresh();
     } finally {
       setBusy(false);
@@ -32,7 +36,7 @@ export function ModeSwitch({ mode }: { mode: MeetingMode }) {
   }
 
   function onPick(next: MeetingMode) {
-    if (next === mode) return;
+    if (next === mode || busy) return;
     if (next === "target") {
       setPending("target");
       return;
@@ -40,40 +44,92 @@ export function ModeSwitch({ mode }: { mode: MeetingMode }) {
     void apply(next);
   }
 
+  function onRadioKey(e: React.KeyboardEvent, current: MeetingMode) {
+    const i = OPTIONS.indexOf(current);
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      onPick(OPTIONS[(i + 1) % OPTIONS.length]);
+    }
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      onPick(OPTIONS[(i - 1 + OPTIONS.length) % OPTIONS.length]);
+    }
+  }
+
+  useEffect(() => {
+    if (pending !== "target") return;
+    const node = dialogRef.current;
+    const first = node?.querySelector<HTMLButtonElement>("[data-confirm]");
+    first?.focus();
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setPending(null);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [pending]);
+
   return (
-    <div className="relative">
+    <div className="relative no-print">
       <div
-        className="flex flex-wrap rounded-sm border border-gold/40 bg-navy-2 p-0.5"
+        className="flex flex-wrap rounded-sm border border-white/25 bg-navy-2 p-0.5"
         role="radiogroup"
         aria-label="Modo de tela"
       >
-        {OPTIONS.map((opt) => {
-          const active = mode === opt.id;
+        {OPTIONS.map((id) => {
+          const opt = MODE_META[id];
+          const active = mode === id;
+          const activeCls =
+            id === "target"
+              ? "bg-alert text-cream font-semibold"
+              : id === "advisors"
+                ? "bg-cyan text-navy font-semibold"
+                : "bg-gold text-navy font-semibold";
           return (
             <button
-              key={opt.id}
+              key={id}
               type="button"
               role="radio"
               aria-checked={active}
+              aria-label={`${opt.label}. ${opt.hint}`}
               title={opt.hint}
-              onClick={() => onPick(opt.id)}
-              className={`px-2.5 py-1.5 text-[12px] sm:text-[13px] tracking-wide ${
-                active
-                  ? "bg-gold text-navy font-semibold"
-                  : "text-cream/80 hover:text-cream"
+              onClick={() => onPick(id)}
+              onKeyDown={(e) => onRadioKey(e, id)}
+              disabled={busy}
+              className={`min-h-11 px-2.5 py-1.5 text-[12px] tracking-wide sm:min-h-0 sm:text-[13px] ${
+                active ? activeCls : "text-cream hover:bg-white/10"
               }`}
             >
-              {opt.label}
+              <span className="md:hidden">{opt.short}</span>
+              <span className="hidden md:inline">{opt.label}</span>
             </button>
           );
         })}
       </div>
+      <p className="mt-0.5 hidden text-right text-[11px] text-cream/80 md:block">
+        {MODE_META[mode].audience}
+      </p>
+      <p className="sr-only" aria-live="polite">
+        {live}
+      </p>
 
       {pending === "target" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-4">
-          <div className="w-full max-w-md paper p-6 shadow-xl">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-4"
+          role="presentation"
+          onClick={() => !busy && setPending(null)}
+        >
+          <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={confirmId}
+            className="w-full max-w-md paper p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <p className="kicker">Confirmação</p>
-            <h2 className="serif mt-2 text-2xl text-navy">Ligar modo Reunião · Alvo?</h2>
+            <h2 id={confirmId} className="serif mt-2 text-2xl text-navy">
+              Ligar modo Alvo?
+            </h2>
             <p className="mt-3 text-[15px] leading-relaxed text-ink">
               Some o que o alvo não pode ver: preço, teses internas, pendências que não são
               formais dele, bandeja e notas da Eleva. Ficam fase, documentos pedidos, checklist
@@ -85,7 +141,7 @@ export function ModeSwitch({ mode }: { mode: MeetingMode }) {
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
-                className="px-3 py-2 text-sm text-muted"
+                className="px-3 py-2 text-sm text-muted hover:text-navy"
                 onClick={() => setPending(null)}
                 disabled={busy}
               >
@@ -93,6 +149,7 @@ export function ModeSwitch({ mode }: { mode: MeetingMode }) {
               </button>
               <button
                 type="button"
+                data-confirm
                 className="bg-alert px-4 py-2 text-sm font-semibold text-cream"
                 onClick={() => apply("target")}
                 disabled={busy}

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "@/lib/toast";
 
 export function InboxForm() {
   const router = useRouter();
@@ -30,6 +31,7 @@ export function InboxForm() {
       return;
     }
     form.reset();
+    toast("Arquivo registrado na bandeja.");
     router.refresh();
   }
 

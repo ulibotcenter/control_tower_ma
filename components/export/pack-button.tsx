@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "@/lib/toast";
 
 export function PackButton({
   disabled,
@@ -14,7 +15,9 @@ export function PackButton({
   async function publish() {
     const res = await fetch("/api/export/pack", { method: "POST" });
     if (!res.ok) {
-      setMsg("Não foi possível gerar o pack. Confirme que está no modo Operar.");
+      const fail = "Não foi possível gerar o pack. Confirme que está no modo Operar.";
+      setMsg(fail);
+      toast(fail, "err");
       return;
     }
     const data = (await res.json()) as { ok: boolean; markdown: string; message: string };
@@ -30,6 +33,7 @@ export function PackButton({
     a.click();
     URL.revokeObjectURL(url);
     setMsg(data.message);
+    toast("Pack baixado.");
   }
 
   return (

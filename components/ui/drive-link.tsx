@@ -13,8 +13,8 @@ export function DriveLink({
     <a
       href={href}
       target="_blank"
-      rel="noreferrer"
-      className="inline-flex items-center gap-1 text-navy underline decoration-gold/70 underline-offset-4 hover:decoration-gold"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 text-navy underline decoration-cyan/70 underline-offset-4 hover:decoration-gold"
     >
       {children}
       <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />

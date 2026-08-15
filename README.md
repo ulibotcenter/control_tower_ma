@@ -2,9 +2,9 @@
 
 Torre de controle do M&A buy-side da AD+R. Duas operações: **Loopert** (prioridade, ativa) e **Radio Health** (congelada). PMO: Eleva Projects. Corte oficial: **14/08/2026**.
 
-A tela é uma só URL com três modos. Login só da Eleva. Pensada para screen share com Camila e Matheus (conhecem rádio, não M&A).
+A tela é uma só URL com três modos. Login só da Eleva (`@elevaprojects.com`). Produção: [https://tower.elevaprojects.com](https://tower.elevaprojects.com).
 
-## Como rodar
+## Como rodar em local
 
 ```bash
 cd control-tower
@@ -15,9 +15,81 @@ npm run dev
 
 Abra [http://localhost:3000](http://localhost:3000).
 
-Entre com um e-mail `@elevaprojects.com`. Em local (`npm run dev`), sem `ELEVA_DEV_PASSWORD`, qualquer senha entra. Em produção: `SESSION_SECRET` + `ELEVA_DEV_PASSWORD` (ou Supabase Auth) e `ALLOW_DEV_LOGIN=false`.
+Entre com um e-mail `@elevaprojects.com`. Em local (`npm run dev`), sem `ELEVA_DEV_PASSWORD`, qualquer senha entra. Em produção: `SESSION_SECRET` + `ELEVA_DEV_PASSWORD` **ou** Supabase Auth, e `ALLOW_DEV_LOGIN=false`.
 
 O cookie de sessão só fica `Secure` em HTTPS. Em `npm start` no localhost o login funciona (não exige HTTPS).
+
+```bash
+npm run build
+npm start
+```
+
+## Deploy no Vercel
+
+1. Importe o repositório `ulibotcenter/control_tower_ma` (Framework: Next.js, Root: raiz do repo).
+2. Preencha as variáveis de ambiente (abaixo) **antes** do primeiro deploy útil.
+3. Rode o schema do Supabase (`supabase/schema.sql` ou `supabase/patch_batch1.sql`) **antes** de usar bandeja/decisões em produção.
+4. Deploy. Confira `https://<projeto>.vercel.app/login`.
+5. Só então aponte o domínio canônico.
+
+Produção **não** usa `.data/`. Sem `SUPABASE_SERVICE_ROLE_KEY` a bandeja e as decisões novas não sobrevivem.
+
+## Domínio `tower.elevaprojects.com`
+
+1. Vercel → Project → Settings → Domains → adicionar `tower.elevaprojects.com`.
+2. DNS da Eleva: CNAME `tower` → `cname.vercel-dns.com` (ou o target que a Vercel indicar).
+3. Env `NEXT_PUBLIC_APP_URL=https://tower.elevaprojects.com`.
+4. Cookie de sessão é do host (não de `.elevaprojects.com`) — o login vale só neste subdomínio.
+5. Auth continua só `@elevaprojects.com`. Sem signup público.
+
+As rotas (`/`, `/deals/loopert`, `/login`) não dependem do hostname.
+
+## Variáveis de ambiente
+
+Ver também `.env.example`.
+
+| Variável | Obrigatória em prod | Função |
+|---|---|---|
+| `NEXT_PUBLIC_APP_URL` | Sim | URL canônica (`https://tower.elevaprojects.com`) |
+| `SESSION_SECRET` | Sim | Assinatura do cookie HMAC |
+| `ELEVA_DEV_PASSWORD` | Se Auth HMAC | Senha única Eleva (enquanto o Auth do Supabase estiver desligado) |
+| `ALLOW_DEV_LOGIN` | `false` | Qualquer senha em local. Nunca `true` na Vercel |
+| `NEXT_PUBLIC_SESSION_IDLE_MINUTES` | Não (padrão 90) | Inatividade até expirar a sessão |
+| `NEXT_PUBLIC_SUPABASE_URL` | Sim, para persistir | Projeto Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Recomendada | Cliente / futuro Auth |
+| `SUPABASE_SERVICE_ROLE_KEY` | Sim, para persistir | Write de bandeja e decisões (servidor) |
+| `SUPABASE_AUTH` | Não | `1` liga `signInWithPassword` |
+| `GOOGLE_DRIVE_FOLDER_ID` | Não | Pasta raiz do data room |
+| `GOOGLE_SERVICE_ACCOUNT` ou OAuth | Não | Leitura do Drive (sem isto a bandeja é manual) |
+| `RESEND_API_KEY` | Não | Sem chave, alertas só logam no servidor |
+| `ALERT_EMAIL` | Não | Padrão `erica@elevaprojects.com` |
+| `CRON_SECRET` | Recomendada | Protege `/api/alerts/weekly` |
+
+## Sessão
+
+- Cookie HMAC `ct-session`, 12 horas, só `@elevaprojects.com`.
+- Inatividade: **90 minutos** (ajustável). Aviso discreto 2 minutos antes. Logout limpa sessão, modo, apresentação e o relógio de ociosidade (`ct-seen`).
+- O mesmo relógio vale para o caminho atual e para o futuro Supabase Auth.
+
+## Como ativar Supabase Auth (futuro)
+
+Hoje o login **não** usa o Auth do Supabase. Persistência (bandeja/decisões) e login são coisas distintas.
+
+Quando for ligar:
+
+1. No Supabase: Authentication → Providers → Email. Desligue signup público.
+2. Crie só contas `@elevaprojects.com`.
+3. Env na Vercel:
+   ```
+   SUPABASE_AUTH=1
+   NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+   ```
+4. Mantenha `SESSION_SECRET`. Depois do `signInWithPassword` a torre ainda grava `ct-session`.
+5. `ALLOW_DEV_LOGIN=false`. Pode aposentar `ELEVA_DEV_PASSWORD` quando o Auth estiver estável.
+6. Quando o Auth SSR estiver pronto, o ponto de troca é `getSession()` em `lib/auth.ts` — o restante da torre não muda.
+
+Service role **não** entra no login. É só para o store.
 
 ## O que é verdade onde
 
@@ -31,6 +103,8 @@ O cookie de sessão só fica `Secure` em HTTPS. Em `npm start` no localhost o lo
 A torre **não lê o disco do Mac**. Workspace local é espelho; sync é a pasta compartilhada:
 
 `https://drive.google.com/drive/folders/1VlZu-j9unQWpcjf9oqEkLIyIzjUiJAuS`
+
+Origem de cada coleção: `lib/data/sources.ts`.
 
 ## Como ligar o Drive
 
@@ -49,101 +123,49 @@ GOOGLE_OAUTH_REFRESH_TOKEN=
 
 A service account precisa de **Leitor** na pasta raiz. Writer, se possível, **só** em `Control Tower/Exports/`.
 
-**A pasta não deve ficar pública.** O link “anyone with the link” foi só para validação. Em produção: Restrito.
+**A pasta não deve ficar pública.** Nunca indexar nem linkar a pasta `.obsidian`.
 
-Nunca indexar nem linkar a pasta `.obsidian`.
+Quando a API estiver ligada: poll ~5 min em `/api/drive/sync` → arquivo novo cai na bandeja → humano classifica → só então entra no checklist. **Arquivo novo ≠ item concluído.**
 
-Quando a API estiver ligada: poll ~5 min em `/api/drive/sync` → arquivo novo cai na bandeja → humano classifica (deal, tipo, workstream, status) → só então entra no checklist. **Arquivo novo ≠ item concluído.**
+## Ligar o Supabase (persistência no Vercel)
 
-Arquivos ainda em Downloads (balancete 05/2026, e-mails Suélen, 5ª ACS, projeção) **não** estão no Drive. Quando forem soltos nas pastas, registre na bandeja. Não os seedamos como classificados.
+1. Crie um projeto no Supabase (região perto do Vercel).
+2. SQL Editor → `supabase/schema.sql` (instalação nova) ou `supabase/patch_batch1.sql` se o schema antigo já rodou.
+3. Project Settings → API: `URL` e `service_role` (nunca a service role no cliente).
+4. Env na Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+5. Deploy **depois** do schema. Sem tabelas, classificar/registrar devolve 500.
+6. Na home, modo Operar: dados em «Supabase write».
 
-## Como adicionar um 3º deal
-
-O modelo é deal-centric. Não redesenhe a home.
-
-1. Inclua uma linha em `lib/data/seed.ts` (`deals`) com `slug`, fase, headline e pasta Drive.
-2. Workstreams, milestones, risks, actions, checklist, metrics apontam para o `dealId`.
-3. A home lista por `priority`. A rota `/deals/[slug]` já serve.
-4. No Supabase: `insert into deals (...)` e o restante nas tabelas filhas.
+Local sem essas env: seed + `.data/`.
 
 ## Os três modos (mesma URL)
-
-Interruptor persistente no header. Ligar **Alvo** pede confirmação.
 
 | Modo | Quem está na sala | O que some |
 |---|---|---|
 | **Operar** (padrão) | Eleva sozinha | Nada |
-| **Reunião · Assessores** | AD+R + Pacta + João Amorim | Bandeja crua, notas de proteção Eleva (“cliente não seguiu”), credenciais |
-| **Reunião · Alvo** | Loopert e/ou Radio Health | SJDC e tese contra Jardel; trajetória de preço / valuation Pacta; NDAs internos da Eleva; Hunter FM; “empresa não vale o passado”; exposição ADR ~30%; notas de proteção; bandeja |
+| **Assessores** | AD+R + Pacta + João Amorim | Bandeja, notas internas, credenciais |
+| **Alvo** | Loopert e/ou Radio Health | Preço, teses internas, SJDC, Hunter, bandeja, decisões |
 
-Mostra no modo Alvo: fase, documentos pedidos, pendências formais do alvo, timeline pública.
+Alvo pede confirmação. Atalhos: `1` Loopert, `2` Radio Health, `P` apresentação, `/` busca, `?` ajuda.
 
 ## Registro de decisão
 
-Objeto de primeira classe: quem, data, recomendação da Eleva, decisão, flag **contra a recomendação**, consequência. Visível no modo Operar; resumo no modo Assessores; invisível no modo Alvo.
+Quem, data, recomendação da Eleva, decisão, flag contra a recomendação, consequência. Operar vê tudo; Assessores vê resumo; Alvo não vê.
 
-## Alertas
+## Alertas e pack
 
-Destinatário padrão: `erica@elevaprojects.com`.
+- Semanal (`/api/alerts/weekly`, cron segunda 11:00 UTC se o Cron da Vercel estiver ligado).
+- Pack em `/export/pack` (markdown). A apresentação viva em `Apresentacoes/` **não** é atualizada por esta torre. PDF da visão atual: botão no header.
 
-- Semanal (`/api/alerts/weekly`, cron segunda 11:00 UTC se Vercel Cron estiver ligado): N vermelhos, N ações atrasadas, 1 decisão pendente.
-- Opcional: e-mail quando a bandeja recebe arquivo.
+## Como adicionar um 3º deal
 
-Sem `RESEND_API_KEY` o payload é **logado** no servidor. Não inventamos que o e-mail saiu.
-
-## Pack da semana
-
-Botão **Publicar pack** em `/export/pack`. Gera markdown (resumo + log de decisão). Sem API do Google, baixa local. Com API, o destino é `Control Tower/Exports/` **dentro** da raiz do Drive — nunca em cima da apresentação viva.
-
-A apresentação em `Apresentacoes/` **não** é atualizada automaticamente.
-
-## Variáveis de ambiente
-
-Ver `.env.example`.
-
-```
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-GOOGLE_DRIVE_FOLDER_ID=1VlZu-j9unQWpcjf9oqEkLIyIzjUiJAuS
-GOOGLE_SERVICE_ACCOUNT=
-RESEND_API_KEY=
-ALERT_EMAIL=erica@elevaprojects.com
-SESSION_SECRET=
-ELEVA_DEV_PASSWORD=
-ALLOW_DEV_LOGIN=true
-CRON_SECRET=
-```
-
-## Ligar o Supabase (persistência no Vercel)
-
-Sem service role a bandeja e as decisões **não sobrevivem** a cold start. Ordem:
-
-1. Crie um projeto no Supabase (região perto do Vercel).
-2. SQL Editor → cole e rode `supabase/schema.sql` (instalação nova).  
-   Se o schema antigo (deal_id uuid) já rodou: rode `supabase/patch_batch1.sql` em vez de recriar as tabelas.
-3. Project Settings → API: copie `URL` e `service_role` (nunca a chave `service_role` no cliente).
-4. No Vercel, env:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-   SUPABASE_SERVICE_ROLE_KEY=...
-   ```
-   A persistência só liga com URL + **service role**. Só anon não escreve (RLS).
-5. Deploy o app **depois** do schema. Sem as tabelas, classificar/registrar decisão devolve 500.
-6. Confira na home (modo Operar): `Supabase: lendo/escrevendo`.
-
-Local sem essas env: a torre sobe com seed + `.data/`. Não precisa de Postgres para desenvolver.
-
-Auth continua o cookie Eleva desta torre. **Não** ligue signup público no Supabase neste batch.
-
-## Deploy
-
-Vercel → importar `ulibotcenter/control_tower_ma`. Preencha `.env.example`. Schema no Supabase **antes** do primeiro uso da bandeja em produção.
+1. Linha em `lib/data/seed.ts` (`deals`) com `slug`, fase, headline e pasta Drive.
+2. Workstreams, milestones, risks, actions, checklist, metrics apontam para o `dealId`.
+3. A home lista por `priority`. A rota `/deals/[slug]` já serve.
 
 ## O que esta torre não faz
 
 - Não inventa LOI, SPA, NDA ADR↔Eleva, valuation fechado, municipal vigente, nem 143 contratos assinados.
 - Não hospeda o binário do data room. Link = Google Drive em nova aba.
-- Não lê `/Users/ulibot/Documents/M&A_Project/M&A - AD+R & Loopert`.
+- Não lê o workspace local do Mac.
 - Não confronta Jardel na tela de Alvo.

@@ -46,7 +46,20 @@ export function driveRootId() {
   return process.env.GOOGLE_DRIVE_FOLDER_ID || "1VlZu-j9unQWpcjf9oqEkLIyIzjUiJAuS";
 }
 
+export function appUrl() {
+  return env("NEXT_PUBLIC_APP_URL") || "https://tower.elevaprojects.com";
+}
+
 export function allowDevLogin() {
   if (process.env.NODE_ENV === "production") return false;
   return process.env.ALLOW_DEV_LOGIN !== "false";
+}
+
+/**
+ * Login via Supabase Auth (signInWithPassword).
+ * Desligado por padrão. Ligar: SUPABASE_AUTH=1 + URL + ANON_KEY.
+ * A sessão da torre continua no cookie HMAC até o Auth SSR substituir getSession().
+ */
+export function isSupabaseAuthEnabled() {
+  return env("SUPABASE_AUTH") === "1" && hasSupabaseAnon();
 }
