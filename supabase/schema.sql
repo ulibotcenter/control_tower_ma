@@ -1,6 +1,25 @@
--- Control Tower · verdade do CONTROLE (não dos documentos).
--- Google Drive permanece a verdade do data room. Sem write-back aqui.
--- deal_id nas tabelas dinâmicas é text (IDs do seed: deal-loopert) até migrar deals.
+-- Control Tower · schema limpo (Batch 1)
+-- window é palavra reservada no Postgres → use time_window
+
+drop table if exists notes cascade;
+drop table if exists inbox_files cascade;
+drop table if exists decisions cascade;
+drop table if exists metrics cascade;
+drop table if exists checklist_items cascade;
+drop table if exists actions cascade;
+drop table if exists risks cascade;
+drop table if exists documents cascade;
+drop table if exists milestones cascade;
+drop table if exists workstreams cascade;
+drop table if exists deals cascade;
+
+drop type if exists decision_who cascade;
+drop type if exists checklist_status cascade;
+drop type if exists document_status cascade;
+drop type if exists document_type cascade;
+drop type if exists deal_status cascade;
+drop type if exists semaphore cascade;
+drop type if exists meeting_visibility cascade;
 
 create extension if not exists "pgcrypto";
 
@@ -51,15 +70,14 @@ create table milestones (
   deal_id uuid not null references deals(id) on delete cascade,
   slug text not null,
   name text not null,
-  window text,
+  time_window text,
   status text not null,
   summary text
 );
 
 create table documents (
   id uuid primary key default gen_random_uuid(),
-  -- text: IDs do seed TS (deal-loopert) até o batch que migrar deals
-  deal_id text,
+  deal_id uuid references deals(id) on delete set null,
   title text not null,
   drive_url text not null,
   drive_id text,
@@ -98,7 +116,7 @@ create table actions (
 
 create table checklist_items (
   id uuid primary key default gen_random_uuid(),
-  deal_id text not null,
+  deal_id uuid not null references deals(id) on delete cascade,
   workstream_slug text not null,
   title text not null,
   status checklist_status not null default 'aberto',
@@ -121,7 +139,7 @@ create table metrics (
 
 create table decisions (
   id uuid primary key default gen_random_uuid(),
-  deal_id text,
+  deal_id uuid references deals(id) on delete set null,
   who decision_who not null,
   who_label text,
   date date not null,
@@ -140,7 +158,7 @@ create table inbox_files (
   drive_id text,
   received_at timestamptz not null default now(),
   classified boolean not null default false,
-  deal_id text,
+  deal_id uuid references deals(id) on delete set null,
   type document_type,
   workstream_slug text,
   status document_status
@@ -154,9 +172,6 @@ create table notes (
   sensitivities text[] not null default '{}'
 );
 
--- Auth: só Eleva. Sem signup público. Restrinja no dashboard do Supabase
--- (Authentication → Providers → e-mail, disable signups; allow list @elevaprojects.com).
-
 alter table deals enable row level security;
 alter table workstreams enable row level security;
 alter table milestones enable row level security;
@@ -168,9 +183,6 @@ alter table metrics enable row level security;
 alter table decisions enable row level security;
 alter table inbox_files enable row level security;
 alter table notes enable row level security;
-
--- Políticas mínimas: usuário autenticado com e-mail Eleva lê tudo.
--- A filtragem por modo de reunião é da aplicação (mesma URL, não dois apps).
 
 create or replace function is_eleva()
 returns boolean language sql stable as $$

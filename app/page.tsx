@@ -66,10 +66,10 @@ export default async function HomePage() {
               </DriveLink>
             </li>
             <li>
-              Supabase:{" "}
-              {program.supabaseConfigured
-                ? "lendo/escrevendo (bandeja, classificação, decisões)."
-                : "não ligado — seed local + .data/"}.
+              Dados:{" "}
+              {program.dataBackend === "supabase"
+                ? "Supabase write (bandeja, classificação, decisões no Postgres)."
+                : "seed only — decisões novas não sobrevivem a deploy."}
             </li>
             <li>
               Alertas: {program.resendConfigured ? "Resend configurado" : "sem chave — o payload é logado"}{" "}

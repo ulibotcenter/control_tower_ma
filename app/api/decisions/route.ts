@@ -52,7 +52,8 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({ decision: row });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "store" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Falha ao gravar decisão";
+    console.error("[api/decisions]", message);
+    return NextResponse.json({ error: "store", message }, { status: 500 });
   }
 }

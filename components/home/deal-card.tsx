@@ -60,7 +60,7 @@ export function DealCard({
         <p className="font-mono text-[12px] text-muted">{deal.cnpj}</p>
         <Link
           href={`/deals/${deal.slug}`}
-          className="bg-navy px-4 py-2 text-sm font-semibold text-cream hover:bg-navy-2"
+          className="btn"
         >
           Abrir deal
         </Link>

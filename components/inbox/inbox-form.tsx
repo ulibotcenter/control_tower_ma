@@ -21,11 +21,11 @@ export function InboxForm() {
     });
     setBusy(false);
     if (!res.ok) {
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
       setError(
         data.error === "drive_url"
           ? "Cole um link do Google Drive (drive.google.com), ou deixe em branco."
-          : "Não foi possível registrar.",
+          : data.message || "Não foi possível registrar.",
       );
       return;
     }
@@ -57,7 +57,7 @@ export function InboxForm() {
       <button
         type="submit"
         disabled={busy}
-        className="mt-4 bg-navy px-4 py-2 text-sm font-semibold text-cream"
+        className="btn mt-4"
       >
         {busy ? "Registrando…" : "Registrar na bandeja"}
       </button>

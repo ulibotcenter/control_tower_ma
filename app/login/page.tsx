@@ -69,7 +69,7 @@ export default async function LoginPage({
           )}
           <button
             type="submit"
-            className="w-full bg-gold py-2.5 font-semibold text-navy hover:bg-gold-2"
+            className="btn btn-gold w-full"
           >
             Entrar
           </button>

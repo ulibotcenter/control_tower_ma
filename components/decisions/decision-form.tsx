@@ -23,18 +23,24 @@ export function DecisionForm({ deals }: { deals: { id: string; name: string }[] 
       againstRecommendation: form.get("against") === "on",
       consequence: String(form.get("consequence")),
     };
-    const res = await fetch("/api/decisions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    setBusy(false);
-    if (!res.ok) {
-      setError("Não foi possível gravar.");
-      return;
+    try {
+      const res = await fetch("/api/decisions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+      if (!res.ok) {
+        setError(data.message || "Não foi possível gravar a decisão no banco.");
+        return;
+      }
+      router.push("/decisions");
+      router.refresh();
+    } catch {
+      setError("Falha de rede ao gravar a decisão.");
+    } finally {
+      setBusy(false);
     }
-    router.push("/decisions");
-    router.refresh();
   }
 
   return (
@@ -85,7 +91,7 @@ export function DecisionForm({ deals }: { deals: { id: string; name: string }[] 
         <textarea id="consequence" name="consequence" rows={3} required />
       </div>
       {error && <p className="text-sm text-alert">{error}</p>}
-      <button type="submit" disabled={busy} className="bg-navy px-4 py-2 text-sm font-semibold text-cream">
+      <button type="submit" disabled={busy} className="btn">
         {busy ? "Gravando…" : "Registrar"}
       </button>
     </form>

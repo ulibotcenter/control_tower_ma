@@ -53,6 +53,8 @@ export async function POST(
     return NextResponse.json({ file });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "store" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Falha ao classificar";
+    console.error("[api/inbox/:id]", message);
+    return NextResponse.json({ error: "store", message }, { status: 500 });
   }
 }

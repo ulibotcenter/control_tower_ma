@@ -28,7 +28,7 @@ export default async function DecisionsPage() {
           </p>
         </div>
         {access === "full" && (
-          <Link href="/decisions/nova" className="bg-navy px-4 py-2 text-sm font-semibold text-cream">
+          <Link href="/decisions/nova" className="btn">
             Registrar decisão
           </Link>
         )}

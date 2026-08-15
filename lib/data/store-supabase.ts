@@ -142,23 +142,32 @@ export async function addDecisionRemote(
   sb: SupabaseClient,
   input: Omit<Decision, "id">,
 ): Promise<Decision> {
-  const { data, error } = await sb
-    .from("decisions")
-    .insert({
-      id: randomUUID(),
-      deal_id: input.dealId,
-      who: input.who,
-      who_label: input.whoLabel,
-      date: input.date,
-      eleva_recommendation: input.elevaRecommendation,
-      decision_taken: input.decisionTaken,
-      against_recommendation: input.againstRecommendation,
-      consequence: input.consequence,
-    })
-    .select("*")
-    .single();
-  if (error || !data) fail("insert decision", error);
-  return mapDecisionRow(data);
+  const payload = {
+    id: randomUUID(),
+    deal_id: input.dealId || null,
+    who: input.who,
+    who_label: input.whoLabel,
+    date: input.date,
+    eleva_recommendation: input.elevaRecommendation,
+    decision_taken: input.decisionTaken,
+    against_recommendation: input.againstRecommendation,
+    consequence: input.consequence,
+  };
+  let { data, error } = await sb.from("decisions").insert(payload).select("*").single();
+  if (error && payload.deal_id && /uuid|foreign key|invalid input syntax/i.test(error.message)) {
+    console.error("[supabase] insert decision deal_id rejeitado, tentando sem deal_id", error.message);
+    ({ data, error } = await sb
+      .from("decisions")
+      .insert({ ...payload, deal_id: null })
+      .select("*")
+      .single());
+  }
+  if (error || !data) {
+    console.error("[supabase] insert decision failed", error);
+    fail("insert decision", error);
+  }
+  console.info("[data] insert decision ok", data.id);
+  return mapDecisionRow(data as Record<string, unknown>);
 }
 
 export async function unclassifiedCountRemote(sb: SupabaseClient) {

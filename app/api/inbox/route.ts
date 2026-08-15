@@ -36,6 +36,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ file });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "store" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Falha ao gravar na bandeja";
+    console.error("[api/inbox]", message);
+    return NextResponse.json({ error: "store", message }, { status: 500 });
   }
 }

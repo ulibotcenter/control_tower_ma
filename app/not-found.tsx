@@ -8,7 +8,7 @@ export default function NotFound() {
       <p className="mt-3 max-w-md text-sm text-muted">
         Se você está em modo Alvo, bandeja e registro de decisão ficam ocultos de propósito.
       </p>
-      <Link href="/" className="mt-6 inline-block bg-navy px-4 py-2 text-sm text-cream">
+      <Link href="/" className="btn mt-6">
         Voltar ao programa
       </Link>
     </div>

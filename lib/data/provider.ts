@@ -47,6 +47,7 @@ export async function getProgram(mode: MeetingMode): Promise<ProgramView> {
       }),
     driveConfigured: isDriveConfigured(),
     supabaseConfigured: isSupabaseConfigured(),
+    dataBackend: isSupabaseConfigured() ? "supabase" : "seed",
     resendConfigured: isResendConfigured(),
     inboxUnclassified,
   };

@@ -40,6 +40,47 @@ a {
   color: inherit;
 }
 
+/* CTAs: cores literais — não depender de utilities Tailwind (text-cream some no Link). */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #0b1c2d;
+  color: #fbf7ee;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  padding: 0.55rem 1rem;
+  border: 0;
+  text-decoration: none;
+  cursor: pointer;
+}
+a.btn,
+a.btn:visited {
+  color: #fbf7ee;
+  text-decoration: none;
+}
+.btn:hover:not(:disabled) {
+  background: #1c3a59;
+  color: #fffdf8;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-gold {
+  background: #c4a046;
+  color: #0b1c2d;
+}
+a.btn-gold,
+a.btn-gold:visited {
+  color: #0b1c2d;
+}
+.btn-gold:hover:not(:disabled) {
+  background: #e0c36a;
+  color: #0b1c2d;
+}
+
 .serif {
   font-family: var(--font-newsreader), "Newsreader", ui-serif, Georgia, serif;
 }

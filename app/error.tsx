@@ -20,7 +20,7 @@ export default function ErrorPage({
         <p className="mt-2 font-mono text-[12px] text-muted">ref {error.digest}</p>
       )}
       <div className="mt-6 flex gap-3">
-        <button type="button" onClick={reset} className="bg-navy px-4 py-2 text-sm text-cream">
+        <button type="button" onClick={reset} className="btn">
           Tentar de novo
         </button>
         <Link href="/" className="px-4 py-2 text-sm text-navy underline">

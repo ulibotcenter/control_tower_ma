@@ -1,6 +1,23 @@
-/** Persistência real: URL + service role. Sem service role a torre não escreve no Postgres. */
+function env(name: string) {
+  return process.env[name]?.trim() || "";
+}
+
+export function supabaseUrl() {
+  return env("NEXT_PUBLIC_SUPABASE_URL") || env("SUPABASE_URL");
+}
+
+export function supabaseServiceKey() {
+  return env("SUPABASE_SERVICE_ROLE_KEY");
+}
+
+/** Persistência real: URL + service role no servidor. */
 export function isSupabaseConfigured() {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return Boolean(supabaseUrl() && supabaseServiceKey());
+}
+
+/** Vercel / produção: nunca gravar em .data (efêmero). */
+export function forbidLocalStore() {
+  return process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
 }
 
 export function hasSupabaseAnon() {

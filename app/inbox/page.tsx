@@ -64,7 +64,7 @@ export default async function InboxPage() {
                 </div>
                 <Link
                   href={`/inbox/${f.id}`}
-                  className="bg-navy px-3 py-1.5 text-sm text-cream"
+                  className="btn"
                 >
                   Classificar
                 </Link>

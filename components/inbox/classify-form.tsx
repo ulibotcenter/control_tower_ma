@@ -116,7 +116,7 @@ export function ClassifyForm({
         &quot;assinado&quot;, o item não é concluído e o semáforo não muda sozinho.
       </p>
       {error && <p className="text-sm text-alert">{error}</p>}
-      <button type="submit" disabled={busy} className="bg-navy px-4 py-2 text-sm font-semibold text-cream">
+      <button type="submit" disabled={busy} className="btn">
         {busy ? "Salvando…" : "Classificar (entra no checklist, sem concluir)"}
       </button>
     </form>

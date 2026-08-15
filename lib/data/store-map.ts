@@ -136,26 +136,18 @@ export function mapChecklistRow(row: {
   };
 }
 
-export function mapDecisionRow(row: {
-  id: string;
-  deal_id: string | null;
-  who: string;
-  who_label: string | null;
-  date: string;
-  eleva_recommendation: string;
-  decision_taken: string;
-  against_recommendation: boolean;
-  consequence: string | null;
-}): Decision {
+export function mapDecisionRow(row: Record<string, unknown>): Decision {
+  const who = String(row.who ?? "eleva");
+  const date = row.date ?? row.created_at ?? "";
   return {
-    id: row.id,
-    dealId: row.deal_id,
-    who: row.who as Decision["who"],
-    whoLabel: row.who_label || row.who,
-    date: String(row.date).slice(0, 10),
-    elevaRecommendation: row.eleva_recommendation,
-    decisionTaken: row.decision_taken,
-    againstRecommendation: row.against_recommendation,
-    consequence: row.consequence || "",
+    id: String(row.id ?? ""),
+    dealId: (row.deal_id as string | null | undefined) ?? (row.dealId as string | null | undefined) ?? null,
+    who: (who === "board" || who === "pacta" || who === "eleva" ? who : "eleva") as Decision["who"],
+    whoLabel: String(row.who_label ?? row.whoLabel ?? who),
+    date: String(date).slice(0, 10),
+    elevaRecommendation: String(row.eleva_recommendation ?? row.elevaRecommendation ?? ""),
+    decisionTaken: String(row.decision_taken ?? row.decisionTaken ?? ""),
+    againstRecommendation: Boolean(row.against_recommendation ?? row.againstRecommendation),
+    consequence: String(row.consequence ?? ""),
   };
 }

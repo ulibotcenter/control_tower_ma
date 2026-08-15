@@ -265,6 +265,7 @@ export interface ProgramView {
   >;
   driveConfigured: boolean;
   supabaseConfigured: boolean;
+  dataBackend: "supabase" | "seed";
   resendConfigured: boolean;
   inboxUnclassified: number;
 }

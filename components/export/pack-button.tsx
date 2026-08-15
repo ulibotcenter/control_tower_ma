@@ -38,7 +38,7 @@ export function PackButton({
         type="button"
         disabled={disabled}
         onClick={publish}
-        className="bg-gold px-5 py-2.5 font-semibold text-navy disabled:opacity-40"
+        className="btn btn-gold"
       >
         Baixar pack (.md)
       </button>
