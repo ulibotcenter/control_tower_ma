@@ -19,6 +19,8 @@ import {
   workstreams,
 } from "./seed";
 import { extraChecklist, extraDocuments, unclassifiedCount } from "./store";
+// Extras (inbox classificado, docs/checklist da bandeja, decisões novas) vêm do store:
+// Supabase se URL+service role; senão seed + .data/. Seed estático (deals, risks) continua no TS.
 
 export async function getProgram(mode: MeetingMode): Promise<ProgramView> {
   const inboxUnclassified = canSeeInbox(mode) ? await unclassifiedCount() : 0;

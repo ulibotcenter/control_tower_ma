@@ -1,5 +1,6 @@
 -- Control Tower · verdade do CONTROLE (não dos documentos).
 -- Google Drive permanece a verdade do data room. Sem write-back aqui.
+-- deal_id nas tabelas dinâmicas é text (IDs do seed: deal-loopert) até migrar deals.
 
 create extension if not exists "pgcrypto";
 
@@ -57,7 +58,8 @@ create table milestones (
 
 create table documents (
   id uuid primary key default gen_random_uuid(),
-  deal_id uuid references deals(id) on delete set null,
+  -- text: IDs do seed TS (deal-loopert) até o batch que migrar deals
+  deal_id text,
   title text not null,
   drive_url text not null,
   drive_id text,
@@ -96,7 +98,7 @@ create table actions (
 
 create table checklist_items (
   id uuid primary key default gen_random_uuid(),
-  deal_id uuid not null references deals(id) on delete cascade,
+  deal_id text not null,
   workstream_slug text not null,
   title text not null,
   status checklist_status not null default 'aberto',
@@ -119,7 +121,7 @@ create table metrics (
 
 create table decisions (
   id uuid primary key default gen_random_uuid(),
-  deal_id uuid references deals(id) on delete set null,
+  deal_id text,
   who decision_who not null,
   who_label text,
   date date not null,
@@ -138,7 +140,7 @@ create table inbox_files (
   drive_id text,
   received_at timestamptz not null default now(),
   classified boolean not null default false,
-  deal_id uuid references deals(id) on delete set null,
+  deal_id text,
   type document_type,
   workstream_slug text,
   status document_status

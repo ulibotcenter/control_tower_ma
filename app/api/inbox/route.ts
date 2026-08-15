@@ -26,12 +26,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "drive_url" }, { status: 400 });
   }
 
-  const file = await addInboxFile({
-    name: body.name,
-    driveUrl: body.driveUrl || null,
-    source: "manual",
-  });
-
-  await dispatchAlert(await buildInboxPayload(file.name));
-  return NextResponse.json({ file });
+  try {
+    const file = await addInboxFile({
+      name: body.name,
+      driveUrl: body.driveUrl || null,
+      source: "manual",
+    });
+    await dispatchAlert(await buildInboxPayload(file.name));
+    return NextResponse.json({ file });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "store" }, { status: 500 });
+  }
 }

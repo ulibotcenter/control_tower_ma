@@ -39,16 +39,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "fields" }, { status: 400 });
   }
 
-  const row = await addDecision({
-    dealId: body.dealId || null,
-    who,
-    whoLabel: body.whoLabel?.trim() || WHO_LABEL[who],
-    date: body.date,
-    elevaRecommendation: body.elevaRecommendation,
-    decisionTaken: body.decisionTaken,
-    againstRecommendation: Boolean(body.againstRecommendation),
-    consequence: body.consequence,
-  });
-
-  return NextResponse.json({ decision: row });
+  try {
+    const row = await addDecision({
+      dealId: body.dealId || null,
+      who,
+      whoLabel: body.whoLabel?.trim() || WHO_LABEL[who],
+      date: body.date,
+      elevaRecommendation: body.elevaRecommendation,
+      decisionTaken: body.decisionTaken,
+      againstRecommendation: Boolean(body.againstRecommendation),
+      consequence: body.consequence,
+    });
+    return NextResponse.json({ decision: row });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "store" }, { status: 500 });
+  }
 }

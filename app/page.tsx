@@ -66,7 +66,10 @@ export default async function HomePage() {
               </DriveLink>
             </li>
             <li>
-              Supabase: {program.supabaseConfigured ? "env presente — a tela ainda lê o seed local" : "não ligado — seed local + .data/"}.
+              Supabase:{" "}
+              {program.supabaseConfigured
+                ? "lendo/escrevendo (bandeja, classificação, decisões)."
+                : "não ligado — seed local + .data/"}.
             </li>
             <li>
               Alertas: {program.resendConfigured ? "Resend configurado" : "sem chave — o payload é logado"}{" "}

@@ -24,8 +24,9 @@ O cookie de sessão só fica `Secure` em HTTPS. Em `npm start` no localhost o lo
 | Camada | Verdade de | Write-back |
 |---|---|---|
 | Google Drive | Documentos do data room | **Proibido** alterar/apagar. Só criar artefato em `Control Tower/Exports/` |
-| Supabase (quando ligado) | Status, semáforo, donos, prazos, riscos, decisões, classificação | Sim |
-| Seed TypeScript | Fatos do corte 14/08, para a tela não nascer vazia | — |
+| Supabase (URL + **service role**) | Bandeja, classificação, documentos extras, decisões novas | Sim |
+| Seed TypeScript | Fatos estáticos do corte 14/08 (deals, riscos, checklist base) | — |
+| `.data/store.json` | Fallback **só em local** sem Supabase | Sim (dev) |
 
 A torre **não lê o disco do Mac**. Workspace local é espelho; sync é a pasta compartilhada:
 
@@ -114,9 +115,31 @@ ALLOW_DEV_LOGIN=true
 CRON_SECRET=
 ```
 
+## Ligar o Supabase (persistência no Vercel)
+
+Sem service role a bandeja e as decisões **não sobrevivem** a cold start. Ordem:
+
+1. Crie um projeto no Supabase (região perto do Vercel).
+2. SQL Editor → cole e rode `supabase/schema.sql` (instalação nova).  
+   Se o schema antigo (deal_id uuid) já rodou: rode `supabase/patch_batch1.sql` em vez de recriar as tabelas.
+3. Project Settings → API: copie `URL` e `service_role` (nunca a chave `service_role` no cliente).
+4. No Vercel, env:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+   SUPABASE_SERVICE_ROLE_KEY=...
+   ```
+   A persistência só liga com URL + **service role**. Só anon não escreve (RLS).
+5. Deploy o app **depois** do schema. Sem as tabelas, classificar/registrar decisão devolve 500.
+6. Confira na home (modo Operar): `Supabase: lendo/escrevendo`.
+
+Local sem essas env: a torre sobe com seed + `.data/`. Não precisa de Postgres para desenvolver.
+
+Auth continua o cookie Eleva desta torre. **Não** ligue signup público no Supabase neste batch.
+
 ## Deploy
 
-Vercel + (quando existir) Supabase. Restrinja o Auth a `@elevaprojects.com`. Sem signup público.
+Vercel → importar `ulibotcenter/control_tower_ma`. Preencha `.env.example`. Schema no Supabase **antes** do primeiro uso da bandeja em produção.
 
 ## O que esta torre não faz
 

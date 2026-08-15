@@ -42,13 +42,17 @@ export async function POST(
     return NextResponse.json({ error: "fields" }, { status: 400 });
   }
 
-  const file = await classifyInboxFile(id, {
-    dealId,
-    type,
-    workstreamSlug,
-    status,
-  });
-
-  if (!file) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  return NextResponse.json({ file });
+  try {
+    const file = await classifyInboxFile(id, {
+      dealId,
+      type,
+      workstreamSlug,
+      status,
+    });
+    if (!file) return NextResponse.json({ error: "not_found" }, { status: 404 });
+    return NextResponse.json({ file });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "store" }, { status: 500 });
+  }
 }
