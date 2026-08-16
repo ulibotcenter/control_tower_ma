@@ -1,8 +1,8 @@
 # Control Tower · Programa Go Live (AD+R)
 
-Torre de controle do M&A buy-side da AD+R. Duas operações: **Loopert** (prioridade, ativa) e **Radio Health** (congelada). PMO: Eleva Projects. Corte oficial: **14/08/2026**.
+Torre de controle do M&A buy-side da AD+R. Duas operações: **Loopert** (prioridade, ativa) e **Radio Health** (em análise). PMO: Eleva Projects. Corte oficial: **14/08/2026**.
 
-A tela é uma só URL com três modos. Login só da Eleva (`@elevaprojects.com`). Produção: [https://tower.elevaprojects.com](https://tower.elevaprojects.com).
+A tela é uma só URL com três modos. Login individual via Supabase Auth (sem signup público). Produção: [https://tower.elevaprojects.com](https://tower.elevaprojects.com).
 
 ## Como rodar em local
 
@@ -15,7 +15,12 @@ npm run dev
 
 Abra [http://localhost:3000](http://localhost:3000).
 
-Entre com um e-mail `@elevaprojects.com`. Em local (`npm run dev`), sem `ELEVA_DEV_PASSWORD`, qualquer senha entra. Em produção: `SESSION_SECRET` + `ELEVA_DEV_PASSWORD` **ou** Supabase Auth, e `ALLOW_DEV_LOGIN=false`.
+**Dois caminhos de login** (não se misturam na mesma requisição):
+
+1. **Supabase Auth** — `SUPABASE_AUTH=1` + URL + ANON_KEY. Cada pessoa entra com a própria conta criada no painel do Supabase. Sem cadastro nesta torre.
+2. **HMAC legado** — sem `SUPABASE_AUTH`. Senha única `ELEVA_DEV_PASSWORD` e só `@elevaprojects.com`. Em `npm run dev` local, sem essa senha, qualquer senha entra (`ALLOW_DEV_LOGIN`).
+
+Em ambos os casos, o sucesso grava o cookie `ct-session`. O restante da torre não muda.
 
 O cookie de sessão só fica `Secure` em HTTPS. Em `npm start` no localhost o login funciona (não exige HTTPS).
 
@@ -40,7 +45,7 @@ Produção **não** usa `.data/`. Sem `SUPABASE_SERVICE_ROLE_KEY` a bandeja e as
 2. DNS da Eleva: CNAME `tower` → `cname.vercel-dns.com` (ou o target que a Vercel indicar).
 3. Env `NEXT_PUBLIC_APP_URL=https://tower.elevaprojects.com`.
 4. Cookie de sessão é do host (não de `.elevaprojects.com`) — o login vale só neste subdomínio.
-5. Auth continua só `@elevaprojects.com`. Sem signup público.
+5. Sem signup público. Com Supabase Auth, só entra quem tem conta criada no painel.
 
 As rotas (`/`, `/deals/loopert`, `/login`) não dependem do hostname.
 
@@ -52,13 +57,13 @@ Ver também `.env.example`.
 |---|---|---|
 | `NEXT_PUBLIC_APP_URL` | Sim | URL canônica (`https://tower.elevaprojects.com`) |
 | `SESSION_SECRET` | Sim | Assinatura do cookie HMAC |
-| `ELEVA_DEV_PASSWORD` | Se Auth HMAC | Senha única Eleva (enquanto o Auth do Supabase estiver desligado) |
+| `ELEVA_DEV_PASSWORD` | Só no fallback HMAC | Senha única Eleva. Pode aposentar com Auth ligado |
 | `ALLOW_DEV_LOGIN` | `false` | Qualquer senha em local. Nunca `true` na Vercel |
 | `NEXT_PUBLIC_SESSION_IDLE_MINUTES` | Não (padrão 90) | Inatividade até expirar a sessão |
-| `NEXT_PUBLIC_SUPABASE_URL` | Sim, para persistir | Projeto Supabase |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Recomendada | Cliente / futuro Auth |
-| `SUPABASE_SERVICE_ROLE_KEY` | Sim, para persistir | Write de bandeja e decisões (servidor) |
-| `SUPABASE_AUTH` | Não | `1` liga `signInWithPassword` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Sim, para Auth e persistir | Projeto Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Sim, para Auth | Só no login (`signInWithPassword`). Nunca service role |
+| `SUPABASE_SERVICE_ROLE_KEY` | Sim, para persistir | Write de bandeja e decisões. **Não** entra no login |
+| `SUPABASE_AUTH` | `1` em produção | Liga o login individual |
 | `GOOGLE_DRIVE_FOLDER_ID` | Não | Pasta raiz do data room |
 | `GOOGLE_SERVICE_ACCOUNT` ou OAuth | Não | Leitura do Drive (sem isto a bandeja é manual) |
 | `RESEND_API_KEY` | Não | Sem chave, alertas só logam no servidor |
@@ -67,29 +72,31 @@ Ver também `.env.example`.
 
 ## Sessão
 
-- Cookie HMAC `ct-session`, 12 horas, só `@elevaprojects.com`.
-- Inatividade: **90 minutos** (ajustável). Aviso discreto 2 minutos antes. Logout limpa sessão, modo, apresentação e o relógio de ociosidade (`ct-seen`).
-- O mesmo relógio vale para o caminho atual e para o futuro Supabase Auth.
+- Depois do login, cookie HMAC `ct-session` (12 horas). O Auth do Supabase **não** fica persistido no browser.
+- Inatividade: **90 minutos** (ajustável). Aviso 2 minutos antes. Logout limpa sessão, modo, apresentação e `ct-seen`.
+- Quem não tem conta no Auth (com `SUPABASE_AUTH` ligado) não entra.
 
-## Como ativar Supabase Auth (futuro)
+## Como ligar o login individual (Supabase Auth)
 
-Hoje o login **não** usa o Auth do Supabase. Persistência (bandeja/decisões) e login são coisas distintas.
+Persistência (bandeja/decisões) e login são coisas distintas. O **service role não entra no login**.
 
-Quando for ligar:
-
-1. No Supabase: Authentication → Providers → Email. Desligue signup público.
-2. Crie só contas `@elevaprojects.com`.
-3. Env na Vercel:
+1. Supabase → **Authentication → Providers → Email**: ligue o provider.
+2. **Authentication → Providers → Email → Enable sign ups**: **desligado**. Sem cadastro público.
+3. **Authentication → Users → Add user**: crie as contas à mão (e-mail + senha).  
+   Previstas: `uli@elevaprojects.com`, `erica@elevaprojects.com`, e Camila / Matheus se tiverem conta.
+4. Env na Vercel (Production):
    ```
    SUPABASE_AUTH=1
    NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+   SESSION_SECRET=...
    ```
-4. Mantenha `SESSION_SECRET`. Depois do `signInWithPassword` a torre ainda grava `ct-session`.
-5. `ALLOW_DEV_LOGIN=false`. Pode aposentar `ELEVA_DEV_PASSWORD` quando o Auth estiver estável.
-6. Quando o Auth SSR estiver pronto, o ponto de troca é `getSession()` em `lib/auth.ts` — o restante da torre não muda.
+   Sem `ANON_KEY` o caminho Auth não liga (a torre cai no HMAC legado).
+5. `ALLOW_DEV_LOGIN=false`.
+6. `ELEVA_DEV_PASSWORD` pode ficar um tempo como fallback (se `SUPABASE_AUTH` estiver desligado). Com Auth estável, retire da Vercel.
+7. Confirme o login em `https://<projeto>.vercel.app/login` com uma conta criada no passo 3.
 
-Service role **não** entra no login. É só para o store.
+Sem signup nesta torre. Quem não existir no Auth recebe «E-mail ou senha incorretos.»
 
 ## O que é verdade onde
 

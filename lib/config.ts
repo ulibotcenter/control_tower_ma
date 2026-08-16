@@ -55,11 +55,16 @@ export function allowDevLogin() {
   return process.env.ALLOW_DEV_LOGIN !== "false";
 }
 
+export function wantsSupabaseAuth() {
+  const v = env("SUPABASE_AUTH").toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
+}
+
 /**
  * Login via Supabase Auth (signInWithPassword).
- * Desligado por padrão. Ligar: SUPABASE_AUTH=1 + URL + ANON_KEY.
- * A sessão da torre continua no cookie HMAC até o Auth SSR substituir getSession().
+ * Ligar: SUPABASE_AUTH=1 (ou true) + URL + ANON_KEY.
+ * Service role não entra neste caminho.
  */
 export function isSupabaseAuthEnabled() {
-  return env("SUPABASE_AUTH") === "1" && hasSupabaseAnon();
+  return wantsSupabaseAuth() && hasSupabaseAnon();
 }

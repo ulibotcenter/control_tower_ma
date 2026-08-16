@@ -39,9 +39,7 @@ export function DealView({
       </div>
       {frozen && (
         <p className="mb-4 stamp text-wait">
-          {mode === "target"
-            ? "Sem andamento neste momento"
-            : "Congelada · não pressionar · Loopert primeiro"}
+          {mode === "target" ? "Em análise" : "Em análise · Loopert primeiro"}
         </p>
       )}
 
@@ -84,14 +82,11 @@ export function DealView({
         )}
       </header>
 
-      {!present && (
-        <div className="no-print">
-          <SectionNav
-            hideThesis={hideThesis}
-            hasThesis={bundle.thesis.length > 0 || bundle.prices.length > 0}
-          />
-        </div>
-      )}
+      <SectionNav
+        hideThesis={hideThesis}
+        hasThesis={bundle.thesis.length > 0 || bundle.prices.length > 0}
+        present={present}
+      />
 
       <section className="mb-10">
         <p className="kicker">Linha do tempo</p>

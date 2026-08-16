@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Term } from "@/components/ui/term";
 
 const ITEMS = [
@@ -13,16 +14,54 @@ const ITEMS = [
   { id: "indicadores", label: "Indicadores" },
 ];
 
-export function SectionNav({ hideThesis, hasThesis }: { hideThesis?: boolean; hasThesis?: boolean }) {
-  const items = hideThesis || hasThesis === false ? ITEMS.filter((i) => i.id !== "tese") : ITEMS;
+export function SectionNav({
+  hideThesis,
+  hasThesis,
+  present = false,
+}: {
+  hideThesis?: boolean;
+  hasThesis?: boolean;
+  present?: boolean;
+}) {
+  const items = ITEMS.filter((i) => {
+    if (i.id === "tese" && (hideThesis || hasThesis === false)) return false;
+    if (present && ["checklist", "workstreams", "docs", "indicadores"].includes(i.id)) return false;
+    return true;
+  });
+  const [active, setActive] = useState(items[0]?.id ?? "visao");
+
+  useEffect(() => {
+    const nodes = items
+      .map((i) => document.getElementById(i.id))
+      .filter((n): n is HTMLElement => Boolean(n));
+    if (!nodes.length) return;
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        const top = visible[0]?.target.id;
+        if (top) setActive(top);
+      },
+      { rootMargin: "-20% 0px -65% 0px", threshold: [0.1, 0.25, 0.5] },
+    );
+    nodes.forEach((n) => obs.observe(n));
+    return () => obs.disconnect();
+  }, [items.map((i) => i.id).join(",")]);
+
+  if (!items.length) return null;
+
   return (
-    <nav className="sticky top-0 z-20 -mx-4 mb-8 border-y border-line bg-cream/95 px-4 py-2 backdrop-blur">
-      <ul className="flex gap-1 overflow-x-auto text-[13px]">
+    <nav className={`section-nav no-print ${present ? "is-present" : ""}`} aria-label="Seções desta operação">
+      <ul>
         {items.map((item) => (
           <li key={item.id}>
             <a
               href={`#${item.id}`}
-              className="block whitespace-nowrap rounded-sm px-3 py-1.5 text-navy hover:bg-cream-2 hover:text-navy"
+              className={active === item.id ? "is-active" : ""}
+              aria-current={active === item.id ? "location" : undefined}
+              onClick={() => setActive(item.id)}
             >
               {item.id === "workstreams" ? (
                 <Term id="workstream" interactive={false}>

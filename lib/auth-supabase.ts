@@ -1,14 +1,11 @@
 /**
- * Adaptador Supabase Auth — pronto, desligado por padrão.
+ * Login individual — só anon key + signInWithPassword.
+ * Sem signup. Sem service role. Quem não existe no Auth não entra.
  *
- * Ligar com SUPABASE_AUTH=1 + NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY.
- * Continua Eleva-only: e-mail fora de @elevaprojects.com é recusado.
- *
- * Depois do sign-in, a torre ainda grava o cookie HMAC (ct-session).
- * Quando o Auth SSR entrar de vez, trocar getSession() neste mesmo ponto.
+ * Ligar: SUPABASE_AUTH=1 + NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY.
+ * Depois do sign-in a torre grava ct-session (HMAC). O restante não muda.
  */
 import { createClient } from "@supabase/supabase-js";
-import { ALLOWED_EMAIL_DOMAIN } from "./constants";
 import { hasSupabaseAnon, supabaseUrl } from "./config";
 import { displayName } from "./format";
 import type { SessionUser } from "./types";
@@ -19,7 +16,10 @@ export async function verifyWithSupabase(
 ): Promise<SessionUser | null> {
   const url = supabaseUrl();
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() || "";
-  if (!hasSupabaseAnon() || !url || !anon) return null;
+  if (!hasSupabaseAnon() || !url || !anon) {
+    console.error("[auth] SUPABASE_AUTH ligado, mas URL/ANON_KEY ausentes");
+    return null;
+  }
 
   const sb = createClient(url, anon, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -29,13 +29,11 @@ export async function verifyWithSupabase(
     email: email.trim().toLowerCase(),
     password,
   });
-  if (error || !data.user?.email) return null;
-
-  const normalized = data.user.email.toLowerCase();
-  if (!normalized.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
-    await sb.auth.signOut();
+  if (error || !data.user?.email) {
+    if (error) console.info("[auth] signIn recusado", error.message);
     return null;
   }
 
+  const normalized = data.user.email.toLowerCase();
   return { email: normalized, name: displayName(normalized) };
 }

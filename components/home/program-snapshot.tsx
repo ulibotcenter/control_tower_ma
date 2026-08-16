@@ -42,7 +42,7 @@ export function ProgramSnapshot({
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="kicker">{priority ? "Prioridade" : "Stand-by"}</p>
+                  <p className="kicker">{priority ? "Prioridade" : "Em análise"}</p>
                   <p className="text-xl font-semibold tracking-tight text-navy">{deal.name}</p>
                 </div>
                 <Hint

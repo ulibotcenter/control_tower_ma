@@ -17,7 +17,8 @@ export default async function LoginPage({
   const signedOut = params.left === "1" || params.idle === "1";
   if (session && !signedOut) redirect(next);
 
-  const dev = allowDevLogin() && !process.env.ELEVA_DEV_PASSWORD && !isSupabaseAuthEnabled();
+  const supabaseAuth = isSupabaseAuthEnabled();
+  const dev = allowDevLogin() && !process.env.ELEVA_DEV_PASSWORD && !supabaseAuth;
 
   const flash = params.idle === "1" ? "idle" : params.left === "1" ? "left" : null;
 
@@ -44,20 +45,27 @@ export default async function LoginPage({
               </span>
             </h1>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-cream/80">
-              Torre de controle do programa de M&amp;A. Login só da Eleva. A tela é compartilhada
-              em reunião — AD+R, Pacta, M12C e os alvos não têm conta.
+              {supabaseAuth
+                ? "Acesso individual. Só quem tem conta entra. Sem cadastro nesta tela."
+                : "Torre de controle do programa de M&A. Login só da Eleva. A tela é compartilhada em reunião — AD+R, Pacta, M12C e os alvos não têm conta."}
             </p>
           </div>
 
           <div className="paper p-6 text-ink sm:p-8">
             <p className="kicker">Entrar</p>
-            <h2 className="mt-1 text-xl font-semibold text-navy">Sessão da Eleva</h2>
-            <p className="mt-1 text-sm text-muted">E-mail @{ALLOWED_EMAIL_DOMAIN}. A sessão vale 12 horas.</p>
+            <h2 className="mt-1 text-xl font-semibold text-navy">
+              {supabaseAuth ? "Sessão individual" : "Sessão da Eleva"}
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              {supabaseAuth
+                ? "Use o e-mail e a senha da sua conta. A sessão vale 12 horas."
+                : `E-mail @${ALLOWED_EMAIL_DOMAIN}. A sessão vale 12 horas.`}
+            </p>
 
             <form action="/api/auth/login" method="post" className="mt-6 space-y-4">
               <input type="hidden" name="next" value={next} />
               <div>
-                <label htmlFor="email">E-mail Eleva</label>
+                <label htmlFor="email">{supabaseAuth ? "E-mail" : "E-mail Eleva"}</label>
                 <input
                   id="email"
                   name="email"
@@ -65,7 +73,7 @@ export default async function LoginPage({
                   required
                   autoComplete="username"
                   autoFocus
-                  placeholder={`nome@${ALLOWED_EMAIL_DOMAIN}`}
+                  placeholder={supabaseAuth ? "e-mail" : `nome@${ALLOWED_EMAIL_DOMAIN}`}
                 />
               </div>
               <div>
@@ -90,9 +98,11 @@ export default async function LoginPage({
               )}
               {params.error && (
                 <p className="text-sm font-medium text-alert" role="alert">
-                  {params.error === "domain"
-                    ? `Só e-mail @${ALLOWED_EMAIL_DOMAIN}.`
-                    : "Não foi possível entrar. Confira e-mail e senha."}
+                  {params.error === "denied"
+                    ? "Acesso não autorizado."
+                    : params.error === "domain"
+                      ? "Acesso não autorizado."
+                      : "E-mail ou senha incorretos."}
                 </p>
               )}
               <button type="submit" className="btn btn-gold w-full">
@@ -104,11 +114,6 @@ export default async function LoginPage({
               <p className="mt-5 text-[12px] leading-relaxed text-muted">
                 Ambiente local sem senha fixa: qualquer senha entra com e-mail @
                 {ALLOWED_EMAIL_DOMAIN}. Em produção isso fica desligado.
-              </p>
-            )}
-            {isSupabaseAuthEnabled() && (
-              <p className="mt-5 text-[12px] leading-relaxed text-muted">
-                Autenticação via Supabase Auth. Continua restrita ao domínio Eleva.
               </p>
             )}
           </div>

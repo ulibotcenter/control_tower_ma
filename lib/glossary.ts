@@ -169,7 +169,7 @@ export const GLOSSARY_LIST: GlossaryEntry[] = [
   {
     id: "standby",
     term: "Stand-by",
-    def: "Operação pausada de propósito. Não é abandono — o programa trata a outra compra primeiro.",
+    def: "Na tela aparece como «Em análise»: operação sem andamento ativo. Não é abandono — o programa trata a outra compra primeiro.",
     category: "projeto",
     aliases: ["Stand-by", "stand-by"],
   },

@@ -76,7 +76,7 @@ export function Shortcuts({ present, allowTour = true }: { present: boolean; all
     <div className="relative no-print" ref={wrapRef}>
       <button
         type="button"
-        className="min-h-11 min-w-11 rounded-sm border border-white/25 px-2 py-1 text-[12px] text-cream hover:text-white sm:min-h-0 sm:min-w-0"
+        className="hdr-btn no-print min-h-11 min-w-11 sm:min-h-0 sm:min-w-8"
         aria-expanded={open}
         aria-controls={panelId}
         aria-label="Atalhos de teclado e como usar"

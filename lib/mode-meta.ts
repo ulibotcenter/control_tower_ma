@@ -26,7 +26,7 @@ export const MODE_META: Record<
     audience: "Só Eleva",
     shareLine: "Tudo visível: bandeja, notas internas e credenciais.",
     homeLead:
-      "Duas compras buy-side da AD+R (Massa FM, Mix FM, Nova Brasil). Sponsors: Camila Kovacevick (CEO) e Matheus Vasconcelos (CFO). PMO Eleva. Jurídico: Pacta. Financeiro: João Amorim / M12C. A prioridade é a Loopert. Radio Health está congelada.",
+      "Duas compras buy-side da AD+R (Massa FM, Mix FM, Nova Brasil). Sponsors: Camila Kovacevick (CEO) e Matheus Vasconcelos (CFO). PMO Eleva. Jurídico: Pacta. Financeiro: João Amorim / M12C. A prioridade é a Loopert. Radio Health está em análise.",
     homeSub:
       "Cada deal tem workstreams. O semáforo no topo explica o ritmo. Ainda não há LOI nem SPA. Closing-alvo da Loopert: jan/2027, flexível.",
     boardKicker: "Próxima decisão do board",
@@ -40,7 +40,7 @@ export const MODE_META: Record<
     audience: "AD+R · Pacta · M12C",
     shareLine: "Bandeja crua, notas da Eleva e credenciais estão ocultas.",
     homeLead:
-      "Reunião com assessores. Loopert primeiro. Radio Health congelada. Sem bandeja, sem notas internas da Eleva, sem credenciais.",
+      "Reunião com assessores. Loopert primeiro. Radio Health em análise. Sem bandeja, sem notas internas da Eleva, sem credenciais.",
     homeSub:
       "Tese, preço verbal e pendências compartilhadas com Pacta e João Amorim. O que o alvo não pode ver continua nesta tela — troque para Alvo se ele entrar.",
     boardKicker: "Decisão em mesa",

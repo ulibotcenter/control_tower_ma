@@ -20,49 +20,53 @@ export function Header({
   present?: boolean;
 }) {
   return (
-    <header className="no-print bg-navy text-cream" style={{ paddingLeft: "env(safe-area-inset-left)", paddingRight: "env(safe-area-inset-right)" }}>
+    <header
+      className="no-print bg-navy text-cream"
+      style={{ paddingLeft: "env(safe-area-inset-left)", paddingRight: "env(safe-area-inset-right)" }}
+    >
       <div className="brand-bar" aria-hidden />
-      <div className="mx-auto flex max-w-6xl flex-col gap-2 px-3 py-2 md:gap-3 md:px-4 md:py-3">
+      <div className="mx-auto max-w-6xl px-3 py-2.5 md:px-4 md:py-3">
         <div className="flex items-center justify-between gap-3">
-          <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+          <Link href="/" className="flex min-w-0 items-center gap-3">
             <Image
               src="/eleva-logo.png"
               alt="Eleva Projects"
               width={200}
               height={48}
               priority
-              className="h-6 w-auto sm:h-9"
+              className="h-7 w-auto sm:h-8"
             />
-            <span className="hidden h-8 w-px bg-white/25 md:block" aria-hidden />
-            <span className="min-w-0">
-              <p className="kicker hidden !text-cyan sm:block">Control Tower</p>
-              <p className="truncate text-[13px] font-semibold leading-tight tracking-tight text-cream sm:text-[15px]">
-                {PROGRAM_NAME}{" "}
-                <span className="text-gold">· {PROGRAM_SPONSOR}</span>
-              </p>
-              <p className="hidden text-[11px] tracking-wide text-cream/75 sm:block">corte {CORTE}</p>
+            <span className="hidden h-7 w-px bg-white/20 md:block" aria-hidden />
+            <span className="min-w-0 leading-tight">
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan">
+                Control Tower
+              </span>
+              <span className="block truncate text-[14px] font-semibold tracking-tight text-cream sm:text-[15px]">
+                {PROGRAM_NAME}
+                <span className="text-gold"> · {PROGRAM_SPONSOR}</span>
+                <span className="ml-2 hidden font-normal text-cream/55 sm:inline">corte {CORTE}</span>
+              </span>
             </span>
           </Link>
-          <div className="flex shrink-0 items-center gap-2 text-[12px] text-cream/80">
+          <div className="flex shrink-0 items-center gap-3 text-[12px] text-cream/75">
             <span className="hidden max-w-[10rem] truncate sm:inline">{user.name}</span>
             <form action="/api/auth/logout" method="post">
-              <button
-                type="submit"
-                className="min-h-11 px-2 hover:text-gold sm:min-h-0"
-                title="Encerrar a sessão"
-              >
+              <button type="submit" className="hdr-btn h-8" title="Encerrar a sessão">
                 Sair
               </button>
             </form>
           </div>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-1.5">
-          <Shortcuts present={present} allowTour={mode !== "target"} />
-          <ExportPdfButton present={present} />
-          <PresentSwitch on={present} />
-          <ModeSwitch mode={mode} />
+
+        <div className="mt-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <NavLinks mode={mode} inboxCount={inboxCount} present={present} />
+          <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
+            <Shortcuts present={present} allowTour={mode !== "target"} />
+            <ExportPdfButton present={present} />
+            <PresentSwitch on={present} />
+            <ModeSwitch mode={mode} />
+          </div>
         </div>
-        <NavLinks mode={mode} inboxCount={inboxCount} present={present} />
       </div>
     </header>
   );

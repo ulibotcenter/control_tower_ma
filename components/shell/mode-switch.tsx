@@ -70,34 +70,23 @@ export function ModeSwitch({ mode }: { mode: MeetingMode }) {
 
   return (
     <div className="relative no-print">
-      <div
-        className="flex flex-wrap rounded-sm border border-white/25 bg-navy-2 p-0.5"
-        role="radiogroup"
-        aria-label="Modo de tela"
-      >
+      <div className="hdr-seg" role="radiogroup" aria-label="Modo de tela">
         {OPTIONS.map((id) => {
           const opt = MODE_META[id];
           const active = mode === id;
-          const activeCls =
-            id === "target"
-              ? "bg-alert text-cream font-semibold"
-              : id === "advisors"
-                ? "bg-cyan text-navy font-semibold"
-                : "bg-gold text-navy font-semibold";
           return (
             <button
               key={id}
               type="button"
               role="radio"
+              data-mode={id}
               aria-checked={active}
               aria-label={`${opt.label}. ${opt.hint}`}
               title={opt.hint}
               onClick={() => onPick(id)}
               onKeyDown={(e) => onRadioKey(e, id)}
               disabled={busy}
-              className={`min-h-11 px-2.5 py-1.5 text-[12px] tracking-wide sm:min-h-0 sm:text-[13px] ${
-                active ? activeCls : "text-cream hover:bg-white/10"
-              }`}
+              className="min-h-11 sm:min-h-0"
             >
               <span className="md:hidden">{opt.short}</span>
               <span className="hidden md:inline">{opt.label}</span>
@@ -105,11 +94,8 @@ export function ModeSwitch({ mode }: { mode: MeetingMode }) {
           );
         })}
       </div>
-      <p className="mt-0.5 hidden text-right text-[11px] text-cream/80 md:block">
-        {MODE_META[mode].audience}
-      </p>
       <p className="sr-only" aria-live="polite">
-        {live}
+        {live || MODE_META[mode].audience}
       </p>
 
       {pending === "target" && (

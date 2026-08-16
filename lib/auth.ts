@@ -1,17 +1,15 @@
 /**
- * Sessão da torre.
+ * Sessão da torre: cookie HMAC `ct-session`.
  *
- * HOJE: cookie HMAC `ct-session`, só @elevaprojects.com.
- *   Senha: ELEVA_DEV_PASSWORD, ou qualquer senha em dev local.
+ * Dois caminhos de login (lib/config.ts):
+ *   SUPABASE_AUTH=1 + URL + ANON_KEY
+ *     → signInWithPassword. Quem não tem conta no Auth não entra.
+ *     Service role não é usado.
+ *   senão
+ *     → senha única ELEVA_DEV_PASSWORD (ou qualquer senha em dev local)
+ *       e só e-mail @elevaprojects.com.
  *
- * AMANHÃ (Supabase Auth):
- *   1. SUPABASE_AUTH=1 + URL + ANON_KEY
- *   2. authenticate() chama verifyWithSupabase (signInWithPassword)
- *   3. Continua gravando ct-session — o restante da torre não muda
- *   4. Quando o Auth SSR estiver pronto, trocar getSession() para ler
- *      a sessão do Supabase e manter o filtro de domínio Eleva
- *
- * Não misturar Auth com o service role do store (dados ≠ login).
+ * Depois do sucesso sempre grava ct-session. getSession() só lê o cookie.
  */
 import { createHmac, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
@@ -22,7 +20,7 @@ import { displayName } from "./format";
 import type { SessionUser } from "./types";
 
 export const SESSION_COOKIE = "ct-session";
-const MAX_AGE = 60 * 60 * 12; // 12h — reunião + dia de operação
+const MAX_AGE = 60 * 60 * 12;
 
 function secret() {
   return process.env.SESSION_SECRET || process.env.ELEVA_DEV_PASSWORD || "dev-only-not-for-prod";
@@ -58,9 +56,8 @@ export function decodeSession(token: string | undefined | null): SessionUser | n
     const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as SessionUser & {
       exp?: number;
     };
-    if (data.exp && data.exp < Date.now()) return null;
-    if (!isElevaEmail(data.email)) return null;
-    return { email: data.email, name: data.name };
+    if (!data.email || (data.exp && data.exp < Date.now())) return null;
+    return { email: data.email, name: data.name || displayName(data.email) };
   } catch {
     return null;
   }
@@ -73,11 +70,13 @@ export async function getSession(): Promise<SessionUser | null> {
 
 export async function authenticate(email: string, password: string): Promise<SessionUser | null> {
   const normalized = email.trim().toLowerCase();
-  if (!isElevaEmail(normalized)) return null;
+  if (!normalized || !password) return null;
 
   if (isSupabaseAuthEnabled()) {
     return verifyWithSupabase(normalized, password);
   }
+
+  if (!isElevaEmail(normalized)) return null;
 
   const expected = process.env.ELEVA_DEV_PASSWORD;
   if (expected) {

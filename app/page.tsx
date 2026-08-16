@@ -43,7 +43,7 @@ export default async function HomePage() {
       </div>
       {present && mode !== "target" ? (
         <p className="mt-3 max-w-3xl text-[17px] leading-relaxed">
-          Loopert primeiro. Radio Health congelada. Abaixo: status, próximo marco e o que o board
+          Loopert primeiro. Radio Health em análise. Abaixo: status, próximo marco e o que o board
           precisa decidir.
         </p>
       ) : (

@@ -1,10 +1,10 @@
 /**
- * Login Eleva-only.
- * authenticate() usa senha local/HMAC hoje, ou Supabase Auth se SUPABASE_AUTH=1.
- * Em ambos os casos grava ct-session — o restante da torre não muda.
+ * Login: Supabase Auth (SUPABASE_AUTH=1) ou HMAC + ELEVA_DEV_PASSWORD.
+ * Sempre grava ct-session. Sem signup. Service role não entra aqui.
  */
 import { NextResponse } from "next/server";
 import { SESSION_COOKIE, authenticate, encodeSession, isElevaEmail } from "@/lib/auth";
+import { isSupabaseAuthEnabled, wantsSupabaseAuth } from "@/lib/config";
 import { cookieSecure, safeInternalPath } from "@/lib/http";
 import { SEEN_COOKIE } from "@/lib/session";
 
@@ -13,10 +13,17 @@ export async function POST(req: Request) {
   const email = String(form.get("email") || "");
   const password = String(form.get("password") || "");
   const next = safeInternalPath(String(form.get("next") || "/"));
-
   const origin = new URL(req.url).origin;
-  if (!isElevaEmail(email)) {
-    return NextResponse.redirect(`${origin}/login?error=domain&next=${encodeURIComponent(next)}`, {
+
+  if (wantsSupabaseAuth() && !isSupabaseAuthEnabled()) {
+    console.error("[auth] SUPABASE_AUTH ligado sem URL/ANON_KEY");
+    return NextResponse.redirect(`${origin}/login?error=denied&next=${encodeURIComponent(next)}`, {
+      status: 303,
+    });
+  }
+
+  if (!isSupabaseAuthEnabled() && !isElevaEmail(email)) {
+    return NextResponse.redirect(`${origin}/login?error=denied&next=${encodeURIComponent(next)}`, {
       status: 303,
     });
   }
@@ -30,8 +37,6 @@ export async function POST(req: Request) {
 
   const res = NextResponse.redirect(new URL(next, origin), { status: 303 });
   const secure = cookieSecure(req);
-  // Sem Domain: cookie do host atual (*.vercel.app hoje, tower.elevaprojects.com depois).
-  // Secure só em HTTPS. SameSite=Lax para o POST do login voltar no mesmo site.
   const cookie = {
     httpOnly: true,
     sameSite: "lax" as const,

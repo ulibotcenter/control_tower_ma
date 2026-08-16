@@ -33,9 +33,7 @@ export function PresentSwitch({ on }: { on: boolean }) {
       aria-keyshortcuts="P"
       aria-label={on ? "Sair do modo apresentação" : "Entrar no modo apresentação"}
       title="Esconde operação e deixa a tela limpa para o board. Atalho P."
-      className={`no-print min-h-11 whitespace-nowrap rounded-sm px-2.5 py-1 text-[12px] sm:min-h-0 ${
-        on ? "bg-cyan text-navy font-semibold" : "border border-white/25 text-cream hover:text-white"
-      }`}
+      className={`hdr-btn no-print min-h-11 sm:min-h-0 ${on ? "is-on" : ""}`}
     >
       {on ? "Sair da apresentação" : "Apresentação"}
     </button>

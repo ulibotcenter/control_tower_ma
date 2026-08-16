@@ -43,15 +43,7 @@ export function ExportPdfButton({
       type="button"
       onClick={exportPdf}
       disabled={busy}
-      className={
-        surface === "page"
-          ? "btn no-print"
-          : `no-print min-h-11 whitespace-nowrap rounded-sm px-2.5 py-1 text-[12px] sm:min-h-0 ${
-              present
-                ? "bg-cream font-semibold text-navy"
-                : "border border-white/25 text-cream hover:border-white/50 hover:text-white"
-            }`
-      }
+      className={surface === "page" ? "btn no-print" : "hdr-btn no-print min-h-11 sm:min-h-0"}
       aria-label="Exportar a visão atual em PDF"
     >
       {busy ? "Preparando…" : present ? "Exportar PDF" : "PDF"}

@@ -34,7 +34,7 @@ export function NavLinks({
     <nav className="-mx-0.5 flex flex-wrap items-center gap-2 overflow-x-auto pb-0.5 text-[13px]" aria-label="Principal">
       <Link
         href={program.href}
-        className={`inline-flex min-h-11 items-center whitespace-nowrap rounded-sm px-3 py-1 sm:min-h-0 sm:px-2.5 ${
+        className={`inline-flex min-h-11 items-center whitespace-nowrap px-3 py-1 sm:h-8 sm:min-h-0 sm:px-2.5 ${
           isActive("/") ? "bg-white text-navy font-semibold" : "text-cream hover:text-cyan"
         }`}
       >
@@ -48,7 +48,7 @@ export function NavLinks({
             <Link
               key={item.href}
               href={item.href}
-              className={`flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-sm px-2 text-center sm:min-h-0 sm:flex-none sm:px-2.5 sm:py-1 ${
+              className={`flex min-h-11 flex-1 items-center justify-center whitespace-nowrap px-2 text-center sm:h-8 sm:min-h-0 sm:flex-none sm:px-2.5 ${
                 active
                   ? item.tone === "priority"
                     ? "bg-gold text-navy font-semibold"
@@ -68,7 +68,7 @@ export function NavLinks({
           <Link
             key={item.href}
             href={item.href}
-            className={`inline-flex min-h-11 items-center whitespace-nowrap rounded-sm px-3 py-1 sm:min-h-0 sm:px-2.5 ${
+            className={`inline-flex min-h-11 items-center whitespace-nowrap px-3 py-1 sm:h-8 sm:min-h-0 sm:px-2.5 ${
               isActive(item.href) ? "bg-white text-navy font-semibold" : "text-cream hover:text-cyan"
             }`}
           >

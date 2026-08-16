@@ -18,7 +18,11 @@ export function initials(email: string) {
 }
 
 export function displayName(email: string) {
-  if (email.toLowerCase().startsWith("erica")) return "Erica Oliveira";
+  const lower = email.toLowerCase();
+  if (lower.startsWith("erica")) return "Erica Oliveira";
+  if (lower.startsWith("uli")) return "Uli";
+  if (lower.startsWith("camila")) return "Camila Kovacevick";
+  if (lower.startsWith("matheus")) return "Matheus Vasconcelos";
   const local = email.split("@")[0] || "Eleva";
   return local
     .split(/[._-]/)
