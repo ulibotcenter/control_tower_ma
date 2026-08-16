@@ -21,7 +21,7 @@ export function Header({
 }) {
   return (
     <header
-      className="no-print bg-navy text-cream"
+      className="no-print sticky top-0 z-40 bg-navy text-cream"
       style={{ paddingLeft: "env(safe-area-inset-left)", paddingRight: "env(safe-area-inset-right)" }}
     >
       <div className="brand-bar" aria-hidden />

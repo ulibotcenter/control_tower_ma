@@ -440,10 +440,20 @@ a.nav-sec.is-on:visited {
   color: #f4f7fb;
 }
 
+html {
+  scroll-padding-top: 7.25rem;
+}
+
+@media (max-width: 639px) {
+  html {
+    scroll-padding-top: 9.5rem;
+  }
+}
+
 .section-nav {
   position: sticky;
-  top: 0;
-  z-index: 25;
+  top: 6.75rem;
+  z-index: 30;
   margin: 0 -1rem 1.75rem;
   padding: 0.4rem 1rem;
   background: color-mix(in srgb, #f4f7fb 92%, transparent);
@@ -505,6 +515,12 @@ a.nav-sec.is-on:visited {
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
+}
+
+@media (max-width: 639px) {
+  .section-nav {
+    top: 9rem;
+  }
 }
 
 @media print {
