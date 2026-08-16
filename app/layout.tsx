@@ -18,10 +18,28 @@ const ibm = IBM_Plex_Mono({
 
 export const dynamic = "force-dynamic";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tower.elevaprojects.com";
+function metadataBaseUrl() {
+  const raw = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (raw) {
+    try {
+      return new URL(raw.includes("://") ? raw : `https://${raw}`);
+    } catch {
+      /* ignora valor inválido */
+    }
+  }
+  const vercel = process.env.VERCEL_URL?.trim();
+  if (vercel) {
+    try {
+      return new URL(`https://${vercel}`);
+    } catch {
+      /* ignora */
+    }
+  }
+  return new URL("https://tower.elevaprojects.com");
+}
 
 export const metadata: Metadata = {
-  metadataBase: new URL(appUrl),
+  metadataBase: metadataBaseUrl(),
   title: {
     default: "Control Tower · Go Live · AD+R",
     template: "%s · Eleva Projects",

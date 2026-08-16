@@ -30,19 +30,16 @@ export async function POST(req: Request) {
 
   const res = NextResponse.redirect(new URL(next, origin), { status: 303 });
   const secure = cookieSecure(req);
-  res.cookies.set(SESSION_COOKIE, encodeSession(user), {
+  // Sem Domain: cookie do host atual (*.vercel.app hoje, tower.elevaprojects.com depois).
+  // Secure só em HTTPS. SameSite=Lax para o POST do login voltar no mesmo site.
+  const cookie = {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     secure,
     path: "/",
     maxAge: 60 * 60 * 12,
-  });
-  res.cookies.set(SEEN_COOKIE, String(Date.now()), {
-    httpOnly: false,
-    sameSite: "lax",
-    secure,
-    path: "/",
-    maxAge: 60 * 60 * 12,
-  });
+  };
+  res.cookies.set(SESSION_COOKIE, encodeSession(user), cookie);
+  res.cookies.set(SEEN_COOKIE, String(Date.now()), { ...cookie, httpOnly: false });
   return res;
 }

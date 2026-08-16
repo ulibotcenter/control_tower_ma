@@ -21,7 +21,14 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   if (!user) redirect("/login");
   const mode = await getMode();
   const present = await getPresent();
-  const inboxCount = !present && canSeeInbox(mode) ? await unclassifiedCount() : 0;
+  let inboxCount = 0;
+  if (!present && canSeeInbox(mode)) {
+    try {
+      inboxCount = await unclassifiedCount();
+    } catch (err) {
+      console.error("[shell] unclassifiedCount falhou", err);
+    }
+  }
   const attention = getAttentionItems(mode);
   const jar = await cookies();
   const showTour = !isOnboardedCookie(jar.get(ONBOARD_COOKIE)?.value) && mode !== "target" && !present;
