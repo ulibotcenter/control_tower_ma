@@ -58,10 +58,7 @@ export function Term({
         }
       }}
     >
-      <span className="term-word">{children ?? entry.term}</span>
-      <span className="term-dot" aria-hidden>
-        i
-      </span>
+      {children ?? entry.term}
       <span className="sr-only">. {entry.def}</span>
       <span id={tipId} role="tooltip" className="term-tip">
         <span className="term-tip-kicker">{entry.term}</span>

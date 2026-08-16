@@ -243,44 +243,14 @@ header :focus-visible,
 
 .term-mark {
   position: relative;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.22rem;
+  display: inline;
   cursor: help;
   outline: none;
-}
-
-.term-word {
   text-decoration: underline;
   text-decoration-style: dotted;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.22em;
-  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
-}
-
-.term-dot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 0.9rem;
-  height: 0.9rem;
-  flex: 0 0 0.9rem;
-  border-radius: 999px;
-  background: #e8ecf4;
-  color: #0a1428;
-  font-size: 0.62rem;
-  font-weight: 700;
-  font-style: italic;
-  line-height: 1;
-  letter-spacing: 0;
-  transform: translateY(0.08em);
-}
-
-.term-mark:hover .term-dot,
-.term-mark:focus-visible .term-dot,
-.term-mark.is-open .term-dot {
-  background: #0a1428;
-  color: #f4f7fb;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
 }
 
 .term-mark:focus-visible {
@@ -325,6 +295,74 @@ header :focus-visible,
 .term-mark.is-open .term-tip {
   opacity: 1;
   transform: none;
+}
+
+.nav-sec a,
+a.nav-sec {
+  display: inline-flex;
+  align-items: center;
+  height: 2rem;
+  padding: 0 0.7rem;
+  color: #e8ecf4;
+  text-decoration: none;
+  font-size: 0.8125rem;
+}
+
+.nav-sec a:hover,
+a.nav-sec:hover {
+  color: #7dd3fc;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.nav-sec a.is-on,
+a.nav-sec.is-on,
+.nav-sec a.is-on:hover,
+a.nav-sec.is-on:hover,
+.nav-sec a.is-on:visited,
+a.nav-sec.is-on:visited {
+  background: #f4f7fb;
+  color: #0a1428;
+  font-weight: 650;
+}
+
+.deal-pick {
+  display: inline-flex;
+  align-items: stretch;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(10, 20, 40, 0.35);
+}
+
+.deal-pick a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0 0.95rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #e8ecf4;
+  text-decoration: none;
+}
+
+.deal-pick a:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.deal-pick a.is-loopert,
+.deal-pick a.is-loopert:hover,
+.deal-pick a.is-loopert:visited {
+  background: #ff6b35;
+  color: #0a1428;
+}
+
+.deal-pick a.is-health,
+.deal-pick a.is-health:hover,
+.deal-pick a.is-health:visited {
+  background: #38bdf8;
+  color: #0a1428;
 }
 
 .hdr-btn {
