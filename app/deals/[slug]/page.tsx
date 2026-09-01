@@ -15,6 +15,7 @@ export default async function DealPage({
   const meeting = await getMeeting();
   // Reunião travada num alvo: o outro deal não abre nem por URL direta.
   if (!isDealAllowed(meeting, slug)) redirect(`/deals/${meeting.targetDeal}`);
+  const onlyDeal = lockedDeal(meeting);
   const present = await getPresent();
   const bundle = await getDealBundle(slug, meeting.mode);
   if (!bundle) notFound();
@@ -24,8 +25,8 @@ export default async function DealPage({
       <DealView
         bundle={bundle}
         mode={meeting.mode}
-        deals={getDealOptions()}
-        onlyDeal={lockedDeal(meeting)}
+        deals={getDealOptions({ onlyDeal })}
+        onlyDeal={onlyDeal}
         present={present}
       />
     </AppShell>

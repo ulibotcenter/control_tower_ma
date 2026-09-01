@@ -34,7 +34,11 @@ export default async function WorkstreamPage({
   return (
     <AppShell>
       <div className="no-print">
-        <DealSwitcher current={slug} deals={getDealOptions()} onlyDeal={lockedDeal(meeting)} />
+        <DealSwitcher
+          current={slug}
+          deals={getDealOptions({ onlyDeal: lockedDeal(meeting) })}
+          onlyDeal={lockedDeal(meeting)}
+        />
       </div>
       <p className="no-print text-sm">
         <Link href={`/deals/${slug}`} className="text-muted hover:text-navy">

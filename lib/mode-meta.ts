@@ -50,11 +50,13 @@ export const MODE_META: Record<
   target: {
     label: "Alvo",
     short: "Alvo",
-    hint: "Loopert ou Radio Health na sala",
+    // Sem citar nomes de operação: este texto vira title/aria-label do botão e
+    // aparece no hover, na tela que está sendo projetada para o alvo.
+    hint: "O alvo está na sala — some preço, tese e notas internas",
     audience: "Alvo na sala",
     shareLine: "Só fase, documentos pedidos e pendências formais.",
     homeLead:
-      "Programa com duas operações em avaliação. Em cada uma: fase, documentos pedidos e pendências formais. Semáforo no topo da tela.",
+      "Situação formal da operação em avaliação: fase, documentos pedidos e pendências. Semáforo no topo da tela.",
     boardKicker: "Situação formal",
     snapshotRedLabel: (n) =>
       `${n} pendência${n > 1 ? "s" : ""} formal${n > 1 ? "is" : ""}`,

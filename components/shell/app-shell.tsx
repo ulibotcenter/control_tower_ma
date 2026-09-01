@@ -32,7 +32,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     }
   }
   const attention = getAttentionItems(mode, { onlyDeal });
-  const dealOptions = getDealOptions();
+  // Recortado no servidor: o nome da outra operação não pode nem viajar no
+  // payload da página que está sendo projetada para o alvo.
+  const dealOptions = getDealOptions({ onlyDeal });
   const jar = await cookies();
   const showTour = !isOnboardedCookie(jar.get(ONBOARD_COOKIE)?.value) && mode !== "target" && !present;
   const generatedAt = new Date().toLocaleString("pt-BR", {
