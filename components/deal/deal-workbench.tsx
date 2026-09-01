@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { ActionItem, DriveDocument, Risk } from "@/lib/types";
+import type { ActionItem, DriveDocument, MeetingMode, Risk } from "@/lib/types";
 import { Freshness } from "@/components/ui/freshness";
 import { ActionBoard } from "./action-board";
 import { RisksBoard } from "./risks-board";
@@ -11,6 +11,7 @@ export function DealWorkbench({
   actions,
   risks,
   documents,
+  mode,
   present,
   showSearch = true,
   showDocs = true,
@@ -19,12 +20,14 @@ export function DealWorkbench({
   actions: ActionItem[];
   risks: Risk[];
   documents: DriveDocument[];
+  mode: MeetingMode;
   present: boolean;
   showSearch?: boolean;
   showDocs?: boolean;
   compact?: boolean;
 }) {
   const tight = compact ?? present;
+  const target = mode === "target";
   const [q, setQ] = useState("");
   const qdocs = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -53,18 +56,20 @@ export function DealWorkbench({
       )}
 
       <section id="riscos" className="mb-10">
-        <p className="kicker">O que trava</p>
+        <p className="kicker">{target ? "Pontos em aberto" : "O que trava"}</p>
         <h2 className="serif mb-1 text-2xl text-navy">
-          {present ? "Riscos críticos" : "Riscos e issues"}
+          {target ? "Pendências e pontos de atenção" : present ? "Riscos críticos" : "Riscos e issues"}
         </h2>
         <Freshness trust="review" />
         {!present && (
           <p className="mb-4 mt-2 max-w-2xl text-sm text-muted">
-            Crítico pode parar o deal. Issue é problema já em cima da mesa.
+            {target
+              ? "Crítico precisa ser resolvido para avançar. Em tratamento já está encaminhado."
+              : "Crítico pode parar o deal. Issue é problema já em cima da mesa."}
           </p>
         )}
         <div className={present ? "mt-4" : ""}>
-          <RisksBoard items={risks} query={q} compact={tight} />
+          <RisksBoard items={risks} mode={mode} query={q} compact={tight} />
         </div>
       </section>
 

@@ -1,13 +1,13 @@
 import { MODE_META } from "@/lib/mode-meta";
 import type { MeetingState } from "@/lib/meeting";
 
-export function ModeBanner({
-  meeting,
-  deals,
-}: {
-  meeting: MeetingState;
-  deals: { slug: string; name: string }[];
-}) {
+/**
+ * Aviso de modo para a Eleva. Não existe versão para o modo Alvo: uma faixa
+ * vermelha anunciando o que está sendo escondido é justamente o vazamento de
+ * encenação que ela deveria evitar. No modo Alvo o sinal é o chip discreto do
+ * cabeçalho, e ele some quando a apresentação liga.
+ */
+export function ModeBanner({ meeting }: { meeting: MeetingState }) {
   const meta = MODE_META[meeting.mode];
 
   if (meeting.mode === "operate") {
@@ -27,13 +27,5 @@ export function ModeBanner({
     );
   }
 
-  const lockedName = deals.find((d) => d.slug === meeting.targetDeal)?.name ?? meeting.targetDeal;
-
-  return (
-    <div className="no-print bg-alert px-4 py-2.5 text-center text-[13px] font-medium text-cream sm:text-sm">
-      <strong>MODO ALVO LIGADO{lockedName ? ` · ${lockedName}` : ""}.</strong> {meta.shareLine} Esta
-      tela pode ser vista por quem está sendo avaliado.
-      {lockedName ? " A outra operação está fora desta sessão." : ""}
-    </div>
-  );
+  return null;
 }

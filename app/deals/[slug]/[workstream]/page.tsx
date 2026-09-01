@@ -69,7 +69,7 @@ export default async function WorkstreamPage({
 
       <section className="mt-10">
         <h2 className="serif mb-3 text-2xl text-navy">Riscos</h2>
-        <RisksBoard items={rs} />
+        <RisksBoard items={rs} mode={mode} />
       </section>
 
       <section className="mt-10">

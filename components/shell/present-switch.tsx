@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "@/lib/toast";
 
-export function PresentSwitch({ on }: { on: boolean }) {
+/** `quiet`: o alvo pode ler a tela — sem o tooltip que explica a encenação. */
+export function PresentSwitch({ on, quiet = false }: { on: boolean; quiet?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -30,10 +31,14 @@ export function PresentSwitch({ on }: { on: boolean }) {
       onClick={toggle}
       disabled={busy}
       aria-pressed={on}
-      aria-keyshortcuts="P"
+      aria-keyshortcuts={quiet ? undefined : "P"}
       aria-label={on ? "Sair do modo apresentação" : "Entrar no modo apresentação"}
-      title="Esconde operação e deixa a tela limpa para o board. Atalho P."
-      className={`hdr-btn no-print min-h-11 sm:min-h-0 ${on ? "is-on" : ""}`}
+      title={quiet ? undefined : "Esconde operação e deixa a tela limpa para o board. Atalho P."}
+      className={
+        quiet
+          ? "hdr-btn no-print h-[1.6rem] px-2 text-[0.6875rem]"
+          : `hdr-btn no-print min-h-11 sm:min-h-0 ${on ? "is-on" : ""}`
+      }
     >
       {on ? "Sair da apresentação" : "Apresentação"}
     </button>

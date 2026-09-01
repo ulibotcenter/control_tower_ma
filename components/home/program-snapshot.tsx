@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { SEMAPHORE_LABEL } from "@/lib/constants";
-import { MODE_META } from "@/lib/mode-meta";
+import { MODE_META, TARGET_COPY, semaphoreLabelFor } from "@/lib/mode-meta";
 import type { Deal, MeetingMode, Semaphore } from "@/lib/types";
 import { Hint } from "@/components/ui/hint";
 import { WithTerms } from "@/components/ui/with-terms";
@@ -21,7 +20,9 @@ export function ProgramSnapshot({
     <section className="paper overflow-hidden">
       <div className="flex flex-col gap-2 border-b border-line px-3 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4">
         <div>
-          <p className="kicker">Visão do programa</p>
+          <p className="kicker">
+            {mode === "target" ? TARGET_COPY.snapshotKicker : "Visão do programa"}
+          </p>
           <h2 className="text-lg font-semibold tracking-tight text-navy">
             {deals.length > 1 ? "As duas operações, lado a lado" : "Situação da operação"}
           </h2>
@@ -44,7 +45,9 @@ export function ProgramSnapshot({
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="kicker">{priority ? "Prioridade" : "Em análise"}</p>
+                  <p className="kicker">
+                    {mode === "target" ? "Operação" : priority ? "Prioridade" : "Em análise"}
+                  </p>
                   <p className="text-xl font-semibold tracking-tight text-navy">{deal.name}</p>
                 </div>
                 <Hint
@@ -61,7 +64,7 @@ export function ProgramSnapshot({
                 >
                   <span className="inline-flex items-center gap-1.5 text-sm font-medium">
                     <Dot tone={deal.health as Semaphore} />
-                    {SEMAPHORE_LABEL[deal.health]}
+                    {semaphoreLabelFor(mode, deal.health)}
                   </span>
                 </Hint>
               </div>

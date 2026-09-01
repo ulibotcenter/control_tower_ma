@@ -9,7 +9,7 @@ export function Freshness({
 }) {
   const detail =
     trust === "firm"
-      ? "Número ou fato já formalizado neste corte."
+      ? "Número ou fato já formalizado."
       : "Leitura em revisão — não tratar como fechado.";
   const tag = trust === "firm" ? "Dados confiáveis" : "Dados em revisão";
 

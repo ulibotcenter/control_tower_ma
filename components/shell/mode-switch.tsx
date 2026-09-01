@@ -9,9 +9,22 @@ import type { MeetingMode } from "@/lib/types";
 
 const OPTIONS: MeetingMode[] = ["operate", "advisors", "target"];
 
-export type DealOption = { slug: string; name: string; priority: number };
+export type DealOption = { slug: string; name: string; priority: number; phaseLabel: string };
 
-export function ModeSwitch({ meeting, deals }: { meeting: MeetingState; deals: DealOption[] }) {
+/**
+ * `quiet` é ligado quando o alvo pode ler a tela: o seletor encolhe, perde o
+ * vermelho e perde os tooltips, que hoje explicam a encenação em voz alta
+ * ("O alvo está na sala", "Eleva sozinha — bandeja, notas internas").
+ */
+export function ModeSwitch({
+  meeting,
+  deals,
+  quiet = false,
+}: {
+  meeting: MeetingState;
+  deals: DealOption[];
+  quiet?: boolean;
+}) {
   const router = useRouter();
   const mode = meeting.mode;
   const [entering, setEntering] = useState(false);
@@ -107,7 +120,11 @@ export function ModeSwitch({ meeting, deals }: { meeting: MeetingState; deals: D
 
   return (
     <div className="relative no-print">
-      <div className="hdr-seg" role="radiogroup" aria-label="Modo de tela">
+      <div
+        className={`hdr-seg${quiet ? " is-quiet" : ""}`}
+        role="radiogroup"
+        aria-label="Modo de tela"
+      >
         {OPTIONS.map((id) => {
           const opt = MODE_META[id];
           const active = mode === id;
@@ -118,21 +135,21 @@ export function ModeSwitch({ meeting, deals }: { meeting: MeetingState; deals: D
               role="radio"
               data-mode={id}
               aria-checked={active}
-              aria-label={`${opt.label}. ${opt.hint}`}
-              title={opt.hint}
+              aria-label={quiet ? opt.label : `${opt.label}. ${opt.hint}`}
+              title={quiet ? undefined : opt.hint}
               onClick={() => onPick(id)}
               onKeyDown={(e) => onRadioKey(e, id)}
               disabled={busy}
-              className="min-h-11 sm:min-h-0"
+              className={quiet ? undefined : "min-h-11 sm:min-h-0"}
             >
-              <span className="md:hidden">{opt.short}</span>
-              <span className="hidden md:inline">{opt.label}</span>
+              <span className={quiet ? undefined : "md:hidden"}>{opt.short}</span>
+              {!quiet && <span className="hidden md:inline">{opt.label}</span>}
             </button>
           );
         })}
       </div>
       <p className="sr-only" aria-live="polite">
-        {live || MODE_META[mode].audience}
+        {live || (quiet ? MODE_META[mode].label : MODE_META[mode].audience)}
       </p>
 
       {open && (

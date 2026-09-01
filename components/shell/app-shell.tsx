@@ -31,7 +31,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       console.error("[shell] unclassifiedCount falhou", err);
     }
   }
-  const attention = getAttentionItems(mode, { onlyDeal });
+  // O bloco Atenção é war-room: "riscos críticos", "ações atrasadas", tarja
+  // vermelha. Não entra em sala com o alvo — e o modo Alvo está a um clique de
+  // ser projetado, então sai do modo inteiro, não só da apresentação.
+  const attention = mode === "target" ? [] : getAttentionItems(mode, { onlyDeal });
   // Recortado no servidor: o nome da outra operação não pode nem viajar no
   // payload da página que está sendo projetada para o alvo.
   const dealOptions = getDealOptions({ onlyDeal });
@@ -73,7 +76,8 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           Operação e edição estão ocultas. {MODE_META[mode].shareLine}
         </div>
       )}
-      {(!present || mode === "target") && <ModeBanner meeting={meeting} deals={dealOptions} />}
+      {/* No modo Alvo o aviso vira o chip discreto do header (ver Header). */}
+      {!present && mode !== "target" && <ModeBanner meeting={meeting} />}
       <AttentionStrip items={attention} />
       {!present && (
         <div className="no-print hidden border-b border-line bg-paper sm:block">
@@ -87,7 +91,12 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         className="mx-auto max-w-6xl px-4 py-6 md:py-8"
         style={{ paddingBottom: "max(1.75rem, env(safe-area-inset-bottom))" }}
       >
-        <PrintMasthead mode={mode} present={present} generatedAt={generatedAt} />
+        <PrintMasthead
+          mode={mode}
+          present={present}
+          generatedAt={generatedAt}
+          dealName={dealOptions.find((d) => d.slug === onlyDeal)?.name ?? null}
+        />
         {children}
       </main>
     </div>

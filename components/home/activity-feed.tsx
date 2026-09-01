@@ -1,28 +1,37 @@
 import Link from "next/link";
 import { activityKindLabel } from "@/lib/activity";
 import { formatDate } from "@/lib/format";
-import type { ActivityEvent } from "@/lib/types";
+import { TARGET_COPY } from "@/lib/mode-meta";
+import type { ActivityEvent, MeetingMode } from "@/lib/types";
 import { WithTerms } from "@/components/ui/with-terms";
 
 
 export function ActivityFeed({
   items,
+  mode,
   compact = false,
 }: {
   items: ActivityEvent[];
+  mode: MeetingMode;
   compact?: boolean;
 }) {
+  const target = mode === "target";
   return (
     <section className="paper flex h-full flex-col p-5">
-      <p className="kicker">Desde a última visita</p>
-      <h2 className="serif mt-1 text-2xl text-navy">Atividade recente</h2>
+      <p className="kicker">{target ? TARGET_COPY.activityKicker : "Desde a última visita"}</p>
+      <h2 className="serif mt-1 text-2xl text-navy">
+        {target ? TARGET_COPY.activityTitle : "Atividade recente"}
+      </h2>
       <p className="mt-1 text-[13px] text-muted">
-        Decisões, arquivos e fatos com data. Sem inventar o que não está no corte.
+        {target
+          ? TARGET_COPY.activityLead
+          : "Decisões, arquivos e fatos com data. Sem inventar o que não está no corte."}
       </p>
       {items.length === 0 ? (
         <p className="mt-4 text-sm leading-relaxed text-muted">
-          Nada novo neste recorte. Quando o board decidir ou um arquivo entrar na bandeja, o
-          registro aparece aqui.
+          {target
+            ? TARGET_COPY.activityEmpty
+            : "Nada novo neste recorte. Quando o board decidir ou um arquivo entrar na bandeja, o registro aparece aqui."}
         </p>
       ) : (
         <ol className="mt-4 space-y-3">

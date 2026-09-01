@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SemaphoreBadge } from "@/components/ui/semaphore";
 import { WithTerms } from "@/components/ui/with-terms";
+import { semaphoreLabelFor } from "@/lib/mode-meta";
 import type { Deal, MeetingMode, Semaphore } from "@/lib/types";
 
 export function DealCard({
@@ -27,19 +28,24 @@ export function DealCard({
       <span className={`deal-card-bar ${priority ? "bg-gold" : "bg-cyan"}`} aria-hidden />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 pl-1">
-          <p className="kicker">{priority ? "Prioridade do programa" : "Segunda operação"}</p>
+          {/* Ordem de prioridade denuncia que existe outra operação. */}
+          <p className="kicker">
+            {target ? "Operação em avaliação" : priority ? "Prioridade do programa" : "Segunda operação"}
+          </p>
           <h2 className="serif mt-1 text-[1.75rem] leading-none tracking-tight text-navy sm:text-3xl">
             {deal.name}
           </h2>
           <p className="mt-1.5 text-sm text-muted">{deal.legalName}</p>
         </div>
-        <span
-          className={`shrink-0 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${
-            priority ? "bg-gold text-navy" : "border border-cyan/50 bg-cyan/10 text-[#0e7490]"
-          }`}
-        >
-          {priority ? "Primeiro" : "Em análise"}
-        </span>
+        {!target && (
+          <span
+            className={`shrink-0 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${
+              priority ? "bg-gold text-navy" : "border border-cyan/50 bg-cyan/10 text-[#0e7490]"
+            }`}
+          >
+            {priority ? "Primeiro" : "Em análise"}
+          </span>
+        )}
       </div>
 
       <p className="mt-5 pl-1 text-[15px] leading-relaxed">
@@ -47,7 +53,10 @@ export function DealCard({
       </p>
 
       <div className="mt-5 flex flex-wrap items-center gap-3 pl-1 text-sm">
-        <SemaphoreBadge tone={deal.health as Semaphore} />
+        <SemaphoreBadge
+          tone={deal.health as Semaphore}
+          label={semaphoreLabelFor(mode, deal.health)}
+        />
         <span className="text-muted">
           <WithTerms text={deal.phaseLabel} />
         </span>

@@ -1,4 +1,42 @@
+import { SEMAPHORE_LABEL } from "./constants";
 import type { MeetingMode } from "./types";
+
+/**
+ * Linguagem do modo Alvo — tudo que o alvo lê na tela passa por aqui.
+ *
+ * Duas regras, nesta ordem:
+ *   1. Nada que denuncie a encenação: modos, o que some, quem mais existe
+ *      no programa, que esta tela está sendo filtrada para ele.
+ *   2. Vocabulário de reunião de M&A. Nada de jargão de software
+ *      (checklist, dashboard, corte, bandeja, modo, vista).
+ *
+ * Centralizado num objeto só para que a revisão seja um diff de um arquivo,
+ * e não uma caça a ternários espalhados pela árvore.
+ */
+export const TARGET_COPY = {
+  homeKicker: "Operação em avaliação",
+  homeTitle: "Situação formal",
+  snapshotKicker: "Situação formal",
+  activityKicker: "Registro",
+  activityTitle: "Movimentações com data",
+  activityLead: "Fatos com data registrada.",
+  activityEmpty: "Nada novo desde a última atualização.",
+  documentsKicker: "Documentos",
+  documentsTitle: "Pendências documentais",
+  metricsKicker: "Números formalizados",
+  criticalHint: "Pontos que precisam ser resolvidos para a operação avançar.",
+  criticalEmpty: "Nenhum ponto crítico em aberto.",
+  issuesHint: "Pontos em tratamento. Isoladamente não travam a operação.",
+  issuesEmpty: "Nenhum ponto em tratamento.",
+  /** Semáforo vermelho sem a palavra "deal". */
+  blockedLabel: "Pendência em aberto",
+} as const;
+
+/** O vermelho do semáforo é "Bloqueia o deal" — palavra nossa, não da sala. */
+export function semaphoreLabelFor(mode: MeetingMode, tone: string) {
+  if (mode === "target" && tone === "red") return TARGET_COPY.blockedLabel;
+  return SEMAPHORE_LABEL[tone];
+}
 
 /**
  * Cópia e cromo de cada modo de reunião.
@@ -50,16 +88,15 @@ export const MODE_META: Record<
   target: {
     label: "Alvo",
     short: "Alvo",
-    // Sem citar nomes de operação: este texto vira title/aria-label do botão e
-    // aparece no hover, na tela que está sendo projetada para o alvo.
-    hint: "O alvo está na sala — some preço, tese e notas internas",
+    // Nunca vira title/aria-label quando o alvo pode ler a tela: o seletor de
+    // modo usa o rótulo puro nesse caso (ver ModeSwitch, prop `quiet`).
+    hint: "Visão formal da operação",
     audience: "Alvo na sala",
     shareLine: "Só fase, documentos pedidos e pendências formais.",
     homeLead:
-      "Situação formal da operação em avaliação: fase, documentos pedidos e pendências. Semáforo no topo da tela.",
+      "Situação formal da operação em avaliação: fase atual, documentos pedidos e pendências em aberto.",
     boardKicker: "Situação formal",
-    snapshotRedLabel: (n) =>
-      `${n} pendência${n > 1 ? "s" : ""} formal${n > 1 ? "is" : ""}`,
+    snapshotRedLabel: (n) => (n > 1 ? `${n} pendências formais` : "1 pendência formal"),
   },
 };
 

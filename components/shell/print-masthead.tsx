@@ -6,12 +6,32 @@ export function PrintMasthead({
   mode,
   present,
   generatedAt,
+  dealName = null,
 }: {
   mode: MeetingMode;
   present: boolean;
   generatedAt: string;
+  dealName?: string | null;
 }) {
   const meta = MODE_META[mode];
+
+  // O PDF gerado no modo Alvo pode acabar na mão do alvo. Ele não carrega o
+  // nome do programa, o corte, o modo nem o público — só a operação e a data.
+  if (mode === "target") {
+    return (
+      <div className="print-masthead mb-6 hidden border-b border-line pb-4">
+        <div className="brand-bar is-single mb-3 w-28" />
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c2410c]">
+          Eleva Projects
+        </p>
+        <p className="mt-1 text-2xl font-semibold tracking-tight text-navy">
+          {dealName ?? "Situação formal"}
+        </p>
+        <p className="mt-1 text-sm text-[#3a4658]">Situação formal · gerado em {generatedAt}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="print-masthead mb-6 hidden border-b border-line pb-4">
       <div className="brand-bar mb-3 w-28" />

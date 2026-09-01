@@ -2,7 +2,8 @@
 
 import { memo, useMemo, useState } from "react";
 import { workstreamLabel } from "@/lib/constants";
-import type { Risk, Semaphore } from "@/lib/types";
+import { TARGET_COPY } from "@/lib/mode-meta";
+import type { MeetingMode, Risk, Semaphore } from "@/lib/types";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, riskTone } from "@/components/ui/status-badge";
 import { WithTerms } from "@/components/ui/with-terms";
@@ -10,13 +11,16 @@ import { Dot } from "@/components/ui/semaphore";
 
 export const RisksBoard = memo(function RisksBoard({
   items,
+  mode,
   query = "",
   compact = false,
 }: {
   items: Risk[];
+  mode: MeetingMode;
   query?: string;
   compact?: boolean;
 }) {
+  const target = mode === "target";
   const [sev, setSev] = useState<"all" | Semaphore>("all");
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -58,17 +62,25 @@ export const RisksBoard = memo(function RisksBoard({
         <EmptyState title="Nenhum risco com este filtro" hint="Limpe a busca ou mude a severidade." />
       ) : null}
       <Block
-        title="Riscos críticos"
-        hint="Podem anular ou travar o deal. O board precisa ver estes primeiro."
+        title={target ? "Pontos críticos" : "Riscos críticos"}
+        hint={
+          target
+            ? TARGET_COPY.criticalHint
+            : "Podem anular ou travar o deal. O board precisa ver estes primeiro."
+        }
         items={criticos}
-        empty="Nenhum risco crítico visível neste modo."
+        empty={target ? TARGET_COPY.criticalEmpty : "Nenhum risco crítico visível neste modo."}
         accent="critical"
       />
       <Block
-        title="Issues abertos"
-        hint="Problemas já identificados, em tratamento. Ainda não são (sozinhos) deal-breakers."
+        title={target ? "Pontos em tratamento" : "Issues abertos"}
+        hint={
+          target
+            ? TARGET_COPY.issuesHint
+            : "Problemas já identificados, em tratamento. Ainda não são (sozinhos) deal-breakers."
+        }
         items={issues}
-        empty="Nenhum issue aberto neste modo."
+        empty={target ? TARGET_COPY.issuesEmpty : "Nenhum issue aberto neste modo."}
         accent="issue"
       />
       {watch.length > 0 && (

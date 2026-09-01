@@ -1,6 +1,6 @@
 import { folderUrl } from "@/lib/constants";
 import { canSeePriceAndThesis } from "@/lib/visibility";
-import { viewChrome } from "@/lib/mode-meta";
+import { TARGET_COPY, semaphoreLabelFor, viewChrome } from "@/lib/mode-meta";
 import type { DealBundle, MeetingMode } from "@/lib/types";
 import { Term } from "@/components/ui/term";
 import { WithTerms } from "@/components/ui/with-terms";
@@ -51,7 +51,7 @@ export function DealView({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="kicker">
-              Deal {deal.priority} · {deal.city}
+              {mode === "target" ? "Operação" : `Deal ${deal.priority}`} · {deal.city}
               {deal.since ? ` · desde ${deal.since}` : ""}
             </p>
             <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
@@ -59,8 +59,8 @@ export function DealView({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <SemaphoreBadge tone={deal.health} />
-            {present && (
+            <SemaphoreBadge tone={deal.health} label={semaphoreLabelFor(mode, deal.health)} />
+            {present && mode !== "target" && (
               <div className="no-print hidden sm:block">
                 <ExportPdfButton present pageLabel={deal.name} surface="page" />
               </div>
@@ -131,13 +131,19 @@ export function DealView({
       {chrome.showChecklist && (
         <section id="checklist" className="mb-10">
           <p className="kicker">
-            <Term id="dd">Due diligence</Term>
+            {mode === "target" ? (
+              TARGET_COPY.documentsKicker
+            ) : (
+              <Term id="dd">Due diligence</Term>
+            )}
           </p>
-          <h2 className="serif mb-1 text-2xl text-navy">Checklist</h2>
+          <h2 className="serif mb-1 text-2xl text-navy">
+            {mode === "target" ? TARGET_COPY.documentsTitle : "Checklist"}
+          </h2>
           <Freshness trust="review" />
           <p className="mb-4 mt-2 max-w-2xl text-sm text-muted">
             {mode === "target"
-              ? "Itens formais pedidos ao alvo. Arquivo novo não conclui o item."
+              ? "Documentos pedidos. Um arquivo entregue não encerra o item — ele passa por conferência."
               : <>
                   Arquivo novo no Drive não conclui item. Um &quot;<Term id="nda">NDA</Term>{" "}
                   assinado.pdf&quot; pode ser <Term id="minuta">minuta</Term>.
@@ -157,6 +163,7 @@ export function DealView({
         actions={bundle.actions}
         risks={bundle.risks}
         documents={bundle.documents}
+        mode={mode}
         present={present}
         showSearch={chrome.showSearch}
         showDocs={chrome.showDocs}
@@ -165,7 +172,11 @@ export function DealView({
 
       {!present && (
       <section id="indicadores" className="mb-10">
-        <p className="kicker">Números do corte {deal.slug === "loopert" ? "14/08/2026" : ""}</p>
+        <p className="kicker">
+          {mode === "target"
+            ? TARGET_COPY.metricsKicker
+            : `Números do corte ${deal.slug === "loopert" ? "14/08/2026" : ""}`}
+        </p>
         <h2 className="serif mb-1 text-2xl text-navy">Indicadores</h2>
         <Freshness trust={review ? "review" : "firm"} />
         <p className="mb-4 mt-2 text-sm text-muted">

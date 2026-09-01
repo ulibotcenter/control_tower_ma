@@ -85,12 +85,17 @@ export function getDealSlugs() {
   return deals.map((d) => d.slug);
 }
 
-/** Lista enxuta para os seletores de deal do cabeçalho e do modo Alvo. */
+/** Lista enxuta para os seletores de deal e para o masthead de reunião. */
 export function getDealOptions(scope?: Scope) {
   return deals
     .filter((d) => inScope(d.slug, scope))
     .sort((a, b) => a.priority - b.priority)
-    .map((d) => ({ slug: d.slug, name: d.name, priority: d.priority }));
+    .map((d) => ({
+      slug: d.slug,
+      name: d.name,
+      priority: d.priority,
+      phaseLabel: d.phaseLabel,
+    }));
 }
 
 export function getDealBySlug(slug: string) {

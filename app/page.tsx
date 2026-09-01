@@ -7,7 +7,7 @@ import { WithTerms } from "@/components/ui/with-terms";
 import { folderUrl, DRIVE_FOLDERS } from "@/lib/constants";
 import { alertEmail } from "@/lib/config";
 import { getActivity, getProgram } from "@/lib/data/provider";
-import { MODE_META, viewChrome } from "@/lib/mode-meta";
+import { MODE_META, TARGET_COPY, viewChrome } from "@/lib/mode-meta";
 import { getLockedDeal, getMode } from "@/lib/mode";
 import { getPresent } from "@/lib/present";
 import { DriveLink } from "@/components/ui/drive-link";
@@ -30,13 +30,22 @@ export default async function HomePage() {
     <AppShell>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          {/* Nome do programa e sigla de M&A são vocabulário nosso, não da sala. */}
           <p className="kicker">
-            Programa de <Term id="ma">M&amp;A</Term>
+            {mode === "target" ? (
+              TARGET_COPY.homeKicker
+            ) : (
+              <>
+                Programa de <Term id="ma">M&amp;A</Term>
+              </>
+            )}
           </p>
-          <h1 className="serif mt-1 text-4xl text-navy sm:text-5xl">Go Live</h1>
+          <h1 className="serif mt-1 text-4xl text-navy sm:text-5xl">
+            {mode === "target" ? TARGET_COPY.homeTitle : "Go Live"}
+          </h1>
           <Freshness />
         </div>
-        {present && (
+        {present && mode !== "target" && (
           <div className="no-print hidden sm:block">
             <ExportPdfButton present pageLabel="Programa" surface="page" />
           </div>
@@ -66,7 +75,7 @@ export default async function HomePage() {
 
       <div className="mt-6 grid items-stretch gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(16rem,0.85fr)]">
         <BoardCard card={program.board} mode={mode} />
-        <ActivityFeed items={activity} compact={present} />
+        <ActivityFeed items={activity} mode={mode} compact={present} />
       </div>
 
       <div className="mt-6 grid items-stretch gap-5 lg:grid-cols-2">
