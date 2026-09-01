@@ -210,7 +210,7 @@ export const workstreams: Workstream[] = [
     owner: "João Amorim / M12C",
     health: "gray",
     summary: "Sem DD financeira no mesmo ponto da Loopert. Não pressionar.",
-    summaryTarget: "Avaliação financeira não iniciada neste corte.",
+    summaryTarget: "Avaliação financeira ainda não iniciada.",
     visibility: "target",
     sensitivities: [],
   },
