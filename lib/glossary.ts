@@ -210,14 +210,16 @@ export const GLOSSARY_LIST: GlossaryEntry[] = [
   {
     id: "pmo",
     term: "PMO",
-    def: "Project Management Office — quem organiza prazos, pendências e a torre. Neste programa é a Eleva.",
+    def: "Project Management Office — quem organiza prazos e pendências do programa. Neste caso é a Eleva.",
     category: "projeto",
     aliases: ["PMO"],
   },
   {
     id: "workstream",
-    term: "Workstream",
-    def: "Frente de trabalho do deal — Legal, Financeiro, Comercial, Pessoas/PI, Operacional, Negociação, Integração. Cada uma tem dono e semáforo.",
+    // A palavra "workstream" não aparece mais na tela; o verbete fica com o
+    // nome que o usuário lê. Os aliases seguem para não mudar o auto-link.
+    term: "Frente",
+    def: "Frente de trabalho da operação — Legal, Financeiro, Comercial, Pessoas/PI, Operacional, Negociação, Integração. Cada uma tem dono e semáforo.",
     category: "projeto",
     aliases: ["workstream", "Workstream", "workstreams", "Workstreams"],
   },
@@ -254,6 +256,7 @@ export const GLOSSARY_LIST: GlossaryEntry[] = [
     term: "Corte",
     def: "A fotografia oficial da torre nesta data. O que não está no corte 14/08/2026 ainda é «a confirmar».",
     category: "projeto",
+    audience: "advisors",
   },
   {
     id: "pack",

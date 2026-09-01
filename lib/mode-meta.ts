@@ -81,7 +81,7 @@ export const MODE_META: Record<
     homeLead:
       "Duas compras buy-side da AD+R (Massa FM, Mix FM, Nova Brasil). Sponsors: Camila Kovacevick (CEO) e Matheus Vasconcelos (CFO). PMO Eleva. Jurídico: Pacta. Financeiro: João Amorim / M12C. A prioridade é a Loopert. Radio Health está em análise.",
     homeSub:
-      "Cada deal tem workstreams. O semáforo no topo explica o ritmo. Ainda não há LOI nem SPA. Closing-alvo da Loopert: jan/2027, flexível.",
+      "Cada deal tem frentes: Legal, Financeiro, Comercial, Pessoas. O semáforo no topo explica o ritmo. Ainda não há LOI nem SPA. Closing-alvo da Loopert: jan/2027, flexível.",
     boardKicker: "Próxima decisão do board",
     snapshotRedLabel: (n) =>
       `${n} ponto${n > 1 ? "s" : ""} vermelho${n > 1 ? "s" : ""}`,

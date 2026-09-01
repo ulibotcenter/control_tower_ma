@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { SemaphoreBadge } from "@/components/ui/semaphore";
-import { Term } from "@/components/ui/term";
 import { WithTerms } from "@/components/ui/with-terms";
 import type { DealBundle, MeetingMode } from "@/lib/types";
 
@@ -15,10 +14,10 @@ export function WorkstreamGrid({
     <section id="workstreams">
       <div className="mb-3 flex items-end justify-between">
         <div>
-          <p className="kicker">Frentes</p>
-          <h2 className="serif text-2xl text-navy">
-            <Term id="workstream">Workstreams</Term>
-          </h2>
+          <h2 className="serif text-2xl text-navy">Frentes</h2>
+          <p className="mt-1 text-sm text-muted">
+            Legal, Financeiro, Comercial, Pessoas e as demais. Cada uma com dono e semáforo.
+          </p>
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">

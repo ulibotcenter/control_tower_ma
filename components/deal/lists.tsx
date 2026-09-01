@@ -56,7 +56,7 @@ export function DocsList({ items }: { items: DriveDocument[] }) {
     return (
       <EmptyState
         title="Nenhum documento nesta frente"
-        hint="Quando um arquivo for classificado para este workstream, o link do Drive entra aqui."
+        hint="Quando um arquivo for classificado para esta frente, o link do Drive entra aqui."
       />
     );
   }

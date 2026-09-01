@@ -54,11 +54,13 @@ export function NavLinks({
   present?: boolean;
 }) {
   const path = usePathname();
+  // `quiet`: fica de apoio. Em Operar quem manda é o seletor de operação —
+  // Programa e Glossário são saídas de contexto, não o caminho principal.
   const extras = [
-    { href: "/", label: "Programa", show: true },
+    { href: "/", label: "Programa", show: true, quiet: true },
     { href: "/inbox", label: "Novos arquivos", show: !present && mode === "operate", badge: inboxCount },
     { href: "/decisions", label: "Decisões", show: mode !== "target" },
-    { href: "/glossary", label: "Glossário", show: !present },
+    { href: "/glossary", label: "Glossário", show: !present, quiet: true },
     { href: "/export/pack", label: "Pack", show: !present && mode === "operate" },
   ];
 
@@ -70,7 +72,12 @@ export function NavLinks({
           <Link
             key={item.href}
             href={item.href}
-            className={isActive(path, item.href) ? "is-on" : undefined}
+            className={[
+              isActive(path, item.href) ? "is-on" : "",
+              item.quiet && !isActive(path, item.href) ? "opacity-60" : "",
+            ]
+              .filter(Boolean)
+              .join(" ") || undefined}
           >
             {item.label}
             {item.badge ? (

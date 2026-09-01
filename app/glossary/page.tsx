@@ -6,7 +6,6 @@ export default async function GlossaryPage() {
   const mode = await getMode();
   return (
     <AppShell>
-      <p className="kicker">Linguagem da torre</p>
       <h1 className="serif text-4xl text-navy">Glossário</h1>
       <p className="mt-3 max-w-2xl text-[15px] leading-relaxed">
         Os mesmos termos que aparecem com um «?» na tela. Feito para quem conhece rádio e ainda

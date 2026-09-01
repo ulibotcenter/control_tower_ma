@@ -244,7 +244,17 @@ header :focus-visible,
   border: 0;
 }
 
+/*
+ * Balões de dica e de glossário.
+ *
+ * Ficam `display: none` enquanto fechados, e não só transparentes. São
+ * `position: absolute` com até ~308px de largura: deixados no layout, esticam
+ * a área rolável do documento e abrem rolagem horizontal em telas estreitas.
+ * Não se perde animação (não há transition aqui) nem leitura de tela — cada
+ * um tem um `.sr-only` irmão com o mesmo texto.
+ */
 .hint-tip {
+  display: none;
   position: absolute;
   left: 0;
   top: calc(100% + 0.4rem);
@@ -260,17 +270,14 @@ header :focus-visible,
   letter-spacing: 0;
   text-transform: none;
   box-shadow: 0 8px 20px rgb(10 20 40 / 18%);
-  opacity: 0;
   pointer-events: none;
-  transform: translateY(2px);
 }
 
 .hint-wrap:hover .hint-tip,
 .hint-wrap:focus .hint-tip,
 .hint-wrap:focus-within .hint-tip,
 .hint-wrap:focus-visible .hint-tip {
-  opacity: 1;
-  transform: none;
+  display: block;
 }
 
 .term-mark {
@@ -291,6 +298,7 @@ header :focus-visible,
 }
 
 .term-tip {
+  display: none;
   position: absolute;
   left: 0;
   top: calc(100% + 0.45rem);
@@ -307,9 +315,7 @@ header :focus-visible,
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
-  opacity: 0;
   pointer-events: none;
-  transform: translateY(3px);
 }
 
 .term-tip-kicker {
@@ -325,8 +331,7 @@ header :focus-visible,
 .term-mark:hover .term-tip,
 .term-mark:focus-visible .term-tip,
 .term-mark.is-open .term-tip {
-  opacity: 1;
-  transform: none;
+  display: block;
 }
 
 .nav-sec a,

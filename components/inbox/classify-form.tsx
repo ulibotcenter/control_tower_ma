@@ -47,7 +47,7 @@ export function ClassifyForm({
     const data = Object.fromEntries(new FormData(e.currentTarget).entries());
     if (!data.workstreamSlug) {
       setBusy(false);
-      setError("Escolha a frente. Sem workstream o arquivo não entra no checklist.");
+      setError("Escolha a frente. Sem ela o arquivo não entra no checklist.");
       return;
     }
     const res = await fetch(`/api/inbox/${id}`, {

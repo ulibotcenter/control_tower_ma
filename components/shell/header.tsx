@@ -85,7 +85,9 @@ export function Header({
           <NavLinks mode={mode} inboxCount={inboxCount} present={present} />
           <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
             <Shortcuts present={present} mode={mode} allowTour={mode !== "target"} />
-            <ExportPdfButton present={present} />
+            {/* Exportar carimba nome de programa e corte no PDF e no título da
+                aba. Não fica ao alcance de um clique com o alvo na sala. */}
+            {mode !== "target" && <ExportPdfButton present={present} />}
             <PresentSwitch on={present} quiet={mode === "target"} />
             <ModeSwitch meeting={meeting} deals={deals} quiet={mode === "target"} />
           </div>

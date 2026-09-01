@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Term } from "@/components/ui/term";
 import { TARGET_COPY } from "@/lib/mode-meta";
 import type { MeetingMode } from "@/lib/types";
 
@@ -12,7 +11,7 @@ const ITEMS = [
   { id: "riscos", label: "Riscos", target: TARGET_COPY.navRisks },
   { id: "acoes", label: "Ações", target: TARGET_COPY.navActions },
   { id: "docs", label: "Documentos", target: TARGET_COPY.navFiles },
-  { id: "workstreams", label: "Workstreams", target: TARGET_COPY.navWorkstreams },
+  { id: "workstreams", label: "Frentes", target: TARGET_COPY.navWorkstreams },
   { id: "indicadores", label: "Indicadores", target: TARGET_COPY.navMetrics },
   { id: "tese", label: "Sala da Eleva", target: null },
 ];
@@ -68,15 +67,7 @@ export function SectionNav({
               aria-current={active === item.id ? "location" : undefined}
               onClick={() => setActive(item.id)}
             >
-              {target ? (
-                (item.target ?? item.label)
-              ) : item.id === "workstreams" ? (
-                <Term id="workstream" interactive={false}>
-                  Workstreams
-                </Term>
-              ) : (
-                item.label
-              )}
+              {target ? (item.target ?? item.label) : item.label}
             </a>
           </li>
         ))}

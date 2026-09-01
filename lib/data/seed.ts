@@ -42,7 +42,7 @@ export const boardCard: BoardCard = {
   sentence:
     "Fechar tese e envelope de preço com a Pacta — sem isso não há LOI.",
   sentenceTarget:
-    "Alinhamento da fase de estruturação e das pendências formais do alvo.",
+    "Alinhamento da fase de estruturação e das pendências formais.",
   owner: "Camila Kovacevick / Matheus Vasconcelos",
   date: "a confirmar",
   dealId: LOOPERT_ID,
@@ -327,7 +327,7 @@ export const documents: DriveDocument[] = [
     workstreamSlug: null,
     status: "vigente",
     classified: true,
-    note: "Fonte do alvo. Sem ID de arquivo individual — abre a pasta no Drive.",
+    note: "Fonte da operação. Sem ID de arquivo individual — abre a pasta no Drive.",
     visibility: "target",
     sensitivities: [],
   },
@@ -752,7 +752,7 @@ export const risks: Risk[] = [
     dealId: LOOPERT_ID,
     workstreamSlug: "legal",
     title: "Certidão municipal vencida em 02/06/2026",
-    detail: "Pendência formal do alvo. Pedido em aberto.",
+    detail: "Pendência formal. Pedido em aberto.",
     severity: "red",
     visibility: "target",
     sensitivities: [],

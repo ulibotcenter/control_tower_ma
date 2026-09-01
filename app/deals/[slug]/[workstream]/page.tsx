@@ -58,7 +58,9 @@ export default async function WorkstreamPage({
       </p>
 
       <section className="mt-10">
-        <h2 className="serif text-2xl text-navy">Checklist desta frente</h2>
+        <h2 className="serif text-2xl text-navy">
+          {mode === "target" ? "Pendências documentais desta frente" : "Checklist desta frente"}
+        </h2>
         <p className="mb-3 mt-1 text-sm text-muted">
           {mode === "target"
             ? "Itens formais desta frente. Arquivo novo não conclui o item."
