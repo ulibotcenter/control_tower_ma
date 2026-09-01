@@ -124,20 +124,20 @@ export function DealView({
 
       {/* Ordem da leitura: onde estamos, o que falta entregar, o que trava,
           quem faz o quê. A leitura interna vai toda para o fim da página. */}
-      <section className="mb-14">
+      <section className="mb-10">
         <h2 className="serif mb-1 text-2xl text-navy">Onde estamos</h2>
-        <Freshness trust={review ? "review" : "firm"} />
+        <Freshness trust={review ? "review" : "firm"} mode={mode} />
         <div className="mt-4">
           <Timeline items={bundle.milestones} mode={mode} />
         </div>
       </section>
 
       {chrome.showChecklist && (
-        <section id="checklist" className="mb-14">
+        <section id="checklist" className="mb-10">
           <h2 className="serif mb-1 text-2xl text-navy">
             {target ? TARGET_COPY.documentsTitle : "Checklist"}
           </h2>
-          <Freshness trust="review" />
+          <Freshness trust="review" mode={mode} />
           <p className="mb-4 mt-2 max-w-2xl text-sm text-muted">
             {target
               ? "Documentos pedidos. Um arquivo entregue não encerra o item — ele passa por conferência."
@@ -162,15 +162,15 @@ export function DealView({
       />
 
       {chrome.showWorkstreams && (
-        <div id="workstreams" className="mb-14">
+        <div id="workstreams" className="mb-10">
           <WorkstreamGrid bundle={bundle} mode={mode} />
         </div>
       )}
 
       {!present && (
-        <section id="indicadores" className="mb-14">
+        <section id="indicadores" className="mb-10">
           <h2 className="serif mb-1 text-2xl text-navy">Indicadores</h2>
-          <Freshness trust={review ? "review" : "firm"} />
+          <Freshness trust={review ? "review" : "firm"} mode={mode} />
           <p className="mb-4 mt-2 text-sm text-muted">
             {target
               ? "Só números já formalizados. Dado ausente = a confirmar."
@@ -210,7 +210,7 @@ export function DealView({
                   </>
                 )}
               </h3>
-              <Freshness trust={deal.slug === "radio-health" ? "review" : "firm"} />
+              <Freshness trust={deal.slug === "radio-health" ? "review" : "firm"} mode={mode} />
               <div className="mt-3">
                 <CapTable rows={bundle.capTable} />
               </div>

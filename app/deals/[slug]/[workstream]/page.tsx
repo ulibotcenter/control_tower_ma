@@ -10,6 +10,7 @@ import { SemaphoreBadge } from "@/components/ui/semaphore";
 import { WithTerms } from "@/components/ui/with-terms";
 import { getDealBundle, getDealOptions, workstreamOf } from "@/lib/data/provider";
 import { isDealAllowed, lockedDeal } from "@/lib/meeting";
+import { semaphoreLabelFor } from "@/lib/mode-meta";
 import { getMeeting } from "@/lib/mode";
 
 export default async function WorkstreamPage({
@@ -51,7 +52,7 @@ export default async function WorkstreamPage({
           <h1 className="serif text-4xl text-navy">{ws.name}</h1>
           <p className="mt-1 text-sm text-muted">Dono · {ws.owner}</p>
         </div>
-        <SemaphoreBadge tone={ws.health} />
+        <SemaphoreBadge tone={ws.health} label={semaphoreLabelFor(mode, ws.health)} />
       </div>
       <p className="mt-4 max-w-2xl text-lg leading-relaxed">
         <WithTerms text={mode === "target" ? ws.summaryTarget : ws.summary} />

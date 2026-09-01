@@ -50,17 +50,25 @@ export function Header({
               priority
               className="h-7 w-auto sm:h-8"
             />
-            <span className="hidden h-7 w-px bg-white/20 md:block" aria-hidden />
-            <span className="min-w-0 leading-tight">
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan">
-                Control Tower
-              </span>
-              <span className="block truncate text-[14px] font-semibold tracking-tight text-cream sm:text-[15px]">
-                {PROGRAM_NAME}
-                <span className="text-gold"> · {PROGRAM_SPONSOR}</span>
-                <span className="ml-2 hidden font-normal text-cream/55 sm:inline">corte {CORTE}</span>
-              </span>
-            </span>
+            {/* Nome do produto, do programa e do corte são vocabulário nosso.
+                No Alvo o cabeçalho fica só com a marca — o chip diz o resto. */}
+            {mode !== "target" && (
+              <>
+                <span className="hidden h-7 w-px bg-white/20 md:block" aria-hidden />
+                <span className="min-w-0 leading-tight">
+                  <span className="block text-[11px] font-medium tracking-tight text-cream/55">
+                    Control Tower
+                  </span>
+                  <span className="block truncate text-[14px] font-semibold tracking-tight text-cream sm:text-[15px]">
+                    {PROGRAM_NAME}
+                    <span className="text-gold"> · {PROGRAM_SPONSOR}</span>
+                    <span className="ml-2 hidden font-normal text-cream/50 sm:inline">
+                      corte {CORTE}
+                    </span>
+                  </span>
+                </span>
+              </>
+            )}
           </Link>
 
           <DealPick deals={deals} onlyDeal={onlyDeal} />
@@ -117,7 +125,7 @@ function MeetingMasthead({
       style={{ paddingLeft: "env(safe-area-inset-left)", paddingRight: "env(safe-area-inset-right)" }}
     >
       <div className="brand-bar is-single" aria-hidden />
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:py-4">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5">
         <div className="flex min-w-0 items-center gap-3 md:gap-4">
           <Image
             src="/eleva-logo.png"
@@ -125,17 +133,17 @@ function MeetingMasthead({
             width={200}
             height={48}
             priority
-            className="h-7 w-auto sm:h-8"
+            className="h-6 w-auto sm:h-7"
           />
           {deal && (
             <>
-              <span className="h-8 w-px shrink-0 bg-white/20" aria-hidden />
-              <span className="min-w-0 leading-tight">
-                <span className="block truncate text-[17px] font-semibold tracking-tight text-cream sm:text-[19px]">
+              <span className="h-6 w-px shrink-0 bg-white/15" aria-hidden />
+              <span className="flex min-w-0 flex-wrap items-baseline gap-x-3">
+                <span className="truncate text-[16px] font-semibold tracking-tight text-cream sm:text-[17px]">
                   {deal.name}
                 </span>
                 {deal.phaseLabel && (
-                  <span className="mt-0.5 block truncate text-[12px] text-cream/60 sm:text-[13px]">
+                  <span className="truncate text-[12px] font-normal text-cream/55 sm:text-[13px]">
                     {deal.phaseLabel}
                   </span>
                 )}

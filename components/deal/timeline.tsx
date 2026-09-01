@@ -11,13 +11,10 @@ function lane(m: Milestone, index: number, items: Milestone[]) {
 }
 
 const LANE = {
-  done: { badge: "Concluído", cls: "border-go/40 bg-go/5", bar: "bg-go" },
-  // `.paper` mora fora de @layer e ganha das utilities do Tailwind, então o
-  // cartão em curso não pode usar `paper` — o branco dele vencia o bg-navy e
-  // deixava o texto creme ilegível.
-  now: { badge: "Estamos aqui", cls: "border border-gold bg-navy text-cream", bar: "bg-gold" },
-  next: { badge: "Próximo", cls: "border-cyan bg-cyan/10", bar: "bg-cyan" },
-  later: { badge: "Ainda não", cls: "", bar: "bg-line" },
+  done: { badge: "Concluído" },
+  now: { badge: "Estamos aqui" },
+  next: { badge: "Próximo" },
+  later: { badge: "Ainda não" },
 };
 
 export const Timeline = memo(function Timeline({
@@ -39,41 +36,23 @@ export const Timeline = memo(function Timeline({
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[12px] text-muted">
-        <p>
-          Progresso · {done} de {items.length} marcos concluídos
-        </p>
-        <p className="hidden sm:block">Concluído · em curso · próximo · ainda não</p>
-      </div>
-      <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-line">
-        <div
-          className="h-full bg-gradient-to-r from-go to-gold"
-          style={{ width: `${Math.max(8, (done / items.length) * 100)}%` }}
-        />
-      </div>
-      <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <p className="mb-2 text-[13px] text-muted">
+        {done} de {items.length} marcos concluídos
+      </p>
+      {/*
+       * Peça única: uma faixa com divisórias internas, não cinco cartões
+       * soltos. A etapa em curso é a única cheia — as outras ficam calmas.
+       */}
+      <ol className="timeline">
         {items.map((m, i) => {
           const k = lane(m, i, items);
-          const look = LANE[k];
           const current = k === "now";
           return (
-            <li
-              key={m.id}
-              className={`relative px-3 py-3 ${current ? "" : "paper "}${look.cls}`}
-            >
-              <span className={`absolute inset-x-3 top-0 h-0.5 ${look.bar}`} aria-hidden />
-              <p className={`kicker ${current ? "text-gold-2" : k === "next" ? "text-navy" : ""}`}>
-                {m.window}
-              </p>
-              <p className={`mt-1 font-semibold ${current ? "text-cream" : "text-navy"}`}>{m.name}</p>
-              <p
-                className={`mt-1 text-[11px] font-semibold uppercase tracking-wide ${
-                  current ? "text-gold-2" : k === "done" ? "text-go" : k === "next" ? "text-navy" : "text-muted"
-                }`}
-              >
-                {look.badge}
-              </p>
-              <p className={`mt-2 text-[13px] leading-snug ${current ? "text-cream/85" : "text-muted"}`}>
+            <li key={m.id} className={`timeline-step${current ? " is-now" : ""}`} data-lane={k}>
+              <p className="timeline-window">{m.window}</p>
+              <p className="timeline-name">{m.name}</p>
+              <p className="timeline-badge">{LANE[k].badge}</p>
+              <p className="timeline-note">
                 <WithTerms text={mode === "target" ? m.summaryTarget : m.summary} />
               </p>
             </li>

@@ -33,11 +33,7 @@ export function DealSwitcher({
             aria-selected={active}
             title={meta ? `${item.name} · atalho ${meta.key}` : item.name}
             className={`flex min-h-11 flex-1 items-center justify-center px-3 text-center text-sm sm:min-h-0 sm:flex-none sm:py-1.5 ${
-              active
-                ? item.slug === "loopert"
-                  ? "bg-gold text-navy font-semibold"
-                  : "bg-cyan text-navy font-semibold"
-                : "text-muted hover:text-navy"
+              active ? "bg-gold text-white font-semibold" : "text-muted hover:text-navy"
             }`}
           >
             {item.name}

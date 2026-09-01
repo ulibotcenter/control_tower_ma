@@ -33,23 +33,31 @@ export const TARGET_COPY = {
   healthLabel: "Situação",
   nextMilestoneLabel: "Próximo marco",
   navOverview: "Situação",
-  navDocuments: "Documentos pedidos",
-  navRisks: "Pontos em aberto",
+  navDocuments: "Documentos",
+  navRisks: "Pendências",
   navActions: "Ações",
   navFiles: "Arquivos",
   navWorkstreams: "Frentes",
-  navMetrics: "Indicadores",
+  navMetrics: "Números",
   criticalHint: "Pontos que precisam ser resolvidos para a operação avançar.",
   criticalEmpty: "Nenhum ponto crítico em aberto.",
   issuesHint: "Pontos em tratamento. Isoladamente não travam a operação.",
   issuesEmpty: "Nenhum ponto em tratamento.",
-  /** Semáforo vermelho sem a palavra "deal". */
-  blockedLabel: "Pendência em aberto",
+  /** Semáforo em linguagem de reunião: sinal de andamento, não de war-room. */
+  semaphore: {
+    green: "No prazo",
+    amber: "Em curso",
+    red: "Pendência em aberto",
+    gray: "Não iniciada",
+  } as Record<string, string>,
 } as const;
 
-/** O vermelho do semáforo é "Bloqueia o deal" — palavra nossa, não da sala. */
+/**
+ * Em Operar o semáforo fala como a Eleva fala ("Bloqueia o deal"). No Alvo
+ * fala como a sala fala: no prazo, em curso, pendência em aberto.
+ */
 export function semaphoreLabelFor(mode: MeetingMode, tone: string) {
-  if (mode === "target" && tone === "red") return TARGET_COPY.blockedLabel;
+  if (mode === "target") return TARGET_COPY.semaphore[tone] ?? SEMAPHORE_LABEL[tone];
   return SEMAPHORE_LABEL[tone];
 }
 

@@ -39,7 +39,7 @@ export default async function LoginPage({
               priority
               className="h-10 w-auto"
             />
-            <p className="kicker mt-8 !text-cyan">tower.elevaprojects.com</p>
+            <p className="mt-8 text-[13px] text-cream/60">tower.elevaprojects.com</p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
               Control Tower
               <span className="mt-1 block text-xl text-gold">

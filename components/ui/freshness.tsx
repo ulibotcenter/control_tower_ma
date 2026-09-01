@@ -1,12 +1,27 @@
 import { CORTE } from "@/lib/constants";
+import type { MeetingMode } from "@/lib/types";
 
+/**
+ * `mode`: no Alvo fica só a data. O selo de confiança é controle de qualidade
+ * do nosso dado — leitura interna, e mais um ponto colorido na tela do cliente.
+ */
 export function Freshness({
   trust = "firm",
   label,
+  mode,
 }: {
   trust?: "firm" | "review";
   label?: string;
+  mode?: MeetingMode;
 }) {
+  if (mode === "target") {
+    return (
+      <p className="mt-1 text-[12px] text-muted">
+        {label ?? `Atualizado em ${CORTE}`}
+      </p>
+    );
+  }
+
   const detail =
     trust === "firm"
       ? "Número ou fato já formalizado."

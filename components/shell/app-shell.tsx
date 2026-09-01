@@ -72,14 +72,15 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       {mode !== "target" && <Onboarding openOnMount={showTour} />}
       {present && mode !== "target" && (
         <div className="no-print bg-navy-2 px-4 py-2 text-center text-[13px] text-cream">
-          <strong className="text-cyan">Modo apresentação · {MODE_META[mode].label}.</strong>{" "}
+          <strong className="text-gold-2">Modo apresentação · {MODE_META[mode].label}.</strong>{" "}
           Operação e edição estão ocultas. {MODE_META[mode].shareLine}
         </div>
       )}
       {/* No modo Alvo o aviso vira o chip discreto do header (ver Header). */}
       {!present && mode !== "target" && <ModeBanner meeting={meeting} />}
       <AttentionStrip items={attention} />
-      {!present && (
+      {/* A legenda é vocabulário de war-room ("Bloqueia o deal"). Fora do Alvo. */}
+      {!present && mode !== "target" && (
         <div className="no-print hidden border-b border-line bg-paper sm:block">
           <div className="mx-auto max-w-6xl px-4 py-2">
             <SemaphoreLegend compact />

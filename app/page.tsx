@@ -42,7 +42,7 @@ export default async function HomePage() {
           <h1 className="serif mt-1 text-4xl text-navy sm:text-5xl">
             {mode === "target" ? TARGET_COPY.homeTitle : "Go Live"}
           </h1>
-          <Freshness />
+          <Freshness mode={mode} />
         </div>
         {present && mode !== "target" && (
           <div className="no-print hidden sm:block">
@@ -81,16 +81,16 @@ export default async function HomePage() {
         ))}
       </div>
 
-      <div className="mt-12">
+      <div className="mt-10">
         <BoardCard card={program.board} mode={mode} />
       </div>
 
-      <div className="mt-12">
+      <div className="mt-10">
         <ActivityFeed items={activity} mode={mode} compact={present} />
       </div>
 
       {chrome.showOperateAside && (
-        <aside className="no-print mt-12 paper p-5 text-sm leading-relaxed">
+        <aside className="no-print mt-10 paper p-5 text-sm leading-relaxed">
           <h2 className="text-[15px] font-semibold text-navy">Operação da torre</h2>
           <ul className="mt-3 space-y-1.5">
             <li>

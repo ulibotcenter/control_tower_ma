@@ -21,7 +21,7 @@ export function ModeBanner({ meeting }: { meeting: MeetingState }) {
   if (meeting.mode === "advisors") {
     return (
       <div className="no-print bg-navy-2 px-4 py-2 text-center text-[13px] text-cream sm:text-sm">
-        <strong className="text-cyan">Modo Assessores.</strong> {meta.shareLine} {meta.audience}{" "}
+        <strong className="text-gold-2">Modo Assessores.</strong> {meta.shareLine} {meta.audience}{" "}
         podem ver o que está na tela.
       </div>
     );

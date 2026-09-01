@@ -25,7 +25,7 @@ export function DealCard({
         priority ? "border-gold/70 shadow-[0_10px_30px_-18px_rgb(10_20_40_/_35%)]" : "border-line"
       }`}
     >
-      <span className={`deal-card-bar ${priority ? "bg-gold" : "bg-cyan"}`} aria-hidden />
+      <span className={`deal-card-bar ${priority ? "bg-gold" : "bg-line-2"}`} aria-hidden />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 pl-1">
           {/* Ordem de prioridade denuncia que existe outra operação. */}
@@ -40,7 +40,7 @@ export function DealCard({
         {!target && (
           <span
             className={`shrink-0 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${
-              priority ? "bg-gold text-navy" : "border border-cyan/50 bg-cyan/10 text-[#0e7490]"
+              priority ? "bg-gold text-white" : "border border-line-2 text-muted"
             }`}
           >
             {priority ? "Primeiro" : "Em análise"}

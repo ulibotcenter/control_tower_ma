@@ -55,11 +55,11 @@ export function DealWorkbench({
         </div>
       )}
 
-      <section id="riscos" className="mb-14">
+      <section id="riscos" className="mb-10">
         <h2 className="serif mb-1 text-2xl text-navy">
           {target ? "Pendências e pontos de atenção" : present ? "Riscos críticos" : "Riscos e issues"}
         </h2>
-        <Freshness trust="review" />
+        <Freshness trust="review" mode={mode} />
         {!present && (
           <p className="mb-4 mt-2 max-w-2xl text-sm text-muted">
             {target
@@ -72,9 +72,9 @@ export function DealWorkbench({
         </div>
       </section>
 
-      <section id="acoes" className="mb-14">
+      <section id="acoes" className="mb-10">
         <h2 className="serif mb-1 text-2xl text-navy">Próximas ações</h2>
-        <Freshness />
+        <Freshness mode={mode} />
         {!present && (
           <p className="mb-4 mt-2 max-w-2xl text-sm text-muted">
             Quem faz, até quando, e se está atrasada.
@@ -86,9 +86,9 @@ export function DealWorkbench({
       </section>
 
       {showDocs && (
-        <section id="docs" className="mb-14">
+        <section id="docs" className="mb-10">
           <h2 className="serif mb-1 text-2xl text-navy">Documentos-chave</h2>
-          <Freshness trust="review" />
+          <Freshness trust="review" mode={mode} />
           <p className="mb-4 mt-2 text-sm text-muted">
             Sempre abre o Google Drive em nova aba. A torre não hospeda o arquivo.
           </p>
