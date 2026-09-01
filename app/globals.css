@@ -190,7 +190,9 @@ header .kicker {
  */
 .eleva-room {
   border-top: 2px solid var(--brand);
-  background: var(--canvas);
+  /* Um degrau abaixo do canvas da página: sem isso o recorte não existe,
+     porque o fundo do <main> já é canvas. Mesmo ramo neutro, nada novo. */
+  background: #eef2f7;
   /* Sangra até a borda do <main>, que tem px-4. Margem e padding laterais
      precisam bater com esse 1rem: a mais, nasce rolagem horizontal. */
   margin-left: -1rem;
