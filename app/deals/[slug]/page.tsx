@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/app-shell";
 import { DealView } from "@/components/deal/deal-view";
 import { getDealBundle, getDealOptions } from "@/lib/data/provider";
+import { getPillarViews } from "@/lib/data/pillar-view";
 import { isDealAllowed, lockedDeal } from "@/lib/meeting";
 import { getMeeting } from "@/lib/mode";
 import { getPresent } from "@/lib/present";
@@ -24,6 +25,7 @@ export default async function DealPage({
     <AppShell>
       <DealView
         bundle={bundle}
+        pillars={getPillarViews(bundle)}
         mode={meeting.mode}
         deals={getDealOptions({ onlyDeal })}
         onlyDeal={onlyDeal}

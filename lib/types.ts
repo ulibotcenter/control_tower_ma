@@ -111,6 +111,8 @@ export interface DriveDocument {
   folderId: string | null;
   type: DocumentType;
   workstreamSlug: string | null;
+  /** Sobrepõe a derivação de pilar (lib/pillars.ts). Opcional. */
+  pillarSlug?: string | null;
   status: DocumentStatus;
   classified: boolean;
   note?: string;
@@ -122,6 +124,8 @@ export interface Risk {
   id: string;
   dealId: string;
   workstreamSlug: string | null;
+  /** Sobrepõe a derivação de pilar (lib/pillars.ts). Opcional. */
+  pillarSlug?: string | null;
   title: string;
   detail: string;
   severity: Semaphore;
@@ -133,6 +137,8 @@ export interface ActionItem {
   id: string;
   dealId: string;
   workstreamSlug: string | null;
+  /** Sobrepõe a derivação de pilar (lib/pillars.ts). Opcional. */
+  pillarSlug?: string | null;
   title: string;
   owner: string;
   due: string;
@@ -145,6 +151,8 @@ export interface ChecklistItem {
   id: string;
   dealId: string;
   workstreamSlug: string;
+  /** Sobrepõe a derivação de pilar (lib/pillars.ts). Opcional. */
+  pillarSlug?: string | null;
   title: string;
   status: ChecklistStatus;
   documentId: string | null;

@@ -1,6 +1,7 @@
 import { folderUrl } from "@/lib/constants";
 import { canSeePriceAndThesis } from "@/lib/visibility";
 import { TARGET_COPY, semaphoreLabelFor, viewChrome } from "@/lib/mode-meta";
+import type { PillarView } from "@/lib/data/pillar-view";
 import type { DealBundle, MeetingMode } from "@/lib/types";
 import { Term } from "@/components/ui/term";
 import { WithTerms } from "@/components/ui/with-terms";
@@ -8,23 +9,22 @@ import { DriveLink } from "@/components/ui/drive-link";
 import { SemaphoreBadge } from "@/components/ui/semaphore";
 import { ExportPdfButton } from "@/components/export/export-pdf-button";
 import { Timeline } from "./timeline";
-import { SectionNav } from "./section-nav";
+import { PillarGrid } from "./pillar-grid";
 import { ThesisPrice } from "./thesis-price";
-import { WorkstreamGrid } from "./workstream-grid";
-import { ChecklistTable } from "./checklist-table";
 import { CapTable, MetricsGrid, NotesList } from "./lists";
 import { DealSwitcher } from "./deal-switcher";
-import { DealWorkbench } from "./deal-workbench";
 import { Freshness } from "@/components/ui/freshness";
 
 export function DealView({
   bundle,
+  pillars,
   mode,
   deals,
   onlyDeal = null,
   present = false,
 }: {
   bundle: DealBundle;
+  pillars: PillarView[];
   mode: MeetingMode;
   deals: { slug: string; name: string }[];
   onlyDeal?: string | null;
@@ -119,60 +119,30 @@ export function DealView({
         )}
       </header>
 
-      <SectionNav
-        mode={mode}
-        hideThesis={!showElevaRoom}
-        present={present}
-      />
-
-      {/* Ordem da leitura: onde estamos, o que falta entregar, o que trava,
-          quem faz o quê. A leitura interna vai toda para o fim da página. */}
+      {/* A linha do tempo continua com os cinco marcos do corte. Não force
+          seis: o pilar de Aprovações não tem marco próprio hoje. */}
       <section className="mb-10">
-        <h2 className="serif mb-1 text-2xl text-navy">Onde estamos</h2>
+        <h2 className="serif mb-1 text-[22px] leading-tight text-navy">Onde estamos</h2>
         <Freshness trust={review ? "review" : "firm"} mode={mode} />
         <div className="mt-4">
           <Timeline items={bundle.milestones} mode={mode} />
         </div>
       </section>
 
-      {chrome.showChecklist && (
-        <section id="checklist" className="mb-10">
-          <h2 className="serif mb-1 text-2xl text-navy">
-            {target ? TARGET_COPY.documentsTitle : "Checklist"}
-          </h2>
-          <Freshness trust="review" mode={mode} />
-          <p className="mb-4 mt-2 max-w-2xl text-sm text-muted">
-            {target
-              ? "Documentos pedidos. Um arquivo entregue não encerra o item — ele passa por conferência."
-              : <>
-                  Arquivo novo no Drive não conclui item. Um &quot;<Term id="nda">NDA</Term>{" "}
-                  assinado.pdf&quot; pode ser <Term id="minuta">minuta</Term>.
-                </>}
-          </p>
-          <ChecklistTable items={bundle.checklist} />
-        </section>
-      )}
-
-      <DealWorkbench
-        actions={bundle.actions}
-        risks={bundle.risks}
-        documents={bundle.documents}
-        mode={mode}
-        present={present}
-        showSearch={chrome.showSearch}
-        showDocs={chrome.showDocs}
-        compact={chrome.compactBoards}
-      />
-
-      {chrome.showWorkstreams && (
-        <div id="workstreams" className="mb-10">
-          <WorkstreamGrid bundle={bundle} mode={mode} />
-        </div>
-      )}
+      {/* O eixo da página é o processo, não a ferramenta: seis pilares. */}
+      <section id="pilares" className="mb-10">
+        <h2 className="serif mb-1 text-[22px] leading-tight text-navy">Pilares do processo</h2>
+        <p className="mb-4 mt-1 max-w-2xl text-[13px] text-muted">
+          {target
+            ? "Cada pilar reúne os documentos pedidos e as pendências formais daquela etapa."
+            : "Cada pilar reúne checklist, riscos, ações e documentos daquela etapa. O semáforo vem dos itens visíveis neste modo."}
+        </p>
+        <PillarGrid dealSlug={deal.slug} pillars={pillars} mode={mode} />
+      </section>
 
       {!present && (
         <section id="indicadores" className="mb-10">
-          <h2 className="serif mb-1 text-2xl text-navy">Indicadores</h2>
+          <h2 className="serif mb-1 text-[22px] leading-tight text-navy">Indicadores</h2>
           <Freshness trust={review ? "review" : "firm"} mode={mode} />
           <p className="mb-4 mt-2 text-sm text-muted">
             {target

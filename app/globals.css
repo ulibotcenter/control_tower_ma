@@ -776,6 +776,72 @@ html {
   font-weight: 600;
 }
 
+/* Pilar: peça clicável inteira, ordem em corpo miúdo, sem ícone colorido. */
+.pillar-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--space-3);
+  text-decoration: none;
+}
+
+.pillar-card:hover {
+  border-color: var(--line-strong);
+}
+
+.pillar-card-order {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  font-family: var(--font-ibm), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+
+/* Chips dos subgrupos da DD. */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 1.75rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font-size: 0.8125rem;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.chip:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.chip.is-on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.chip-count {
+  font-family: var(--font-ibm), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  opacity: 0.75;
+}
+
 /* Tabela de dado: alinhamento no topo, zebra suave, cabeçalho sem grito. */
 .data-table {
   width: 100%;

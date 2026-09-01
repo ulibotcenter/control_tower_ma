@@ -4,7 +4,6 @@ import { DOC_STATUS_LABEL, DOC_TYPE_LABEL } from "@/lib/constants";
 import { DriveLink } from "@/components/ui/drive-link";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, documentTone } from "@/components/ui/status-badge";
-import { Term } from "@/components/ui/term";
 import { WithTerms } from "@/components/ui/with-terms";
 
 export function MetricsGrid({ items, mode }: { items: Metric[]; mode: MeetingMode }) {
@@ -40,17 +39,6 @@ export function MetricsGrid({ items, mode }: { items: Metric[]; mode: MeetingMod
   );
 }
 
-const DOC_GROUPS: { key: string; label: string; match: (d: DriveDocument) => boolean }[] = [
-  { key: "nda", label: "NDAs", match: (d) => d.type === "nda" },
-  { key: "legal", label: "Legal", match: (d) => d.workstreamSlug === "legal" && d.type !== "nda" },
-  { key: "fin", label: "Financeiro", match: (d) => d.workstreamSlug === "financeiro" || d.type === "financeiro" },
-  { key: "com", label: "Comercial", match: (d) => d.workstreamSlug === "comercial" },
-  { key: "pi", label: "Pessoas / PI", match: (d) => d.workstreamSlug === "pessoas-pi" },
-  { key: "ops", label: "Operacional", match: (d) => d.workstreamSlug === "operacional" },
-  { key: "ata", label: "Atas e transcrições", match: (d) => d.type === "ata" || d.type === "transcricao" },
-  { key: "folder", label: "Pastas no Drive", match: (d) => !d.driveId && Boolean(d.folderId) },
-];
-
 export function DocsList({ items }: { items: DriveDocument[] }) {
   if (!items.length) {
     return (
@@ -66,52 +54,6 @@ export function DocsList({ items }: { items: DriveDocument[] }) {
         <DocRow key={d.id} d={d} />
       ))}
     </ul>
-  );
-}
-
-export function DocsByCategory({ items }: { items: DriveDocument[] }) {
-  if (!items.length) {
-    return (
-      <EmptyState
-        title="Nenhum documento nesta vista"
-        hint="Pastas e arquivos classificados entram aqui. No modo Alvo, só o que o alvo pode ver."
-      />
-    );
-  }
-  const used = new Set<string>();
-  const groups = DOC_GROUPS.map((g) => {
-    const rows = items.filter((d) => !used.has(d.id) && g.match(d));
-    rows.forEach((d) => used.add(d.id));
-    return { ...g, rows };
-  }).filter((g) => g.rows.length);
-  const leftover = items.filter((d) => !used.has(d.id));
-  if (leftover.length) groups.push({ key: "outros", label: "Outros", match: () => true, rows: leftover });
-
-  return (
-    <div className="space-y-5">
-      {groups.map((g) => (
-        <div key={g.key}>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
-            {g.key === "nda" ? (
-              <>
-                <Term id="nda">NDAs</Term> (versão vigente / assinada)
-              </>
-            ) : g.key === "pi" ? (
-              <>
-                Pessoas / <Term id="pi">PI</Term>
-              </>
-            ) : (
-              g.label
-            )}
-          </p>
-          <ul className="divide-y divide-line paper">
-            {g.rows.map((d) => (
-              <DocRow key={d.id} d={d} />
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
   );
 }
 
