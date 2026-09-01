@@ -56,7 +56,7 @@ Ver também `.env.example`.
 | Variável | Obrigatória em prod | Função |
 |---|---|---|
 | `NEXT_PUBLIC_APP_URL` | Sim | URL canônica (`https://tower.elevaprojects.com`) |
-| `SESSION_SECRET` | Sim | Assinatura do cookie HMAC |
+| `SESSION_SECRET` | Sim | Assinatura do cookie HMAC. **Sem fallback**: ausente ou vazia, a torre não autentica |
 | `ELEVA_DEV_PASSWORD` | Só no fallback HMAC | Senha única Eleva. Pode aposentar com Auth ligado |
 | `ALLOW_DEV_LOGIN` | `false` | Qualquer senha em local. Nunca `true` na Vercel |
 | `NEXT_PUBLIC_SESSION_IDLE_MINUTES` | Não (padrão 90) | Inatividade até expirar a sessão |
@@ -72,9 +72,21 @@ Ver também `.env.example`.
 
 ## Sessão
 
-- Depois do login, cookie HMAC `ct-session` (12 horas). O Auth do Supabase **não** fica persistido no browser.
+- `SESSION_SECRET` é **obrigatória e não tem fallback**. Sem ela `/login` mostra a tela de configuração, o login recusa e as APIs devolvem 503. Nunca houve chave padrão em produção — agora também não há em lugar nenhum.
+- Depois do login, cookie HMAC `ct-session` (12 horas), `httpOnly`. O Auth do Supabase **não** fica persistido no browser.
+- O cookie carrega **quem entrou e o estado da reunião** (modo + alvo travado). O middleware confere a assinatura em toda requisição; cookie forjado ou adulterado é apagado e cai no login.
 - Inatividade: **90 minutos** (ajustável). Aviso 2 minutos antes. Logout limpa sessão, modo, apresentação e `ct-seen`.
 - Quem não tem conta no Auth (com `SUPABASE_AUTH` ligado) não entra.
+
+## Modo de reunião
+
+O modo **não** é mais um cookie `ct-mode` que o browser lê e edita. Ele vive dentro do `ct-session` assinado, então:
+
+- trocar de modo exige sessão válida e passa por `POST /api/mode`;
+- apagar o cookie **desloga** em vez de voltar para Operar (falha para o lado seguro);
+- entrar em **Alvo** exige dizer qual operação está na sala. A reunião trava nela: a outra some do cabeçalho, da home e das URLs `/deals/…`, inclusive digitadas à mão;
+- sair do **Alvo** exige digitar `SAIR DO ALVO` por extenso — verificado no servidor, não só na tela;
+- no modo Alvo os atalhos `1`, `2` e `P` ficam desligados. Trocar de operação ou de modo só pelo seletor.
 
 ## Como ligar o login individual (Supabase Auth)
 

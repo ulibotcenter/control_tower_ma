@@ -3,6 +3,7 @@ import { ALLOWED_EMAIL_DOMAIN, PROGRAM_NAME, PROGRAM_SPONSOR } from "@/lib/const
 import { allowDevLogin, isSupabaseAuthEnabled } from "@/lib/config";
 import { getSession } from "@/lib/auth";
 import { safeInternalPath } from "@/lib/http";
+import { hasSessionSecret } from "@/lib/secret";
 import { redirect } from "next/navigation";
 import { LoginFlash } from "@/components/shell/login-flash";
 
@@ -11,7 +12,8 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ next?: string; error?: string; left?: string; idle?: string }>;
 }) {
-  const session = await getSession();
+  const configured = hasSessionSecret();
+  const session = configured ? await getSession() : null;
   const params = await searchParams;
   const next = safeInternalPath(params.next);
   const signedOut = params.left === "1" || params.idle === "1";
@@ -52,6 +54,22 @@ export default async function LoginPage({
           </div>
 
           <div className="paper p-6 text-ink sm:p-8">
+            {!configured ? (
+              <>
+                <p className="kicker">Configuração</p>
+                <h2 className="mt-1 text-xl font-semibold text-navy">Torre fora do ar</h2>
+                <p className="mt-3 text-sm leading-relaxed text-ink">
+                  A variável de ambiente <code>SESSION_SECRET</code> não está definida. Sem ela a
+                  torre não assina sessão e não deixa ninguém entrar — não existe chave padrão.
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-muted">
+                  Defina <code>SESSION_SECRET</code> no ambiente (Vercel → Settings → Environment
+                  Variables, ou <code>.env.local</code> em desenvolvimento) e recarregue esta
+                  página.
+                </p>
+              </>
+            ) : (
+              <>
             <p className="kicker">Entrar</p>
             <h2 className="mt-1 text-xl font-semibold text-navy">
               {supabaseAuth ? "Sessão individual" : "Sessão da Eleva"}
@@ -98,10 +116,10 @@ export default async function LoginPage({
               )}
               {params.error && (
                 <p className="text-sm font-medium text-alert" role="alert">
-                  {params.error === "denied"
+                  {params.error === "denied" || params.error === "domain"
                     ? "Acesso não autorizado."
-                    : params.error === "domain"
-                      ? "Acesso não autorizado."
+                    : params.error === "config"
+                      ? "Torre sem SESSION_SECRET. Avise quem cuida do ambiente."
                       : "E-mail ou senha incorretos."}
                 </p>
               )}
@@ -115,6 +133,8 @@ export default async function LoginPage({
                 Ambiente local sem senha fixa: qualquer senha entra com e-mail @
                 {ALLOWED_EMAIL_DOMAIN}. Em produção isso fica desligado.
               </p>
+            )}
+              </>
             )}
           </div>
         </div>

@@ -40,14 +40,24 @@ import { DATA_ORIGIN } from "./sources";
 
 export { DATA_ORIGIN };
 
-export async function getProgram(mode: MeetingMode): Promise<ProgramView> {
+/**
+ * `onlyDeal` é o slug travado na reunião (modo Alvo). Quando presente, o outro
+ * deal não entra na resposta: o alvo não vê a operação concorrente.
+ */
+type Scope = { onlyDeal?: string | null };
+
+function inScope(slug: string, scope?: Scope) {
+  return !scope?.onlyDeal || slug === scope.onlyDeal;
+}
+
+export async function getProgram(mode: MeetingMode, scope?: Scope): Promise<ProgramView> {
   const inboxUnclassified = canSeeInbox(mode) ? await unclassifiedCount() : 0;
 
   return {
     corte: CORTE,
     board: boardCard,
     deals: deals
-      .slice()
+      .filter((d) => inScope(d.slug, scope))
       .sort((a, b) => a.priority - b.priority)
       .map((deal) => {
         const dealRisks = filterVisible(
@@ -73,6 +83,14 @@ export async function getProgram(mode: MeetingMode): Promise<ProgramView> {
 
 export function getDealSlugs() {
   return deals.map((d) => d.slug);
+}
+
+/** Lista enxuta para os seletores de deal do cabeçalho e do modo Alvo. */
+export function getDealOptions(scope?: Scope) {
+  return deals
+    .filter((d) => inScope(d.slug, scope))
+    .sort((a, b) => a.priority - b.priority)
+    .map((d) => ({ slug: d.slug, name: d.name, priority: d.priority }));
 }
 
 export function getDealBySlug(slug: string) {
@@ -133,8 +151,17 @@ export function workstreamOf(bundle: DealBundle, slug: string) {
  * REAL: a mesma assinatura, lendo `actions` + `risks` do Supabase
  * (DATA_ORIGIN.actions / DATA_ORIGIN.risks).
  */
-export function getAttentionItems(mode: MeetingMode): AttentionItem[] {
-  return collectAttention({ actions, risks, deals }, mode);
+export function getAttentionItems(mode: MeetingMode, scope?: Scope): AttentionItem[] {
+  const scoped = deals.filter((d) => inScope(d.slug, scope));
+  const ids = new Set(scoped.map((d) => d.id));
+  return collectAttention(
+    {
+      actions: actions.filter((a) => ids.has(a.dealId)),
+      risks: risks.filter((r) => ids.has(r.dealId)),
+      deals: scoped,
+    },
+    mode,
+  );
 }
 
 function dealName(id: string | null) {
@@ -147,7 +174,11 @@ function dealName(id: string | null) {
  * REAL: DATA_ORIGIN.activity → activity_events.
  * Falha no store não derruba a home — cai no seed.
  */
-export async function getActivity(mode: MeetingMode, limit = 8): Promise<ActivityEvent[]> {
+export async function getActivity(
+  mode: MeetingMode,
+  limit = 8,
+  scope?: Scope,
+): Promise<ActivityEvent[]> {
   let decisionRows = seedDecisions;
   let inboxRows: Awaited<ReturnType<typeof listInbox>> = [];
   try {
@@ -160,5 +191,10 @@ export async function getActivity(mode: MeetingMode, limit = 8): Promise<Activit
   } catch {
     inboxRows = [];
   }
-  return visibleActivity(collectActivity({ decisions: decisionRows, inbox: inboxRows, dealName }), mode, limit);
+  const events = collectActivity({ decisions: decisionRows, inbox: inboxRows, dealName });
+  const scopedId = scope?.onlyDeal
+    ? (deals.find((d) => d.slug === scope.onlyDeal)?.id ?? null)
+    : null;
+  const scoped = scopedId ? events.filter((e) => e.dealId === scopedId) : events;
+  return visibleActivity(scoped, mode, limit);
 }

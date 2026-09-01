@@ -8,7 +8,7 @@ import { folderUrl, DRIVE_FOLDERS } from "@/lib/constants";
 import { alertEmail } from "@/lib/config";
 import { getActivity, getProgram } from "@/lib/data/provider";
 import { MODE_META, viewChrome } from "@/lib/mode-meta";
-import { getMode } from "@/lib/mode";
+import { getLockedDeal, getMode } from "@/lib/mode";
 import { getPresent } from "@/lib/present";
 import { DriveLink } from "@/components/ui/drive-link";
 import { Freshness } from "@/components/ui/freshness";
@@ -17,10 +17,11 @@ import { ActivityFeed } from "@/components/home/activity-feed";
 
 export default async function HomePage() {
   const mode = await getMode();
+  const onlyDeal = await getLockedDeal();
   const present = await getPresent();
   const [program, activity] = await Promise.all([
-    getProgram(mode),
-    getActivity(mode, present ? 4 : 8),
+    getProgram(mode, { onlyDeal }),
+    getActivity(mode, present ? 4 : 8, { onlyDeal }),
   ]);
   const chrome = viewChrome(mode, present);
   const meta = MODE_META[mode];

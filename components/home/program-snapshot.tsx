@@ -22,7 +22,9 @@ export function ProgramSnapshot({
       <div className="flex flex-col gap-2 border-b border-line px-3 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4">
         <div>
           <p className="kicker">Visão do programa</p>
-          <h2 className="text-lg font-semibold tracking-tight text-navy">As duas operações, lado a lado</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-navy">
+            {deals.length > 1 ? "As duas operações, lado a lado" : "Situação da operação"}
+          </h2>
           <Freshness />
         </div>
         <p className="max-w-md text-[12px] text-muted">

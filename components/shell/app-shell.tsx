@@ -1,9 +1,9 @@
 import { cookies } from "next/headers";
-import { getSession } from "@/lib/auth";
-import { getMode } from "@/lib/mode";
+import { getSessionPayload } from "@/lib/auth";
+import { lockedDeal } from "@/lib/meeting";
 import { getPresent } from "@/lib/present";
 import { unclassifiedCount } from "@/lib/data/store";
-import { getAttentionItems } from "@/lib/data/provider";
+import { getAttentionItems, getDealOptions } from "@/lib/data/provider";
 import { canSeeInbox } from "@/lib/visibility";
 import { MODE_META } from "@/lib/mode-meta";
 import { isOnboardedCookie, ONBOARD_COOKIE } from "@/lib/onboarding";
@@ -17,9 +17,11 @@ import { SessionGuard } from "./session-guard";
 import { SemaphoreLegend } from "../ui/legend";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
-  const user = await getSession();
-  if (!user) redirect("/login");
-  const mode = await getMode();
+  const session = await getSessionPayload();
+  if (!session) redirect("/login");
+  const { user, meeting } = session;
+  const mode = meeting.mode;
+  const onlyDeal = lockedDeal(meeting);
   const present = await getPresent();
   let inboxCount = 0;
   if (!present && canSeeInbox(mode)) {
@@ -29,7 +31,8 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       console.error("[shell] unclassifiedCount falhou", err);
     }
   }
-  const attention = getAttentionItems(mode);
+  const attention = getAttentionItems(mode, { onlyDeal });
+  const dealOptions = getDealOptions();
   const jar = await cookies();
   const showTour = !isOnboardedCookie(jar.get(ONBOARD_COOKIE)?.value) && mode !== "target" && !present;
   const generatedAt = new Date().toLocaleString("pt-BR", {
@@ -54,7 +57,13 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         Ir para o conteúdo
       </a>
       <SessionGuard />
-      <Header user={user} mode={mode} inboxCount={inboxCount} present={present} />
+      <Header
+        user={user}
+        meeting={meeting}
+        deals={dealOptions}
+        inboxCount={inboxCount}
+        present={present}
+      />
       {mode !== "target" && <Onboarding openOnMount={showTour} />}
       {present && mode !== "target" && (
         <div className="no-print bg-navy-2 px-4 py-2 text-center text-[13px] text-cream">
@@ -62,7 +71,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           Operação e edição estão ocultas. {MODE_META[mode].shareLine}
         </div>
       )}
-      {(!present || mode === "target") && <ModeBanner mode={mode} />}
+      {(!present || mode === "target") && <ModeBanner meeting={meeting} deals={dealOptions} />}
       <AttentionStrip items={attention} />
       {!present && (
         <div className="no-print hidden border-b border-line bg-paper sm:block">

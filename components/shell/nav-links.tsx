@@ -8,26 +8,38 @@ function isActive(path: string, href: string) {
   return href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`);
 }
 
-export function DealPick() {
+/**
+ * `onlyDeal` vem do modo Alvo: a operação que não está na sala nem aparece
+ * como link. Loopert não vê Radio Health e vice-versa.
+ */
+export function DealPick({
+  deals,
+  onlyDeal = null,
+}: {
+  deals: { slug: string; name: string }[];
+  onlyDeal?: string | null;
+}) {
   const path = usePathname();
+  const visible = onlyDeal ? deals.filter((d) => d.slug === onlyDeal) : deals;
+  if (visible.length === 0) return null;
+
   return (
     <div className="deal-pick" role="tablist" aria-label="Operações">
-      <Link
-        href="/deals/loopert"
-        role="tab"
-        aria-selected={isActive(path, "/deals/loopert")}
-        className={isActive(path, "/deals/loopert") ? "is-loopert" : undefined}
-      >
-        Loopert
-      </Link>
-      <Link
-        href="/deals/radio-health"
-        role="tab"
-        aria-selected={isActive(path, "/deals/radio-health")}
-        className={isActive(path, "/deals/radio-health") ? "is-health" : undefined}
-      >
-        Radio Health
-      </Link>
+      {visible.map((deal) => {
+        const href = `/deals/${deal.slug}`;
+        const active = isActive(path, href);
+        return (
+          <Link
+            key={deal.slug}
+            href={href}
+            role="tab"
+            aria-selected={active}
+            className={active ? (deal.slug === "loopert" ? "is-loopert" : "is-health") : undefined}
+          >
+            {deal.name}
+          </Link>
+        );
+      })}
     </div>
   );
 }

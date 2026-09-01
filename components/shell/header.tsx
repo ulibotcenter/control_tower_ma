@@ -1,24 +1,29 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CORTE, PROGRAM_NAME, PROGRAM_SPONSOR } from "@/lib/constants";
-import type { MeetingMode, SessionUser } from "@/lib/types";
+import { lockedDeal, type MeetingState } from "@/lib/meeting";
+import type { SessionUser } from "@/lib/types";
 import { ExportPdfButton } from "@/components/export/export-pdf-button";
-import { ModeSwitch } from "./mode-switch";
+import { ModeSwitch, type DealOption } from "./mode-switch";
 import { DealPick, NavLinks } from "./nav-links";
 import { PresentSwitch } from "./present-switch";
 import { Shortcuts } from "./shortcuts";
 
 export function Header({
   user,
-  mode,
+  meeting,
+  deals,
   inboxCount,
   present = false,
 }: {
   user: SessionUser;
-  mode: MeetingMode;
+  meeting: MeetingState;
+  deals: DealOption[];
   inboxCount: number;
   present?: boolean;
 }) {
+  const mode = meeting.mode;
+  const onlyDeal = lockedDeal(meeting);
   return (
     <header
       className="no-print sticky top-0 z-40 bg-navy text-cream"
@@ -49,7 +54,7 @@ export function Header({
             </span>
           </Link>
 
-          <DealPick />
+          <DealPick deals={deals} onlyDeal={onlyDeal} />
 
           <div className="flex shrink-0 items-center gap-2">
             <span className="hidden max-w-[10rem] truncate text-[12px] text-cream/75 lg:inline">{user.name}</span>
@@ -64,10 +69,10 @@ export function Header({
         <div className="mt-2.5 flex flex-col gap-2 border-t border-white/10 pt-2 sm:flex-row sm:items-center sm:justify-between">
           <NavLinks mode={mode} inboxCount={inboxCount} present={present} />
           <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
-            <Shortcuts present={present} allowTour={mode !== "target"} />
+            <Shortcuts present={present} mode={mode} allowTour={mode !== "target"} />
             <ExportPdfButton present={present} />
             <PresentSwitch on={present} />
-            <ModeSwitch mode={mode} />
+            <ModeSwitch meeting={meeting} deals={deals} />
           </div>
         </div>
       </div>

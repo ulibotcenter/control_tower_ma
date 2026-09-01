@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/app-shell";
 import { DealSwitcher } from "@/components/deal/deal-switcher";
 import { ChecklistTable } from "@/components/deal/checklist-table";
@@ -8,8 +8,9 @@ import { ActionBoard } from "@/components/deal/action-board";
 import { RisksBoard } from "@/components/deal/risks-board";
 import { SemaphoreBadge } from "@/components/ui/semaphore";
 import { WithTerms } from "@/components/ui/with-terms";
-import { getDealBundle, workstreamOf } from "@/lib/data/provider";
-import { getMode } from "@/lib/mode";
+import { getDealBundle, getDealOptions, workstreamOf } from "@/lib/data/provider";
+import { isDealAllowed, lockedDeal } from "@/lib/meeting";
+import { getMeeting } from "@/lib/mode";
 
 export default async function WorkstreamPage({
   params,
@@ -17,7 +18,9 @@ export default async function WorkstreamPage({
   params: Promise<{ slug: string; workstream: string }>;
 }) {
   const { slug, workstream } = await params;
-  const mode = await getMode();
+  const meeting = await getMeeting();
+  if (!isDealAllowed(meeting, slug)) redirect(`/deals/${meeting.targetDeal}`);
+  const mode = meeting.mode;
   const bundle = await getDealBundle(slug, mode);
   if (!bundle) notFound();
   const ws = workstreamOf(bundle, workstream);
@@ -31,7 +34,7 @@ export default async function WorkstreamPage({
   return (
     <AppShell>
       <div className="no-print">
-        <DealSwitcher current={slug} />
+        <DealSwitcher current={slug} deals={getDealOptions()} onlyDeal={lockedDeal(meeting)} />
       </div>
       <p className="no-print text-sm">
         <Link href={`/deals/${slug}`} className="text-muted hover:text-navy">

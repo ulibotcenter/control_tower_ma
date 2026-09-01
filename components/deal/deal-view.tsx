@@ -20,10 +20,14 @@ import { Freshness } from "@/components/ui/freshness";
 export function DealView({
   bundle,
   mode,
+  deals,
+  onlyDeal = null,
   present = false,
 }: {
   bundle: DealBundle;
   mode: MeetingMode;
+  deals: { slug: string; name: string }[];
+  onlyDeal?: string | null;
   present?: boolean;
 }) {
   const { deal } = bundle;
@@ -35,7 +39,7 @@ export function DealView({
   return (
     <article>
       <div className="no-print">
-        <DealSwitcher current={deal.slug} />
+        <DealSwitcher current={deal.slug} deals={deals} onlyDeal={onlyDeal} />
       </div>
       {frozen && (
         <p className="mb-4 stamp text-wait">
