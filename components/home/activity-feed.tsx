@@ -38,10 +38,11 @@ export function ActivityFeed({
           {items.map((item) => (
             <li key={item.id}>
               <Link href={item.href} className="block rounded-sm hover:bg-cream-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
-                  {formatDate(item.at)}
-                  {item.who ? ` · ${item.who}` : ""}
-                  {item.dealName ? ` · ${item.dealName}` : ""}
+                {/* who e dealName costumam ser a mesma operação: não repetir. */}
+                <p className="text-[12px] text-muted">
+                  {[formatDate(item.at), item.who, item.dealName]
+                    .filter((part, i, all) => part && all.indexOf(part) === i)
+                    .join(" · ")}
                 </p>
                 <p className={`mt-0.5 leading-snug text-navy ${compact ? "text-sm" : "text-[15px]"}`}>
                   <span className="text-[#c2410c]">{activityKindLabel(item.kind)}</span>

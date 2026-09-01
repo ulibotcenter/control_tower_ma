@@ -68,8 +68,14 @@ export default async function HomePage() {
         </>
       )}
 
-      {/* As operações são a peça principal da home: uma carta cada, lado a lado. */}
-      <div className="mt-10 grid items-stretch gap-5 lg:grid-cols-2">
+      {/* As operações são a peça principal da home: uma carta cada, lado a lado.
+          Com a reunião travada num alvo sobra uma só — aí ela ocupa a largura
+          inteira, em vez de ficar uma meia carta e um vazio ao lado. */}
+      <div
+        className={`mt-10 grid items-stretch gap-5 ${
+          program.deals.length > 1 ? "lg:grid-cols-2" : "grid-cols-1"
+        }`}
+      >
         {program.deals.map((deal) => (
           <DealCard
             key={deal.id}
