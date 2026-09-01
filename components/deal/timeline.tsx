@@ -12,7 +12,10 @@ function lane(m: Milestone, index: number, items: Milestone[]) {
 
 const LANE = {
   done: { badge: "Concluído", cls: "border-go/40 bg-go/5", bar: "bg-go" },
-  now: { badge: "Estamos aqui", cls: "border-gold bg-navy text-cream", bar: "bg-gold" },
+  // `.paper` mora fora de @layer e ganha das utilities do Tailwind, então o
+  // cartão em curso não pode usar `paper` — o branco dele vencia o bg-navy e
+  // deixava o texto creme ilegível.
+  now: { badge: "Estamos aqui", cls: "border border-gold bg-navy text-cream", bar: "bg-gold" },
   next: { badge: "Próximo", cls: "border-cyan bg-cyan/10", bar: "bg-cyan" },
   later: { badge: "Ainda não", cls: "", bar: "bg-line" },
 };
@@ -54,7 +57,10 @@ export const Timeline = memo(function Timeline({
           const look = LANE[k];
           const current = k === "now";
           return (
-            <li key={m.id} className={`paper relative px-3 py-3 ${look.cls}`}>
+            <li
+              key={m.id}
+              className={`relative px-3 py-3 ${current ? "" : "paper "}${look.cls}`}
+            >
               <span className={`absolute inset-x-3 top-0 h-0.5 ${look.bar}`} aria-hidden />
               <p className={`kicker ${current ? "text-gold-2" : k === "next" ? "text-navy" : ""}`}>
                 {m.window}
