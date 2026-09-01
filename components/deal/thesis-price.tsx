@@ -27,14 +27,14 @@ export function ThesisPrice({
             <li
               key={t.id}
               className={`flex flex-wrap items-baseline gap-3 border-l-2 pl-3 ${
-                t.current ? "border-gold" : "border-line"
+                t.current ? "border-brand" : "border-line"
               }`}
             >
               <span className="font-mono text-[12px] text-muted">{t.date}</span>
               <span className={t.current ? "font-semibold text-navy" : ""}>
                 <WithTerms text={t.label} />
               </span>
-              {t.current && <span className="stamp text-gold">Atual (10/08)</span>}
+              {t.current && <span className="stamp text-brand">Atual (10/08)</span>}
             </li>
           ))}
         </ol>

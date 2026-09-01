@@ -2,21 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { MeetingMode } from "@/lib/types";
+import type { MeetingMode, Semaphore } from "@/lib/types";
 
 function isActive(path: string, href: string) {
   return href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`);
 }
 
 /**
- * `onlyDeal` vem do modo Alvo: a operação que não está na sala nem aparece
- * como link. Loopert não vê Radio Health e vice-versa.
+ * Seletor de operação: instrumento, não dois botões de site. Cada posição
+ * carrega o semáforo da operação, então trocar de deal já informa antes do
+ * clique. `onlyDeal` vem do modo Alvo — a operação que não está na sala nem
+ * aparece como link.
  */
 export function DealPick({
   deals,
   onlyDeal = null,
 }: {
-  deals: { slug: string; name: string }[];
+  deals: { slug: string; name: string; health?: Semaphore }[];
   onlyDeal?: string | null;
 }) {
   const path = usePathname();
@@ -34,8 +36,11 @@ export function DealPick({
             href={href}
             role="tab"
             aria-selected={active}
-            className={active ? (deal.slug === "loopert" ? "is-loopert" : "is-health") : undefined}
+            className={active ? "is-on" : undefined}
           >
+            {deal.health && (
+              <span className={`deal-pick-dot dot-${deal.health}`} aria-hidden />
+            )}
             {deal.name}
           </Link>
         );

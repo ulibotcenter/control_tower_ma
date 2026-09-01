@@ -27,7 +27,7 @@ export function WorkstreamGrid({
           <Link
             key={ws.id}
             href={`/deals/${bundle.deal.slug}/${ws.slug}`}
-            className="paper block p-4 hover:border-gold"
+            className="paper block p-4 transition-none hover:border-brand"
           >
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-semibold text-navy">{ws.name}</h3>

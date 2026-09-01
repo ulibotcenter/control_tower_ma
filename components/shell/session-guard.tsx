@@ -82,14 +82,14 @@ export function SessionGuard() {
   const minutes = Math.max(1, Math.ceil(remain / 60));
 
   return (
-    <div className="no-print fixed inset-x-0 bottom-0 z-[55] border-t border-gold bg-navy px-4 py-3 text-cream shadow-lg sm:bottom-4 sm:inset-x-auto sm:right-4 sm:max-w-sm sm:border">
+    <div className="no-print fixed inset-x-0 bottom-0 z-[55] border-t-2 border-brand bg-navy px-4 py-3 text-cream shadow-lg sm:bottom-4 sm:inset-x-auto sm:right-4 sm:max-w-sm sm:border">
       <p className="text-sm font-medium">
         Sessão inativa. Expira em cerca de {minutes} min.
       </p>
       <p className="mt-1 text-[13px] text-cream/80">
         Toque em continuar para permanecer nesta tela.
       </p>
-      <button type="button" className="btn btn-gold mt-3 min-h-11 w-full sm:w-auto" onClick={stay}>
+      <button type="button" className="btn btn-primary mt-3 min-h-11 w-full sm:w-auto" onClick={stay}>
         Continuar nesta sessão
       </button>
     </div>

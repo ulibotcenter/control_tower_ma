@@ -9,42 +9,71 @@
  * Escala de espaço: 8 / 12 / 16 / 24 / 40. Toda seção respira igual.
  * Raio: 6px em tudo que é superfície. Sem sombra pesada, sem gradiente.
  */
-@theme inline {
-  --color-navy: #14181f;
-  --color-navy-2: #1d232c;
-  --color-navy-3: #2a313b;
-  --color-cream: #faf8f4;
-  --color-cream-2: #f1ede6;
-  --color-paper: #ffffff;
-  --color-ink: #14181f;
-  --color-muted: #5f6672;
-  --color-gold: #e05a24;
-  --color-gold-2: #f2733c;
-  --color-alert: #b42318;
-  --color-go: #0f766e;
-  --color-wait: #b45309;
-  --color-line: #e4ded4;
-  --color-line-2: #cdc5b8;
-  /* Anel de foco: função de acessibilidade, não acento de marca. */
-  --color-focus: #2563eb;
-  --font-sans: var(--font-jakarta);
-  --font-serif: var(--font-jakarta);
-  --font-mono: var(--font-ibm);
-}
-
+/*
+ * Marca da Eleva nesta torre. Os nomes do brief são a fonte da verdade; o
+ * tema do Tailwind abaixo só aponta para eles, para as utilities existentes
+ * continuarem valendo sem renomear classe em quarenta arquivos.
+ *
+ *   brand (#4F46E5)  ação, foco, link, recorte da Sala Eleva
+ *   brand-2 (#0EA5E9) dado, informação, "ao vivo"
+ *   logo (#E05A24)   SÓ o filete de 3px do topo e o estado ativo de deal/modo
+ *   go/wait/alert    só semáforo
+ *
+ * Sem gradiente, sem glass, sem dark mode, sem segunda família tipográfica.
+ */
 :root {
+  --ink: #0f172a;
+  --canvas: #f8fafc;
+  --paper: #ffffff;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --muted: #475569;
+  --brand: #4f46e5;
+  --brand-2: #0ea5e9;
+  --logo: #e05a24;
+  --go: #0f766e;
+  --wait: #b45309;
+  --alert: #b42318;
+
   --radius: 6px;
   --space-1: 0.5rem;
   --space-2: 0.75rem;
   --space-3: 1rem;
   --space-4: 1.5rem;
   --space-5: 2.5rem;
+  --header-h: 3.5rem;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-navy: var(--ink);
+  --color-navy-2: #1e293b;
+  --color-navy-3: #334155;
+  --color-canvas: var(--canvas);
+  --color-cream: var(--canvas);
+  --color-cream-2: #f1f5f9;
+  --color-paper: var(--paper);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
+  /* `gold` é o laranja do logotipo. Mantido só onde marca deal/modo ativo. */
+  --color-gold: var(--logo);
+  --color-gold-2: #ef7a4a;
+  --color-alert: var(--alert);
+  --color-go: var(--go);
+  --color-wait: var(--wait);
+  --color-line: var(--line);
+  --color-line-2: var(--line-strong);
+  --color-focus: var(--brand);
+  --font-sans: var(--font-jakarta);
+  --font-serif: var(--font-jakarta);
+  --font-mono: var(--font-ibm);
 }
 
 html,
 body {
-  background: var(--color-cream);
-  color: var(--color-ink);
+  background: var(--canvas);
+  color: var(--ink);
 }
 
 body {
@@ -57,8 +86,8 @@ body {
 }
 
 ::selection {
-  background: var(--color-gold-2);
-  color: var(--color-navy);
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+  color: var(--ink);
 }
 
 a {
@@ -70,8 +99,8 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-navy);
-  color: var(--color-cream);
+  background: var(--ink);
+  color: var(--canvas);
   font-weight: 600;
   font-size: 0.875rem;
   line-height: 1.25;
@@ -83,38 +112,38 @@ a {
 }
 a.btn,
 a.btn:visited {
-  color: var(--color-cream);
+  color: var(--canvas);
   text-decoration: none;
 }
 .btn:hover:not(:disabled) {
-  background: var(--color-navy-3);
-  color: var(--color-paper);
+  background: #334155;
+  color: var(--paper);
 }
 .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.btn-gold {
-  background: var(--color-gold);
+.btn-primary {
+  background: var(--brand);
   color: #ffffff;
 }
-a.btn-gold,
-a.btn-gold:visited {
-  color: var(--color-navy);
+a.btn-primary,
+a.btn-primary:visited {
+  color: #ffffff;
 }
-.btn-gold:hover:not(:disabled) {
-  background: var(--color-gold-2);
-  color: var(--color-navy);
+.btn-primary:hover:not(:disabled) {
+  background: #4338ca;
+  color: #ffffff;
 }
 
 .brand-bar {
   height: 3px;
-  background: var(--color-gold);
+  background: var(--logo);
 }
 
 /* Masthead de reunião: um acento só, o laranja do deal. */
 .brand-bar.is-single {
-  background: var(--color-gold);
+  background: var(--logo);
 }
 
 .serif {
@@ -127,19 +156,19 @@ a.btn-gold:visited {
   font-size: 0.75rem;
   letter-spacing: 0.02em;
   text-transform: none;
-  color: var(--color-muted);
+  color: var(--muted);
   font-weight: 600;
 }
 
 .bg-navy .kicker,
 .bg-navy-2 .kicker,
 header .kicker {
-  color: var(--color-gold);
+  color: color-mix(in srgb, var(--canvas) 65%, transparent);
 }
 
 .rule {
   height: 1px;
-  background: var(--color-line);
+  background: var(--line);
 }
 
 /*
@@ -149,8 +178,8 @@ header .kicker {
  * `.paper` de fora e declare a borda na mão.
  */
 .paper {
-  background: var(--color-paper);
-  border: 1px solid var(--color-line);
+  background: var(--paper);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
 }
 
@@ -160,8 +189,8 @@ header .kicker {
  * confundir leitura interna com fato formal da operação.
  */
 .eleva-room {
-  border-top: 2px solid var(--color-navy);
-  background: var(--color-cream-2);
+  border-top: 2px solid var(--brand);
+  background: var(--canvas);
   /* Sangra até a borda do <main>, que tem px-4. Margem e padding laterais
      precisam bater com esse 1rem: a mais, nasce rolagem horizontal. */
   margin-left: -1rem;
@@ -175,6 +204,18 @@ header .kicker {
   }
 }
 
+.eleva-room-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--brand) 35%, transparent);
+  border-radius: 3px;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  color: var(--brand);
+}
+
 .dot {
   width: 0.65rem;
   height: 0.65rem;
@@ -184,20 +225,20 @@ header .kicker {
 }
 
 .dot-red {
-  background: var(--color-alert);
-  color: var(--color-alert);
+  background: var(--alert);
+  color: var(--alert);
 }
 .dot-amber {
-  background: var(--color-wait);
-  color: var(--color-wait);
+  background: var(--wait);
+  color: var(--wait);
 }
 .dot-green {
-  background: var(--color-go);
-  color: var(--color-go);
+  background: var(--go);
+  color: var(--go);
 }
 .dot-gray {
-  background: var(--color-line-2);
-  color: var(--color-line-2);
+  background: var(--line-strong);
+  color: var(--line-strong);
 }
 
 .stamp {
@@ -222,9 +263,9 @@ button {
 input,
 select,
 textarea {
-  background: var(--color-paper);
-  border: 1px solid var(--color-line-2);
-  color: var(--color-ink);
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
   border-radius: var(--radius);
   padding: 0.55rem 0.7rem;
   width: 100%;
@@ -233,7 +274,7 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--brand);
   outline-offset: 1px;
 }
 
@@ -242,19 +283,19 @@ label {
   font-size: 0.78rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-muted);
+  color: var(--muted);
   margin-bottom: 0.3rem;
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
 
 header :focus-visible,
 .bg-navy :focus-visible,
 .bg-navy-2 :focus-visible {
-  outline-color: var(--color-cream);
+  outline-color: var(--canvas);
 }
 
 .sr-only {
@@ -287,8 +328,8 @@ header :focus-visible,
   width: max-content;
   max-width: min(18rem, 80vw);
   padding: 0.45rem 0.65rem;
-  background: var(--color-navy);
-  color: var(--color-cream);
+  background: var(--ink);
+  color: var(--canvas);
   font-size: 0.75rem;
   line-height: 1.35;
   font-weight: 400;
@@ -318,7 +359,7 @@ header :focus-visible,
 }
 
 .term-mark:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--brand);
   outline-offset: 3px;
 }
 
@@ -332,8 +373,8 @@ header :focus-visible,
   max-width: min(20rem, 82vw);
   padding: 0.65rem 0.75rem;
   background: #ffffff;
-  color: var(--color-navy);
-  border: 1px solid var(--color-line);
+  color: var(--ink);
+  border: 1px solid var(--line);
   box-shadow: 0 10px 28px rgb(10 20 40 / 14%);
   font-size: 0.8125rem;
   line-height: 1.45;
@@ -350,7 +391,7 @@ header :focus-visible,
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-wait);
+  color: var(--wait);
 }
 
 .term-mark:hover .term-tip,
@@ -365,14 +406,14 @@ a.nav-sec {
   align-items: center;
   height: 2rem;
   padding: 0 0.7rem;
-  color: var(--color-cream-2);
+  color: #f1f5f9;
   text-decoration: none;
   font-size: 0.8125rem;
 }
 
 .nav-sec a:hover,
 a.nav-sec:hover {
-  color: var(--color-gold-2);
+  color: #ef7a4a;
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -382,45 +423,56 @@ a.nav-sec.is-on,
 a.nav-sec.is-on:hover,
 .nav-sec a.is-on:visited,
 a.nav-sec.is-on:visited {
-  background: var(--color-cream);
-  color: var(--color-navy);
+  background: var(--canvas);
+  color: var(--ink);
   font-weight: 650;
 }
 
+/* Instrumento: uma peça, divisórias internas, semáforo por posição. */
 .deal-pick {
   display: inline-flex;
   align-items: stretch;
-  padding: 2px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(10, 20, 40, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .deal-pick a {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-height: 2.25rem;
-  padding: 0 0.95rem;
-  font-size: 0.875rem;
-  font-weight: 600;
+  gap: 0.45rem;
+  min-height: 1.9rem;
+  padding: 0 0.8rem;
+  font-size: 0.8125rem;
+  font-weight: 550;
   letter-spacing: -0.01em;
-  color: var(--color-cream-2);
+  color: color-mix(in srgb, var(--canvas) 72%, transparent);
   text-decoration: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.deal-pick a:first-child {
+  border-left: 0;
 }
 
 .deal-pick a:hover {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.07);
 }
 
-.deal-pick a.is-loopert,
-.deal-pick a.is-loopert:hover,
-.deal-pick a.is-loopert:visited,
-.deal-pick a.is-health,
-.deal-pick a.is-health:hover,
-.deal-pick a.is-health:visited {
-  background: var(--color-gold);
+.deal-pick a.is-on,
+.deal-pick a.is-on:hover,
+.deal-pick a.is-on:visited {
+  background: var(--logo);
   color: #ffffff;
+  font-weight: 650;
+}
+
+.deal-pick-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  flex: none;
 }
 
 .hdr-btn {
@@ -431,7 +483,7 @@ a.nav-sec.is-on:visited {
   padding: 0 0.7rem;
   border: 1px solid rgba(255, 255, 255, 0.22);
   background: transparent;
-  color: var(--color-cream);
+  color: var(--canvas);
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.01em;
@@ -450,8 +502,8 @@ a.nav-sec.is-on:visited {
 }
 
 .hdr-btn.is-on {
-  background: var(--color-gold);
-  border-color: var(--color-gold);
+  background: var(--brand);
+  border-color: var(--brand);
   color: #ffffff;
   font-weight: 650;
 }
@@ -468,7 +520,7 @@ a.nav-sec.is-on:visited {
   padding: 0 0.7rem;
   font-size: 0.75rem;
   letter-spacing: 0.02em;
-  color: rgba(244, 247, 251, 0.82);
+  color: color-mix(in srgb, var(--canvas) 82%, transparent);
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -484,7 +536,7 @@ a.nav-sec.is-on:visited {
 }
 
 .hdr-seg button[data-mode][aria-checked="true"] {
-  background: var(--color-gold);
+  background: var(--logo);
   color: #ffffff;
 }
 
@@ -505,19 +557,19 @@ a.nav-sec.is-on:visited {
   padding: 0 0.5rem;
   font-size: 0.6875rem;
   letter-spacing: 0.03em;
-  color: rgba(244, 247, 251, 0.55);
+  color: color-mix(in srgb, var(--canvas) 55%, transparent);
 }
 
 .hdr-seg.is-quiet button:hover:not(:disabled):not([aria-checked="true"]) {
-  color: rgba(244, 247, 251, 0.85);
+  color: color-mix(in srgb, var(--canvas) 85%, transparent);
   background: rgba(255, 255, 255, 0.05);
 }
 
 .hdr-seg.is-quiet button[data-mode][aria-checked="true"] {
   background: transparent;
-  color: rgba(244, 247, 251, 0.92);
+  color: color-mix(in srgb, var(--canvas) 92%, transparent);
   font-weight: 650;
-  box-shadow: inset 0 -2px 0 var(--color-gold);
+  box-shadow: inset 0 -2px 0 var(--logo);
 }
 
 /* Indicador só para a Eleva, quando o alvo ainda não está na sala. */
@@ -530,7 +582,7 @@ a.nav-sec.is-on:visited {
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.04em;
-  color: rgba(244, 247, 251, 0.78);
+  color: color-mix(in srgb, var(--canvas) 78%, transparent);
   white-space: nowrap;
 }
 
@@ -538,7 +590,7 @@ a.nav-sec.is-on:visited {
   width: 0.4rem;
   height: 0.4rem;
   border-radius: 999px;
-  background: var(--color-gold);
+  background: var(--logo);
 }
 
 html {
@@ -557,8 +609,8 @@ html {
   z-index: 30;
   margin: 0 -1rem 1.75rem;
   padding: 0.4rem 1rem;
-  background: color-mix(in srgb, var(--color-cream) 92%, transparent);
-  border-bottom: 1px solid var(--color-line);
+  background: color-mix(in srgb, var(--canvas) 92%, transparent);
+  border-bottom: 1px solid var(--line);
   backdrop-filter: blur(10px);
 }
 
@@ -581,32 +633,32 @@ html {
   border-radius: var(--radius);
   white-space: nowrap;
   font-size: 0.8125rem;
-  color: var(--color-muted);
+  color: var(--muted);
   text-decoration: none;
 }
 
 .section-nav a:hover {
-  color: var(--color-navy);
-  background: var(--color-cream-2);
+  color: var(--ink);
+  background: #f1f5f9;
 }
 
 .section-nav a.is-active {
-  color: var(--color-ink);
+  color: var(--ink);
   font-weight: 650;
   background: transparent;
   border-radius: 0;
-  box-shadow: inset 0 -2.5px 0 var(--color-gold);
+  box-shadow: inset 0 -2.5px 0 var(--logo);
 }
 
 .section-nav.is-present {
-  background: color-mix(in srgb, var(--color-cream) 96%, transparent);
-  border-bottom-color: var(--color-cream-2);
+  background: color-mix(in srgb, var(--canvas) 96%, transparent);
+  border-bottom-color: #f1f5f9;
 }
 
 .section-nav.is-present a {
   height: 1.75rem;
   font-size: 0.75rem;
-  color: var(--color-muted);
+  color: var(--muted);
 }
 
 /*
@@ -616,8 +668,8 @@ html {
 .timeline {
   display: grid;
   grid-template-columns: 1fr;
-  background: var(--color-paper);
-  border: 1px solid var(--color-line);
+  background: var(--paper);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
 }
@@ -636,7 +688,7 @@ html {
 
 .timeline-step {
   padding: var(--space-2) var(--space-3) var(--space-3);
-  border-top: 1px solid var(--color-line);
+  border-top: 1px solid var(--line);
 }
 
 .timeline-step:first-child {
@@ -646,23 +698,23 @@ html {
 @media (min-width: 640px) {
   .timeline-step {
     border-top: 0;
-    border-left: 1px solid var(--color-line);
+    border-left: 1px solid var(--line);
   }
   .timeline-step:nth-child(odd) {
     border-left: 0;
   }
   .timeline-step:nth-child(n + 3) {
-    border-top: 1px solid var(--color-line);
+    border-top: 1px solid var(--line);
   }
 }
 
 @media (min-width: 1024px) {
   .timeline-step {
     border-top: 0;
-    border-left: 1px solid var(--color-line);
+    border-left: 1px solid var(--line);
   }
   .timeline-step:nth-child(odd) {
-    border-left: 1px solid var(--color-line);
+    border-left: 1px solid var(--line);
   }
   .timeline-step:first-child {
     border-left: 0;
@@ -673,64 +725,99 @@ html {
 }
 
 .timeline-step.is-now {
-  background: var(--color-navy);
-  box-shadow: inset 0 2px 0 var(--color-gold);
+  background: var(--ink);
+  box-shadow: inset 0 2px 0 var(--brand-2);
 }
 
 .timeline-window {
   font-size: 0.6875rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-muted);
+  color: var(--muted);
 }
 
 .timeline-name {
   margin-top: 0.15rem;
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--ink);
 }
 
 .timeline-badge {
   margin-top: 0.1rem;
   font-size: 0.75rem;
-  color: var(--color-muted);
+  color: var(--muted);
 }
 
 .timeline-note {
   margin-top: var(--space-1);
   font-size: 0.8125rem;
   line-height: 1.45;
-  color: var(--color-muted);
+  color: var(--muted);
 }
 
 .timeline-step[data-lane="done"] .timeline-badge {
-  color: var(--color-go);
+  color: var(--go);
 }
 
 /* Um pouco mais claro que o cinza de apoio: esta tela é lida projetada. */
 .timeline-step.is-now .timeline-window,
 .timeline-step.is-now .timeline-note {
-  color: color-mix(in srgb, var(--color-cream) 80%, transparent);
+  color: color-mix(in srgb, var(--canvas) 80%, transparent);
 }
 
 .timeline-step.is-now .timeline-name {
-  color: var(--color-cream);
+  color: var(--canvas);
 }
 
 .timeline-step.is-now .timeline-badge {
-  color: var(--color-gold-2);
+  color: var(--brand-2);
   font-weight: 600;
+}
+
+/* Tabela de dado: alinhamento no topo, zebra suave, cabeçalho sem grito. */
+.data-table {
+  width: 100%;
+  text-align: left;
+  font-size: 0.875rem;
+  border-collapse: collapse;
+}
+
+.data-table thead th {
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.data-table tbody td {
+  padding: 0.6rem 0.75rem 0.6rem 0;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+
+.data-table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--canvas) 60%, transparent);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .deal-card {
   position: relative;
   overflow: hidden;
+  text-decoration: none;
+}
+
+.deal-card:hover {
+  border-color: var(--line-strong);
 }
 
 .deal-card-bar {
   position: absolute;
   inset: 0 auto 0 0;
-  width: 4px;
+  width: 3px;
 }
 
 @media (max-width: 639px) {
@@ -774,29 +861,29 @@ html {
 
 .status-critical,
 .status-late {
-  background: var(--color-alert);
-  color: var(--color-cream);
+  background: var(--alert);
+  color: var(--canvas);
 }
 
 .status-progress {
-  border: 1px solid var(--color-wait);
+  border: 1px solid var(--wait);
   background: #fff;
-  color: var(--color-wait);
+  color: var(--wait);
 }
 
 .status-done {
-  background: var(--color-go);
-  color: var(--color-cream);
+  background: var(--go);
+  color: var(--canvas);
 }
 
 .status-watch {
-  border: 1px solid var(--color-line);
-  background: var(--color-cream-2);
-  color: var(--color-navy);
+  border: 1px solid var(--line);
+  background: #f1f5f9;
+  color: var(--ink);
 }
 
 .skeleton {
-  background: var(--color-line);
+  background: var(--line);
   opacity: 0;
   animation: ct-skel 1.4s ease-in-out 180ms infinite;
 }
@@ -831,7 +918,7 @@ html {
   html,
   body {
     background: #fff !important;
-    color: var(--color-navy) !important;
+    color: var(--ink) !important;
   }
 
   .no-print {

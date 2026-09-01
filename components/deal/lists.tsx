@@ -149,7 +149,7 @@ export function NotesList({ items }: { items: Note[] }) {
       <h3 className="serif mb-3 text-xl text-navy">Notas</h3>
       <ul className="space-y-2">
         {items.map((n) => (
-          <li key={n.id} className="border-l-2 border-gold pl-3 text-sm leading-relaxed">
+          <li key={n.id} className="border-l-2 border-brand pl-3 text-sm leading-relaxed">
             <WithTerms text={n.body} />
           </li>
         ))}

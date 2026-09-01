@@ -42,7 +42,7 @@ export function PackButton({
         type="button"
         disabled={disabled}
         onClick={publish}
-        className="btn btn-gold"
+        className="btn btn-primary"
       >
         Baixar pack (.md)
       </button>

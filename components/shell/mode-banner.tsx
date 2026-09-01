@@ -13,7 +13,7 @@ export function ModeBanner({ meeting }: { meeting: MeetingState }) {
   if (meeting.mode === "operate") {
     return (
       <div className="no-print border-b border-navy-3 bg-navy-2 px-4 py-1.5 text-center text-[12px] text-cream/90 sm:text-[13px]">
-        <strong className="text-gold">Modo Operar.</strong> {meta.shareLine}
+        <strong className="text-brand-2">Modo Operar.</strong> {meta.shareLine}
       </div>
     );
   }
@@ -21,7 +21,7 @@ export function ModeBanner({ meeting }: { meeting: MeetingState }) {
   if (meeting.mode === "advisors") {
     return (
       <div className="no-print bg-navy-2 px-4 py-2 text-center text-[13px] text-cream sm:text-sm">
-        <strong className="text-gold-2">Modo Assessores.</strong> {meta.shareLine} {meta.audience}{" "}
+        <strong className="text-brand-2">Modo Assessores.</strong> {meta.shareLine} {meta.audience}{" "}
         podem ver o que está na tela.
       </div>
     );

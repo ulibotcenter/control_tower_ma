@@ -28,32 +28,24 @@ export default async function LoginPage({
     <div className="min-h-screen bg-navy text-cream">
       <LoginFlash kind={flash} />
       <div className="brand-bar" aria-hidden />
-      <div className="mx-auto flex min-h-screen max-w-5xl items-center px-4 py-12">
-        <div className="grid w-full items-center gap-10 lg:grid-cols-2">
-          <div>
-            <Image
-              src="/eleva-logo.png"
-              alt="Eleva Projects"
-              width={220}
-              height={53}
-              priority
-              className="h-10 w-auto"
-            />
-            <p className="mt-8 text-[13px] text-cream/60">tower.elevaprojects.com</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Control Tower
-              <span className="mt-1 block text-xl text-gold">
-                {PROGRAM_NAME} · {PROGRAM_SPONSOR}
-              </span>
-            </h1>
-            <p className="mt-4 max-w-md text-sm leading-relaxed text-cream/80">
-              {supabaseAuth
-                ? "Acesso individual. Só quem tem conta entra. Sem cadastro nesta tela."
-                : "Torre de controle do programa de M&A. Login só da Eleva. A tela é compartilhada em reunião — AD+R, Pacta, M12C e os alvos não têm conta."}
-            </p>
-          </div>
+      <div className="mx-auto flex min-h-screen w-full max-w-[26rem] flex-col justify-center px-4 py-12">
+        <div className="mb-8">
+          <Image
+            src="/eleva-logo.png"
+            alt="Eleva Projects"
+            width={220}
+            height={53}
+            priority
+            className="h-9 w-auto"
+          />
+          <p className="mt-6 text-[15px] leading-relaxed text-cream/75">
+            {supabaseAuth
+              ? `${PROGRAM_NAME} · ${PROGRAM_SPONSOR}. Acesso individual — só entra quem tem conta.`
+              : `${PROGRAM_NAME} · ${PROGRAM_SPONSOR}. Acesso da Eleva.`}
+          </p>
+        </div>
 
-          <div className="paper p-6 text-ink sm:p-8">
+        <div className="paper p-6 text-ink sm:p-7">
             {!configured ? (
               <>
                 <p className="kicker">Configuração</p>
@@ -123,7 +115,7 @@ export default async function LoginPage({
                       : "E-mail ou senha incorretos."}
                 </p>
               )}
-              <button type="submit" className="btn btn-gold w-full">
+              <button type="submit" className="btn btn-primary w-full">
                 Entrar
               </button>
             </form>
@@ -135,8 +127,7 @@ export default async function LoginPage({
               </p>
             )}
               </>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>

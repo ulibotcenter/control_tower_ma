@@ -63,8 +63,11 @@ export function DealView({
               {target ? "Operação" : `Deal ${deal.priority}`} · {deal.city}
               {deal.since ? ` · desde ${deal.since}` : ""}
             </p>
-            <h1 className="serif mt-1 text-4xl text-navy sm:text-5xl">{deal.name}</h1>
-            <p className="mt-1 text-sm text-muted">
+            {/* Silêncio tipográfico: um H1 de memo, não manchete de site. */}
+            <h1 className="serif mt-1 text-[28px] leading-tight text-navy sm:text-[32px]">
+              {deal.name}
+            </h1>
+            <p className="mt-1 text-[13px] text-muted">
               {deal.legalName} · {deal.cnpj}
             </p>
           </div>
@@ -100,7 +103,7 @@ export function DealView({
           </div>
         </dl>
 
-        <p className="mt-6 max-w-3xl text-lg leading-relaxed">
+        <p className="mt-5 max-w-3xl text-[16px] leading-relaxed">
           <WithTerms text={target ? deal.headlineTarget : deal.headline} />
         </p>
         {chrome.showProductLine && deal.product && (
@@ -185,10 +188,13 @@ export function DealView({
 
       {showElevaRoom && (
         <section id="tese" className="eleva-room mb-4">
-          <h2 className="serif text-2xl text-navy">Sala da Eleva</h2>
-          <p className="mt-1 max-w-2xl text-sm text-muted">
-            Leitura interna: tese, preço, quadro societário e notas. Não é fato formal da
-            operação e não vai para a tela de reunião com o alvo.
+          <p className="eleva-room-label">Sala Eleva</p>
+          <h2 className="serif mt-1 text-[22px] leading-tight text-navy">
+            Leitura interna
+          </h2>
+          <p className="mt-1 max-w-2xl text-[13px] text-muted">
+            Tese, preço, quadro societário, pessoas e notas. Não é fato formal da operação e não
+            vai para a tela de reunião.
           </p>
 
           {showThesis && (

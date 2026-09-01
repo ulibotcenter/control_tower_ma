@@ -33,19 +33,19 @@ export function ChecklistTable({ items }: { items: ChecklistItem[] }) {
         ))}
       </ul>
       <div className="hidden overflow-x-auto lg:block">
-        <table className="w-full text-left text-sm">
+        <table className="data-table">
           <thead>
-            <tr className="border-b border-line text-[11px] uppercase tracking-wider text-muted">
-              <th className="py-2 pr-3 font-medium">Item</th>
-              <th className="py-2 pr-3 font-medium">Frente</th>
-              <th className="py-2 pr-3 font-medium">Status</th>
-              <th className="py-2 font-medium">Drive</th>
+            <tr>
+              <th>Item</th>
+              <th>Frente</th>
+              <th>Status</th>
+              <th>Drive</th>
             </tr>
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id} className="border-b border-line/70 align-top">
-                <td className="py-2.5 pr-3">
+              <tr key={item.id}>
+                <td>
                   <WithTerms text={item.title} />
                   {item.note && (
                     <p className="mt-0.5 text-[12px] text-muted">
@@ -53,11 +53,11 @@ export function ChecklistTable({ items }: { items: ChecklistItem[] }) {
                     </p>
                   )}
                 </td>
-                <td className="py-2.5 pr-3 text-muted">{workstreamLabel(item.workstreamSlug)}</td>
-                <td className="py-2.5 pr-3">
+                <td className="text-muted">{workstreamLabel(item.workstreamSlug)}</td>
+                <td>
                   <Status status={item.status} />
                 </td>
-                <td className="py-2.5">
+                <td>
                   {item.driveUrl ? (
                     <DriveLink href={item.driveUrl}>Abrir</DriveLink>
                   ) : (

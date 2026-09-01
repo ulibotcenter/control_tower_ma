@@ -5,11 +5,17 @@ import { useRouter } from "next/navigation";
 import { MODE_META } from "@/lib/mode-meta";
 import { TARGET_EXIT_PHRASE, type MeetingState } from "@/lib/meeting";
 import { toast } from "@/lib/toast";
-import type { MeetingMode } from "@/lib/types";
+import type { MeetingMode, Semaphore } from "@/lib/types";
 
 const OPTIONS: MeetingMode[] = ["operate", "advisors", "target"];
 
-export type DealOption = { slug: string; name: string; priority: number; phaseLabel: string };
+export type DealOption = {
+  slug: string;
+  name: string;
+  priority: number;
+  phaseLabel: string;
+  health: Semaphore;
+};
 
 /**
  * `quiet` é ligado quando o alvo pode ler a tela: o seletor encolhe, perde o

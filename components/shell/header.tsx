@@ -9,6 +9,17 @@ import { DealPick, NavLinks } from "./nav-links";
 import { PresentSwitch } from "./present-switch";
 import { Shortcuts } from "./shortcuts";
 
+/**
+ * Uma barra só, 56px, tinta #0F172A, filete do logotipo no topo.
+ *
+ *   esquerda  marca e — fora do Alvo — o nome do programa em corpo miúdo
+ *   centro    as operações como instrumento; travado no Alvo, vira o nome
+ *             da operação e a fase, sem nada para clicar
+ *   direita   modo, apresentação e saída
+ *
+ * A navegação de gestão (bandeja, decisões, pack, glossário) é uma faixa
+ * fina abaixo, e existe só quando a Eleva está operando.
+ */
 export function Header({
   user,
   meeting,
@@ -25,13 +36,8 @@ export function Header({
   const mode = meeting.mode;
   const onlyDeal = lockedDeal(meeting);
   const locked = onlyDeal ? (deals.find((d) => d.slug === onlyDeal) ?? null) : null;
-
-  // Alvo com a tela projetada: o cabeçalho de operação inteiro sai de cena.
-  // Nome do produto, nome do programa, corte, bandeja, atalhos e exportação
-  // são vocabulário interno — nada disso pertence a uma sala de reunião.
-  if (mode === "target" && present) {
-    return <MeetingMasthead deal={locked} meeting={meeting} deals={deals} />;
-  }
+  const projecting = mode === "target" && present;
+  const showWorkNav = mode !== "target" && !present;
 
   return (
     <header
@@ -39,94 +45,9 @@ export function Header({
       style={{ paddingLeft: "env(safe-area-inset-left)", paddingRight: "env(safe-area-inset-right)" }}
     >
       <div className="brand-bar" aria-hidden />
-      <div className="mx-auto max-w-6xl px-3 py-2.5 md:px-4 md:py-3">
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <Link href="/" className="flex min-w-0 items-center gap-3">
-            <Image
-              src="/eleva-logo.png"
-              alt="Eleva Projects"
-              width={200}
-              height={48}
-              priority
-              className="h-7 w-auto sm:h-8"
-            />
-            {/* Nome do produto, do programa e do corte são vocabulário nosso.
-                No Alvo o cabeçalho fica só com a marca — o chip diz o resto. */}
-            {mode !== "target" && (
-              <>
-                <span className="hidden h-7 w-px bg-white/20 md:block" aria-hidden />
-                <span className="min-w-0 leading-tight">
-                  <span className="block text-[11px] font-medium tracking-tight text-cream/55">
-                    Control Tower
-                  </span>
-                  <span className="block truncate text-[14px] font-semibold tracking-tight text-cream sm:text-[15px]">
-                    {PROGRAM_NAME}
-                    <span className="text-gold"> · {PROGRAM_SPONSOR}</span>
-                    <span className="ml-2 hidden font-normal text-cream/50 sm:inline">
-                      corte {CORTE}
-                    </span>
-                  </span>
-                </span>
-              </>
-            )}
-          </Link>
 
-          <DealPick deals={deals} onlyDeal={onlyDeal} />
-
-          <div className="flex shrink-0 items-center gap-2">
-            {mode === "target" && (
-              <span className="mode-chip">
-                <span className="mode-chip-dot" aria-hidden />
-                Visão formal{locked ? ` · ${locked.name}` : ""}
-              </span>
-            )}
-            <span className="hidden max-w-[10rem] truncate text-[12px] text-cream/75 lg:inline">{user.name}</span>
-            <form action="/api/auth/logout" method="post">
-              <button type="submit" className="hdr-btn" title="Encerrar a sessão">
-                Sair
-              </button>
-            </form>
-          </div>
-        </div>
-
-        <div className="mt-2.5 flex flex-col gap-2 border-t border-white/10 pt-2 sm:flex-row sm:items-center sm:justify-between">
-          <NavLinks mode={mode} inboxCount={inboxCount} present={present} />
-          <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
-            <Shortcuts present={present} mode={mode} allowTour={mode !== "target"} />
-            {/* Exportar carimba nome de programa e corte no PDF e no título da
-                aba. Não fica ao alcance de um clique com o alvo na sala. */}
-            {mode !== "target" && <ExportPdfButton present={present} />}
-            <PresentSwitch on={present} quiet={mode === "target"} />
-            <ModeSwitch meeting={meeting} deals={deals} quiet={mode === "target"} />
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-/**
- * Cabeçalho de sala de reunião: logo da Eleva, nome da operação e a fase em
- * que ela está. Só isso. Os controles de modo continuam à direita, discretos,
- * porque a Eleva precisa conseguir sair quando o alvo deixar a sala.
- */
-function MeetingMasthead({
-  deal,
-  meeting,
-  deals,
-}: {
-  deal: DealOption | null;
-  meeting: MeetingState;
-  deals: DealOption[];
-}) {
-  return (
-    <header
-      className="no-print sticky top-0 z-40 bg-navy text-cream"
-      style={{ paddingLeft: "env(safe-area-inset-left)", paddingRight: "env(safe-area-inset-right)" }}
-    >
-      <div className="brand-bar is-single" aria-hidden />
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5">
-        <div className="flex min-w-0 items-center gap-3 md:gap-4">
+      <div className="mx-auto flex min-h-14 max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2">
+        <Link href="/" className="flex min-w-0 items-center gap-3" aria-label="Eleva Projects">
           <Image
             src="/eleva-logo.png"
             alt="Eleva Projects"
@@ -135,27 +56,74 @@ function MeetingMasthead({
             priority
             className="h-6 w-auto sm:h-7"
           />
-          {deal && (
+          {/* Nome do produto e do programa são vocabulário nosso: fora do Alvo. */}
+          {mode !== "target" && (
             <>
-              <span className="h-6 w-px shrink-0 bg-white/15" aria-hidden />
-              <span className="flex min-w-0 flex-wrap items-baseline gap-x-3">
-                <span className="truncate text-[16px] font-semibold tracking-tight text-cream sm:text-[17px]">
-                  {deal.name}
-                </span>
-                {deal.phaseLabel && (
-                  <span className="truncate text-[12px] font-normal text-cream/55 sm:text-[13px]">
-                    {deal.phaseLabel}
-                  </span>
-                )}
+              <span className="hidden h-6 w-px bg-white/15 md:block" aria-hidden />
+              <span className="hidden min-w-0 truncate text-[12px] text-cream/60 md:block">
+                {PROGRAM_NAME} · {PROGRAM_SPONSOR}
+                <span className="hidden lg:inline"> · corte {CORTE}</span>
               </span>
             </>
           )}
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <PresentSwitch on quiet />
-          <ModeSwitch meeting={meeting} deals={deals} quiet />
+        </Link>
+
+        {locked ? (
+          <span className="flex min-w-0 basis-full flex-wrap items-baseline gap-x-3 sm:basis-auto sm:flex-1">
+            <span className="truncate text-[16px] font-semibold tracking-tight text-cream sm:text-[17px]">
+              {locked.name}
+            </span>
+            {locked.phaseLabel && (
+              <span className="truncate text-[12px] text-cream/55 sm:text-[13px]">
+                {locked.phaseLabel}
+              </span>
+            )}
+          </span>
+        ) : (
+          <div className="flex min-w-0 basis-full justify-start sm:basis-auto sm:flex-1 md:justify-center">
+            <DealPick deals={deals} onlyDeal={onlyDeal} />
+          </div>
+        )}
+
+        <div className="flex flex-1 flex-wrap items-center justify-end gap-1.5 sm:flex-none">
+          {mode === "target" && !present && (
+            <span className="mode-chip">
+              <span className="mode-chip-dot" aria-hidden />
+              Visão formal{locked ? ` · ${locked.name}` : ""}
+            </span>
+          )}
+          {!projecting && (
+            <>
+              <Shortcuts present={present} mode={mode} allowTour={mode !== "target"} />
+              {/* Exportar carimba nome de programa e corte no PDF e no título
+                  da aba. Não fica ao alcance de um clique com o alvo na sala. */}
+              {mode !== "target" && <ExportPdfButton present={present} />}
+            </>
+          )}
+          <PresentSwitch on={present} quiet={mode === "target"} />
+          <ModeSwitch meeting={meeting} deals={deals} quiet={mode === "target"} />
+          {!projecting && (
+            <>
+              <span className="hidden max-w-[9rem] truncate text-[12px] text-cream/60 xl:inline">
+                {user.name}
+              </span>
+              <form action="/api/auth/logout" method="post">
+                <button type="submit" className="hdr-btn" title="Encerrar a sessão">
+                  Sair
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
+
+      {showWorkNav && (
+        <div className="border-t border-white/10">
+          <div className="mx-auto max-w-6xl px-4">
+            <NavLinks mode={mode} inboxCount={inboxCount} present={present} />
+          </div>
+        </div>
+      )}
     </header>
   );
 }

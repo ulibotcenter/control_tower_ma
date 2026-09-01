@@ -45,6 +45,6 @@ export function ToastHost() {
 
 function toneCls(tone: ToastTone) {
   if (tone === "err") return "bg-alert text-cream";
-  if (tone === "warn") return "bg-navy text-cream border border-gold";
+  if (tone === "warn") return "bg-navy text-cream border border-brand";
   return "bg-navy text-cream";
 }

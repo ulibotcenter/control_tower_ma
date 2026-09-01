@@ -3,18 +3,16 @@ import { getSessionPayload } from "@/lib/auth";
 import { lockedDeal } from "@/lib/meeting";
 import { getPresent } from "@/lib/present";
 import { unclassifiedCount } from "@/lib/data/store";
-import { getAttentionItems, getDealOptions } from "@/lib/data/provider";
+import { getDealOptions } from "@/lib/data/provider";
 import { canSeeInbox } from "@/lib/visibility";
 import { MODE_META } from "@/lib/mode-meta";
 import { isOnboardedCookie, ONBOARD_COOKIE } from "@/lib/onboarding";
 import { redirect } from "next/navigation";
 import { Header } from "./header";
 import { ModeBanner } from "./mode-banner";
-import { AttentionStrip } from "./attention-strip";
 import { PrintMasthead } from "./print-masthead";
 import { Onboarding } from "./onboarding";
 import { SessionGuard } from "./session-guard";
-import { SemaphoreLegend } from "../ui/legend";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await getSessionPayload();
@@ -31,10 +29,6 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       console.error("[shell] unclassifiedCount falhou", err);
     }
   }
-  // O bloco Atenção é war-room: "riscos críticos", "ações atrasadas", tarja
-  // vermelha. Não entra em sala com o alvo — e o modo Alvo está a um clique de
-  // ser projetado, então sai do modo inteiro, não só da apresentação.
-  const attention = mode === "target" ? [] : getAttentionItems(mode, { onlyDeal });
   // Recortado no servidor: o nome da outra operação não pode nem viajar no
   // payload da página que está sendo projetada para o alvo.
   const dealOptions = getDealOptions({ onlyDeal });
@@ -57,7 +51,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     >
       <a
         href="#conteudo"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:bg-gold focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-navy"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:bg-brand focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
       >
         Ir para o conteúdo
       </a>
@@ -72,21 +66,18 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       {mode !== "target" && <Onboarding openOnMount={showTour} />}
       {present && mode !== "target" && (
         <div className="no-print bg-navy-2 px-4 py-2 text-center text-[13px] text-cream">
-          <strong className="text-gold-2">Modo apresentação · {MODE_META[mode].label}.</strong>{" "}
+          <strong className="text-brand-2">Modo apresentação · {MODE_META[mode].label}.</strong>{" "}
           Operação e edição estão ocultas. {MODE_META[mode].shareLine}
         </div>
       )}
-      {/* No modo Alvo o aviso vira o chip discreto do header (ver Header). */}
-      {!present && mode !== "target" && <ModeBanner meeting={meeting} />}
-      <AttentionStrip items={attention} />
-      {/* A legenda é vocabulário de war-room ("Bloqueia o deal"). Fora do Alvo. */}
-      {!present && mode !== "target" && (
-        <div className="no-print hidden border-b border-line bg-paper sm:block">
-          <div className="mx-auto max-w-6xl px-4 py-2">
-            <SemaphoreLegend compact />
-          </div>
-        </div>
-      )}
+      {/*
+       * Uma faixa só abaixo do cabeçalho, e só quando ela informa algo que o
+       * cromo já não diz. Em Operar o próprio seletor mostra o modo, então o
+       * aviso fica para Assessores, onde importa quem está na sala. No Alvo é
+       * o chip discreto do cabeçalho. A legenda do semáforo desceu para o
+       * rodapé do trilho da home, ao lado dos pontos que ela explica.
+       */}
+      {!present && mode === "advisors" && <ModeBanner meeting={meeting} />}
       <main
         id="conteudo"
         className="mx-auto max-w-6xl px-4 py-6 md:py-8"

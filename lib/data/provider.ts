@@ -95,6 +95,7 @@ export function getDealOptions(scope?: Scope) {
       name: d.name,
       priority: d.priority,
       phaseLabel: d.phaseLabel,
+      health: d.health,
     }));
 }
 

@@ -24,13 +24,11 @@ const ITEMS = [
 export function SemaphoreLegend({ compact = false }: { compact?: boolean }) {
   return (
     <div
-      className={`flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px] text-muted ${compact ? "" : "border-t border-line pt-3"}`}
+      className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-muted ${compact ? "" : "border-t border-line pt-3"}`}
       role="group"
       aria-label="Legenda do semáforo"
     >
-      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#c2410c]">
-        Semáforo
-      </span>
+      <span className="w-full text-[13px] font-semibold tracking-tight text-navy">Semáforo</span>
       {ITEMS.map((item) => (
         <span key={item.tone} className="hint-wrap relative inline-flex items-center gap-1.5" tabIndex={0}>
           <span className={`dot dot-${item.tone}`} aria-hidden />
