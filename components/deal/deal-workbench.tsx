@@ -55,8 +55,7 @@ export function DealWorkbench({
         </div>
       )}
 
-      <section id="riscos" className="mb-10">
-        <p className="kicker">{target ? "Pontos em aberto" : "O que trava"}</p>
+      <section id="riscos" className="mb-14">
         <h2 className="serif mb-1 text-2xl text-navy">
           {target ? "Pendências e pontos de atenção" : present ? "Riscos críticos" : "Riscos e issues"}
         </h2>
@@ -73,8 +72,7 @@ export function DealWorkbench({
         </div>
       </section>
 
-      <section id="acoes" className="mb-10">
-        <p className="kicker">Próximos passos</p>
+      <section id="acoes" className="mb-14">
         <h2 className="serif mb-1 text-2xl text-navy">Próximas ações</h2>
         <Freshness />
         {!present && (
@@ -88,8 +86,7 @@ export function DealWorkbench({
       </section>
 
       {showDocs && (
-        <section id="docs" className="mb-10">
-          <p className="kicker">Data room</p>
+        <section id="docs" className="mb-14">
           <h2 className="serif mb-1 text-2xl text-navy">Documentos-chave</h2>
           <Freshness trust="review" />
           <p className="mb-4 mt-2 text-sm text-muted">

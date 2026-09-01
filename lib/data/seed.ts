@@ -66,11 +66,11 @@ export const deals: Deal[] = [
     headline:
       "A operação está no fim da due diligence e no começo da estruturação. Não há LOI e não há SPA. Sem anuência da TARGA o deal é nulo.",
     headlineTarget:
-      "A operação está no fim da revisão de documentos e no começo da estruturação. Há pendências formais do alvo listadas no checklist.",
+      "A operação está no fim da revisão de documentos e no começo da estruturação. Há pendências formais listadas nos documentos pedidos.",
     health: "red",
     healthReason: "TARGA, preço suspenso e municipal vencida bloqueiam o avanço para LOI.",
     nextMilestone: "Tese + envelope de preço para a Pacta estruturar",
-    nextMilestoneTarget: "Pendências formais do checklist e certidões vigentes",
+    nextMilestoneTarget: "Pendências formais e certidões vigentes",
     driveFolderId: DRIVE_FOLDERS.loopert.id,
     driveFolderLabel: "Doctos Loopert",
   },
@@ -89,7 +89,7 @@ export const deals: Deal[] = [
     headline:
       "Em análise. Documentos parciais. Loopert primeiro. NDA Eleva × HealthData assinado — a ADR não é parte.",
     headlineTarget:
-      "Operação em avaliação, sem andamento neste momento. Documentos parciais já pedidos constam na pasta do alvo.",
+      "Operação em avaliação, sem andamento neste momento. Documentos parciais já pedidos constam na pasta da operação.",
     health: "amber",
     healthReason: "Em análise, sem andamento ativo. Não é DD no mesmo ponto da Loopert.",
     nextMilestone: "Retomar só depois de Loopert",
@@ -123,7 +123,7 @@ export const workstreams: Workstream[] = [
     health: "amber",
     summary:
       "DRE 2025 com prejuízo e PL negativo. Fluxo 2025 não fecha com a DRE. Mútuo TARGA R$ 2M no passivo. 14 itens declarados inexistentes.",
-    summaryTarget: "Revisão financeira em curso. Há itens declarados inexistentes pelo alvo e reconciliações em aberto.",
+    summaryTarget: "Revisão financeira em curso. Há itens declarados inexistentes e reconciliações em aberto.",
     visibility: "target",
     sensitivities: [],
   },

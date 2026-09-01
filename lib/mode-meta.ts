@@ -24,6 +24,21 @@ export const TARGET_COPY = {
   documentsKicker: "Documentos",
   documentsTitle: "Pendências documentais",
   metricsKicker: "Números formalizados",
+  metricsEmpty: "Nenhum número formalizado até aqui. Os que faltam estão a confirmar.",
+  /**
+   * Rótulos do bloco "situação em 5 segundos" e da navegação de seções.
+   * São neutros e servem aos três modos, mas moram aqui porque o alvo os lê.
+   */
+  phaseLabel: "Fase",
+  healthLabel: "Situação",
+  nextMilestoneLabel: "Próximo marco",
+  navOverview: "Situação",
+  navDocuments: "Documentos pedidos",
+  navRisks: "Pontos em aberto",
+  navActions: "Ações",
+  navFiles: "Arquivos",
+  navWorkstreams: "Frentes",
+  navMetrics: "Indicadores",
   criticalHint: "Pontos que precisam ser resolvidos para a operação avançar.",
   criticalEmpty: "Nenhum ponto crítico em aberto.",
   issuesHint: "Pontos em tratamento. Isoladamente não travam a operação.",

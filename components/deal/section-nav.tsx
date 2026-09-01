@@ -2,29 +2,34 @@
 
 import { useEffect, useState } from "react";
 import { Term } from "@/components/ui/term";
+import { TARGET_COPY } from "@/lib/mode-meta";
+import type { MeetingMode } from "@/lib/types";
 
+/** A ordem aqui é a ordem da página. Mexeu numa, mexa na outra. */
 const ITEMS = [
-  { id: "visao", label: "Visão" },
-  { id: "tese", label: "Tese e preço" },
-  { id: "checklist", label: "Checklist" },
-  { id: "workstreams", label: "Workstreams" },
-  { id: "riscos", label: "Riscos" },
-  { id: "acoes", label: "Ações" },
-  { id: "docs", label: "Documentos" },
-  { id: "indicadores", label: "Indicadores" },
+  { id: "visao", label: "Visão", target: TARGET_COPY.navOverview },
+  { id: "checklist", label: "Checklist", target: TARGET_COPY.navDocuments },
+  { id: "riscos", label: "Riscos", target: TARGET_COPY.navRisks },
+  { id: "acoes", label: "Ações", target: TARGET_COPY.navActions },
+  { id: "docs", label: "Documentos", target: TARGET_COPY.navFiles },
+  { id: "workstreams", label: "Workstreams", target: TARGET_COPY.navWorkstreams },
+  { id: "indicadores", label: "Indicadores", target: TARGET_COPY.navMetrics },
+  { id: "tese", label: "Sala da Eleva", target: null },
 ];
 
 export function SectionNav({
+  mode,
   hideThesis,
-  hasThesis,
   present = false,
 }: {
+  mode: MeetingMode;
   hideThesis?: boolean;
-  hasThesis?: boolean;
   present?: boolean;
 }) {
+  const target = mode === "target";
   const items = ITEMS.filter((i) => {
-    if (i.id === "tese" && (hideThesis || hasThesis === false)) return false;
+    // A sala da Eleva nunca entra na navegação do alvo.
+    if (i.id === "tese" && (hideThesis || target)) return false;
     if (present && ["checklist", "workstreams", "docs", "indicadores"].includes(i.id)) return false;
     return true;
   });
@@ -63,7 +68,9 @@ export function SectionNav({
               aria-current={active === item.id ? "location" : undefined}
               onClick={() => setActive(item.id)}
             >
-              {item.id === "workstreams" ? (
+              {target ? (
+                (item.target ?? item.label)
+              ) : item.id === "workstreams" ? (
                 <Term id="workstream" interactive={false}>
                   Workstreams
                 </Term>

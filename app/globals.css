@@ -118,9 +118,34 @@ header .kicker {
   background: linear-gradient(90deg, var(--color-gold), transparent);
 }
 
+/*
+ * Atenção: `.paper` mora fora de @layer e por isso ganha das utilities do
+ * Tailwind na cascata. Não combine `.paper` com `bg-*` no mesmo elemento —
+ * o branco daqui vence e o texto some. Precisa de outro fundo? Deixe o
+ * `.paper` de fora e declare a borda na mão.
+ */
 .paper {
   background: var(--color-paper);
   border: 1px solid var(--color-line);
+}
+
+/*
+ * "Sala da Eleva": tese, preço, quadro societário, pessoas e notas internas.
+ * Mesma paleta, só separada do resto por uma faixa e um recuo, para ninguém
+ * confundir leitura interna com fato formal da operação.
+ */
+.eleva-room {
+  border-top: 2px solid var(--color-navy);
+  background: var(--color-cream-2);
+  padding: 1.75rem 1.25rem 0.5rem;
+  margin-left: -1.25rem;
+  margin-right: -1.25rem;
+}
+
+@media (min-width: 640px) {
+  .eleva-room {
+    padding: 2rem 1.75rem 0.75rem;
+  }
 }
 
 .dot {

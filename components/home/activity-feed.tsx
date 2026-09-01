@@ -16,10 +16,10 @@ export function ActivityFeed({
   compact?: boolean;
 }) {
   const target = mode === "target";
+  // Registro, não manchete: fica no rodapé da home, sem carta em volta.
   return (
-    <section className="paper flex h-full flex-col p-5">
-      <p className="kicker">{target ? TARGET_COPY.activityKicker : "Desde a última visita"}</p>
-      <h2 className="serif mt-1 text-2xl text-navy">
+    <section className="border-t border-line pt-6">
+      <h2 className="text-lg font-semibold tracking-tight text-navy">
         {target ? TARGET_COPY.activityTitle : "Atividade recente"}
       </h2>
       <p className="mt-1 text-[13px] text-muted">
@@ -34,7 +34,7 @@ export function ActivityFeed({
             : "Nada novo neste recorte. Quando o board decidir ou um arquivo entrar na bandeja, o registro aparece aqui."}
         </p>
       ) : (
-        <ol className="mt-4 space-y-3">
+        <ol className="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
           {items.map((item) => (
             <li key={item.id}>
               <Link href={item.href} className="block rounded-sm hover:bg-cream-2">

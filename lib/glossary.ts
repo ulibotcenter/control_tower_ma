@@ -74,7 +74,7 @@ export const GLOSSARY_LIST: GlossaryEntry[] = [
   {
     id: "dd",
     term: "DD",
-    def: "Due diligence — revisão de documentos, números, contratos e riscos do alvo antes de assinar.",
+    def: "Due diligence — revisão de documentos, números, contratos e riscos da empresa antes de assinar.",
     category: "ma",
     aliases: ["DD", "due diligence", "Due diligence", "Due Diligence"],
   },
@@ -139,7 +139,7 @@ export const GLOSSARY_LIST: GlossaryEntry[] = [
   {
     id: "walkaway",
     term: "Walkaway",
-    def: "Ponto em que a Eleva recomenda não seguir. Frase interna — não usar na frente do alvo.",
+    def: "Ponto em que a Eleva recomenda não seguir. Leitura interna — não é posição oficial e não vai para a mesa.",
     category: "ma",
     audience: "operate",
   },

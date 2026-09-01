@@ -1,7 +1,6 @@
 import { AppShell } from "@/components/shell/app-shell";
 import { BoardCard } from "@/components/home/board-card";
 import { DealCard } from "@/components/home/deal-card";
-import { ProgramSnapshot } from "@/components/home/program-snapshot";
 import { Term } from "@/components/ui/term";
 import { WithTerms } from "@/components/ui/with-terms";
 import { folderUrl, DRIVE_FOLDERS } from "@/lib/constants";
@@ -69,16 +68,8 @@ export default async function HomePage() {
         </>
       )}
 
-      <div className="mt-8">
-        <ProgramSnapshot deals={program.deals} mode={mode} />
-      </div>
-
-      <div className="mt-6 grid items-stretch gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(16rem,0.85fr)]">
-        <BoardCard card={program.board} mode={mode} />
-        <ActivityFeed items={activity} mode={mode} compact={present} />
-      </div>
-
-      <div className="mt-6 grid items-stretch gap-5 lg:grid-cols-2">
+      {/* As operações são a peça principal da home: uma carta cada, lado a lado. */}
+      <div className="mt-10 grid items-stretch gap-5 lg:grid-cols-2">
         {program.deals.map((deal) => (
           <DealCard
             key={deal.id}
@@ -90,9 +81,17 @@ export default async function HomePage() {
         ))}
       </div>
 
+      <div className="mt-12">
+        <BoardCard card={program.board} mode={mode} />
+      </div>
+
+      <div className="mt-12">
+        <ActivityFeed items={activity} mode={mode} compact={present} />
+      </div>
+
       {chrome.showOperateAside && (
-        <aside className="no-print mt-10 paper p-5 text-sm leading-relaxed">
-          <p className="kicker">Operação da torre</p>
+        <aside className="no-print mt-12 paper p-5 text-sm leading-relaxed">
+          <h2 className="text-[15px] font-semibold text-navy">Operação da torre</h2>
           <ul className="mt-3 space-y-1.5">
             <li>
               Drive:{" "}

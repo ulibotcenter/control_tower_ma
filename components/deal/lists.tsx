@@ -1,4 +1,5 @@
-import type { CapRow, DriveDocument, Metric, Note } from "@/lib/types";
+import type { CapRow, DriveDocument, MeetingMode, Metric, Note } from "@/lib/types";
+import { TARGET_COPY } from "@/lib/mode-meta";
 import { DOC_STATUS_LABEL, DOC_TYPE_LABEL } from "@/lib/constants";
 import { DriveLink } from "@/components/ui/drive-link";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -6,12 +7,17 @@ import { StatusBadge, documentTone } from "@/components/ui/status-badge";
 import { Term } from "@/components/ui/term";
 import { WithTerms } from "@/components/ui/with-terms";
 
-export function MetricsGrid({ items }: { items: Metric[] }) {
+export function MetricsGrid({ items, mode }: { items: Metric[]; mode: MeetingMode }) {
   if (!items.length) {
     return (
       <EmptyState
         title="Nenhum indicador nesta vista"
-        hint="O número ainda é «a confirmar», ou está oculto neste modo de reunião."
+        // "oculto neste modo" entrega a encenação para quem está na sala.
+        hint={
+          mode === "target"
+            ? TARGET_COPY.metricsEmpty
+            : "O número ainda é «a confirmar», ou está oculto neste modo de reunião."
+        }
       />
     );
   }
@@ -139,9 +145,9 @@ function DocRow({ d }: { d: DriveDocument }) {
 export function NotesList({ items }: { items: Note[] }) {
   if (!items.length) return null;
   return (
-    <section className="mt-8">
-      <p className="kicker">Notas</p>
-      <ul className="mt-2 space-y-2">
+    <section className="mt-10">
+      <h3 className="serif mb-3 text-xl text-navy">Notas</h3>
+      <ul className="space-y-2">
         {items.map((n) => (
           <li key={n.id} className="border-l-2 border-gold pl-3 text-sm leading-relaxed">
             <WithTerms text={n.body} />

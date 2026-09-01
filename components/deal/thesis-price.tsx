@@ -13,10 +13,11 @@ export function ThesisPrice({
 }) {
   if (hidden) return null;
 
+  // A âncora #tese pertence à sala da Eleva, que envolve este bloco.
   return (
-    <section id="tese" className="space-y-4">
+    <div className="space-y-4">
       <div className="paper p-5">
-        <p className="kicker">Evolução da tese</p>
+        <h3 className="text-[15px] font-semibold text-navy">Evolução da tese</h3>
         <p className="mt-1 text-sm text-muted">
           Histórico falado na sala. Nada disto é <Term id="loi">LOI</Term>. Nada disto é{" "}
           <Term id="valuation">valuation</Term> fechado.
@@ -39,7 +40,9 @@ export function ThesisPrice({
         </ol>
       </div>
       <div className="paper p-5">
-        <p className="kicker">Trajetória de preço — verbal, suspensa desde 15/06</p>
+        <h3 className="text-[15px] font-semibold text-navy">
+          Trajetória de preço — verbal, suspensa desde 15/06
+        </h3>
         <p className="mt-1 text-sm text-muted">
           Não há <Term id="valuation">valuation</Term> fechado. Rafaella: pode ser ~R$ 1M / ~R$ 600k.
           Board ainda não fechou <Term id="envelope">envelope</Term>.
@@ -58,6 +61,6 @@ export function ThesisPrice({
           ))}
         </ol>
       </div>
-    </section>
+    </div>
   );
 }
