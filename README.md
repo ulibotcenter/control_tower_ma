@@ -1,6 +1,6 @@
 # Control Tower · Programa Go Live (AD+R)
 
-Torre de controle do M&A buy-side da AD+R. Duas operações: **Loopert** (prioridade, ativa) e **Radio Health** (em análise). PMO: Eleva Projects. Corte oficial: **14/08/2026**.
+Torre de controle do M&A buy-side da AD+R. Duas operações: **Loopert** (prioridade, ativa) e **Radio Health** (em análise, em paralelo). PMO: Eleva Projects. Corte oficial: **02/09/2026**.
 
 A tela é uma só URL com três modos. Login individual via Supabase Auth (sem signup público). Produção: [https://tower.elevaprojects.com](https://tower.elevaprojects.com).
 
@@ -116,7 +116,7 @@ Sem signup nesta torre. Quem não existir no Auth recebe «E-mail ou senha incor
 |---|---|---|
 | Google Drive | Documentos do data room | **Proibido** alterar/apagar. Só criar artefato em `Control Tower/Exports/` |
 | Supabase (URL + **service role**) | Bandeja, classificação, documentos extras, decisões novas | Sim |
-| Seed TypeScript | Fatos estáticos do corte 14/08 (deals, riscos, checklist base) | — |
+| Seed TypeScript | Fatos estáticos do corte 02/09 (deals, riscos, checklist base) | — |
 | `.data/store.json` | Fallback **só em local** sem Supabase | Sim (dev) |
 
 A torre **não lê o disco do Mac**. Workspace local é espelho; sync é a pasta compartilhada:

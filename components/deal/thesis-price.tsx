@@ -1,5 +1,6 @@
 import { Term } from "@/components/ui/term";
 import { WithTerms } from "@/components/ui/with-terms";
+import { CORTE } from "@/lib/constants";
 import type { PriceStep, ThesisStep } from "@/lib/types";
 
 export function ThesisPrice({
@@ -34,7 +35,9 @@ export function ThesisPrice({
               <span className={t.current ? "font-semibold text-navy" : ""}>
                 <WithTerms text={t.label} />
               </span>
-              {t.current && <span className="stamp text-brand">Atual (10/08)</span>}
+              {t.current && (
+                <span className="stamp text-brand">Atual ({t.date || CORTE})</span>
+              )}
             </li>
           ))}
         </ol>
@@ -44,8 +47,9 @@ export function ThesisPrice({
           Trajetória de preço — verbal, suspensa desde 15/06
         </h3>
         <p className="mt-1 text-sm text-muted">
-          Não há <Term id="valuation">valuation</Term> fechado. Rafaella: pode ser ~R$ 1M / ~R$ 600k.
-          Board ainda não fechou <Term id="envelope">envelope</Term>.
+          Não há <Term id="valuation">valuation</Term> fechado.{" "}
+          <Term id="envelope">Envelope</Term> ainda não. ~R$ 1M / ~R$ 600k é histórico, não é o
+          preço atual.
         </p>
         <ol className="mt-4 flex flex-wrap gap-2">
           {prices.map((p) => (

@@ -44,7 +44,7 @@ export function DealView({
     <article>
       {frozen && (
         <p className="mb-4 stamp text-wait">
-          {mode === "target" ? "Em análise" : "Em análise · Loopert primeiro"}
+          {mode === "target" ? "Em análise" : "Em análise · em paralelo"}
         </p>
       )}
 

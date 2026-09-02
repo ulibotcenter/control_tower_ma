@@ -2,7 +2,7 @@
 
 Neste batch o Postgres guarda **bandeja, classificação, documentos/checklist da bandeja e decisões novas**.
 
-Deals, riscos, workstreams e o checklist-base do corte 14/08 continuam no seed TypeScript (`lib/data/seed.ts`).
+Deals, riscos, workstreams e o checklist-base do corte 02/09 continuam no seed TypeScript (`lib/data/seed.ts`).
 
 ## Instalação nova
 

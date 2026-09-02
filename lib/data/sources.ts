@@ -36,7 +36,7 @@ export const DATA_ORIGIN = {
     origin: "seed",
     today: "lib/data/seed.ts → deals",
     futureTable: "deals",
-    note: "Cadastro das duas operações. Hoje é o corte 14/08/2026.",
+    note: "Cadastro das duas operações. Hoje é o corte 02/09/2026.",
   },
   boardCard: {
     key: "boardCard",

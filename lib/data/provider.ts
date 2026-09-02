@@ -3,7 +3,7 @@
  *
  * HOJE
  *   - Programa, deals, riscos, ações, marcos, tese, preço, métricas, notas:
- *     `seed.ts` (corte estático 14/08/2026). Ver DATA_ORIGIN.
+ *     `seed.ts` (corte estático 02/09/2026). Ver DATA_ORIGIN.
  *   - Inbox, decisões, docs/checklist classificados na bandeja:
  *     `store.ts` → Supabase se URL+service role; senão seed + .data/.
  *

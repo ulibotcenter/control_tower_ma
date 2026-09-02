@@ -254,7 +254,7 @@ export const GLOSSARY_LIST: GlossaryEntry[] = [
   {
     id: "corte",
     term: "Corte",
-    def: "A fotografia oficial da torre nesta data. O que não está no corte 14/08/2026 ainda é «a confirmar».",
+    def: "A fotografia oficial da torre nesta data. O que não está no corte 02/09/2026 ainda é «a confirmar».",
     category: "projeto",
     audience: "advisors",
   },

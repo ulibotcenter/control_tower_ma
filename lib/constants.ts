@@ -1,6 +1,6 @@
 export const PROGRAM_NAME = "Go Live";
 export const PROGRAM_SPONSOR = "AD+R";
-export const CORTE = "14/08/2026";
+export const CORTE = "02/09/2026";
 export const PMO = "Eleva Projects";
 export const PMO_CNPJ = "67.212.016/0001-39";
 export const PMO_LEAD = "Erica Oliveira";

@@ -118,7 +118,7 @@ export const MODE_META: Record<
     audience: "AD+R · Pacta · M12C",
     shareLine: "Bandeja crua, notas da Eleva e credenciais estão ocultas.",
     homeLead:
-      "Reunião com assessores. Loopert primeiro. Radio Health em análise. Sem bandeja, sem notas internas da Eleva, sem credenciais.",
+      "Reunião com assessores. Radio Health em análise · em paralelo. Sem bandeja, sem notas internas da Eleva, sem credenciais.",
     homeSub:
       "Tese, preço verbal e pendências compartilhadas com Pacta e João Amorim. O que o alvo não pode ver continua nesta tela — troque para Alvo se ele entrar.",
     boardKicker: "Decisão em mesa",
