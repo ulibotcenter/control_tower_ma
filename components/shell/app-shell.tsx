@@ -80,7 +80,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       {!present && mode === "advisors" && <ModeBanner meeting={meeting} />}
       <main
         id="conteudo"
-        className="mx-auto max-w-6xl px-4 py-6 md:py-8"
+        className="mx-auto max-w-6xl px-4 py-6"
         style={{ paddingBottom: "max(1.75rem, env(safe-area-inset-bottom))" }}
       >
         <PrintMasthead

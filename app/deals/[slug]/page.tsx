@@ -1,9 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/app-shell";
 import { DealView } from "@/components/deal/deal-view";
-import { getDealBundle, getDealOptions } from "@/lib/data/provider";
+import { getDealBundle } from "@/lib/data/provider";
 import { getPillarViews } from "@/lib/data/pillar-view";
-import { isDealAllowed, lockedDeal } from "@/lib/meeting";
+import { isDealAllowed } from "@/lib/meeting";
 import { getMeeting } from "@/lib/mode";
 import { getPresent } from "@/lib/present";
 
@@ -16,7 +16,6 @@ export default async function DealPage({
   const meeting = await getMeeting();
   // Reunião travada num alvo: o outro deal não abre nem por URL direta.
   if (!isDealAllowed(meeting, slug)) redirect(`/deals/${meeting.targetDeal}`);
-  const onlyDeal = lockedDeal(meeting);
   const present = await getPresent();
   const bundle = await getDealBundle(slug, meeting.mode);
   if (!bundle) notFound();
@@ -27,8 +26,6 @@ export default async function DealPage({
         bundle={bundle}
         pillars={getPillarViews(bundle)}
         mode={meeting.mode}
-        deals={getDealOptions({ onlyDeal })}
-        onlyDeal={onlyDeal}
         present={present}
       />
     </AppShell>

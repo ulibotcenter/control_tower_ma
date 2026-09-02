@@ -32,13 +32,8 @@ export const Timeline = memo(function Timeline({
     );
   }
 
-  const done = items.filter((m) => m.status === "done").length;
-
   return (
     <div>
-      <p className="mb-2 text-[13px] text-muted">
-        {done} de {items.length} marcos concluídos
-      </p>
       {/*
        * Peça única: uma faixa com divisórias internas, não cinco cartões
        * soltos. A etapa em curso é a única cheia — as outras ficam calmas.

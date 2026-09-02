@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/app-shell";
-import { DealSwitcher } from "@/components/deal/deal-switcher";
 import { ChecklistTable } from "@/components/deal/checklist-table";
 import { DocsList } from "@/components/deal/lists";
 import { ActionBoard } from "@/components/deal/action-board";
 import { RisksBoard } from "@/components/deal/risks-board";
-import { EmptyState } from "@/components/ui/empty-state";
-import { getDealBundle, getDealOptions } from "@/lib/data/provider";
+import { getDealBundle } from "@/lib/data/provider";
 import {
   ddOutsideSubgroups,
   ddSubgroupCounts,
@@ -15,7 +13,7 @@ import {
   getPillarView,
   getPillarViews,
 } from "@/lib/data/pillar-view";
-import { isDealAllowed, lockedDeal } from "@/lib/meeting";
+import { isDealAllowed } from "@/lib/meeting";
 import { semaphoreLabelFor, TARGET_COPY } from "@/lib/mode-meta";
 import { getMeeting } from "@/lib/mode";
 import {
@@ -72,14 +70,6 @@ export default async function PillarPage({
 
   return (
     <AppShell>
-      <div className="no-print">
-        <DealSwitcher
-          current={slug}
-          deals={getDealOptions({ onlyDeal: lockedDeal(meeting) })}
-          onlyDeal={lockedDeal(meeting)}
-        />
-      </div>
-
       <p className="no-print text-[13px]">
         <Link href={`/deals/${slug}`} className="text-muted hover:text-brand">
           ← {bundle.deal.name}
@@ -95,7 +85,7 @@ export default async function PillarPage({
             {semaphoreLabelFor(mode, view.health)}
           </span>
         </div>
-        <p className="mt-2 max-w-3xl text-[15px] leading-relaxed text-muted">
+        <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-muted">
           {resumoDoPilar(bundle.workstreams, pillar, mode)}
         </p>
       </header>
@@ -128,43 +118,54 @@ export default async function PillarPage({
       )}
 
       {vazio ? (
-        <div className="mt-8">
-          <EmptyState
-            title="Nada neste pilar por enquanto"
-            hint="Quando um documento for classificado ou uma pendência entrar aqui, ela aparece nesta página."
-          />
-        </div>
+        <p className="mt-8 text-[15px] text-muted">
+          Ainda não iniciado. Quando um documento ou uma pendência entrar neste pilar, ele aparece
+          aqui.
+        </p>
       ) : (
         <>
-          {checklist.length > 0 && (
-            <section className="mt-10">
-              <h2 className="serif mb-3 text-[22px] leading-tight text-navy">
-                {mode === "target" ? TARGET_COPY.documentsTitle : "Pendências"}
-              </h2>
-              <ChecklistTable items={checklist} />
-            </section>
-          )}
+          {/* Duas colunas: à esquerda o que trava, à direita o que existe. */}
+          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+            <div className="min-w-0 space-y-10">
+              {checklist.length > 0 && (
+                <section>
+                  <h2 className="pillar-section-title">
+                    {mode === "target" ? TARGET_COPY.documentsTitle : "Pendências"}
+                  </h2>
+                  <ChecklistTable items={checklist} />
+                </section>
+              )}
 
-          {risks.length > 0 && (
-            <section className="mt-10">
-              <h2 className="serif mb-3 text-[22px] leading-tight text-navy">
-                {mode === "target" ? "Pontos em aberto" : "Riscos"}
-              </h2>
-              <RisksBoard items={risks} mode={mode} />
-            </section>
-          )}
+              {risks.length > 0 && (
+                <section>
+                  <h2 className="pillar-section-title">
+                    {mode === "target" ? "Pontos em aberto" : "Riscos"}
+                  </h2>
+                  <RisksBoard items={risks} mode={mode} />
+                </section>
+              )}
+
+              {checklist.length === 0 && risks.length === 0 && (
+                <p className="text-[14px] text-muted">Nada trava este pilar hoje.</p>
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <section>
+                <h2 className="pillar-section-title">Documentos</h2>
+                {documents.length > 0 ? (
+                  <DocsList items={documents} />
+                ) : (
+                  <p className="text-[14px] text-muted">Nenhum documento neste pilar ainda.</p>
+                )}
+              </section>
+            </div>
+          </div>
 
           {actions.length > 0 && (
-            <section className="mt-10">
-              <h2 className="serif mb-3 text-[22px] leading-tight text-navy">Ações</h2>
+            <section className="mt-10 border-t border-line pt-6">
+              <h2 className="pillar-section-title">Ações</h2>
               <ActionBoard items={actions} />
-            </section>
-          )}
-
-          {documents.length > 0 && (
-            <section className="mt-10">
-              <h2 className="serif mb-3 text-[22px] leading-tight text-navy">Documentos</h2>
-              <DocsList items={documents} />
             </section>
           )}
 
@@ -206,5 +207,5 @@ function resumoDoPilar(workstreams: Workstream[], pillar: string, mode: MeetingM
     .map((w) => (mode === "target" ? w.summaryTarget : w.summary))
     .filter(Boolean);
   if (partes.length === 0) return "Ainda sem leitura registrada para este pilar.";
-  return partes.slice(0, 2).join(" ");
+  return partes[0];
 }

@@ -12,22 +12,17 @@ import { Timeline } from "./timeline";
 import { PillarGrid } from "./pillar-grid";
 import { ThesisPrice } from "./thesis-price";
 import { CapTable, MetricsGrid, NotesList } from "./lists";
-import { DealSwitcher } from "./deal-switcher";
 import { Freshness } from "@/components/ui/freshness";
 
 export function DealView({
   bundle,
   pillars,
   mode,
-  deals,
-  onlyDeal = null,
   present = false,
 }: {
   bundle: DealBundle;
   pillars: PillarView[];
   mode: MeetingMode;
-  deals: { slug: string; name: string }[];
-  onlyDeal?: string | null;
   present?: boolean;
 }) {
   const { deal } = bundle;
@@ -47,16 +42,13 @@ export function DealView({
 
   return (
     <article>
-      <div className="no-print">
-        <DealSwitcher current={deal.slug} deals={deals} onlyDeal={onlyDeal} />
-      </div>
       {frozen && (
         <p className="mb-4 stamp text-wait">
           {mode === "target" ? "Em análise" : "Em análise · Loopert primeiro"}
         </p>
       )}
 
-      <header id="visao" className="mb-10">
+      <header id="visao" className="mb-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-sm text-muted">
@@ -64,7 +56,7 @@ export function DealView({
               {deal.since ? ` · desde ${deal.since}` : ""}
             </p>
             {/* Silêncio tipográfico: um H1 de memo, não manchete de site. */}
-            <h1 className="serif mt-1 text-[28px] leading-tight text-navy sm:text-[32px]">
+            <h1 className="serif mt-1 text-[28px] leading-tight text-navy">
               {deal.name}
             </h1>
             <p className="mt-1 text-[13px] text-muted">
@@ -79,7 +71,7 @@ export function DealView({
         </div>
 
         {/* Situação em 5 segundos: fase, semáforo e próximo marco, sem rolar. */}
-        <dl className="paper mt-6 grid grid-cols-1 divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <dl className="paper mt-5 grid grid-cols-1 divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <div className="px-4 py-3">
             <dt className="text-[12px] text-muted">{TARGET_COPY.phaseLabel}</dt>
             <dd className="mt-1 text-[15px] font-semibold leading-snug text-navy">
@@ -103,7 +95,7 @@ export function DealView({
           </div>
         </dl>
 
-        <p className="mt-5 max-w-3xl text-[16px] leading-relaxed">
+        <p className="mt-4 max-w-3xl text-[15px] leading-relaxed">
           <WithTerms text={target ? deal.headlineTarget : deal.headline} />
         </p>
         {chrome.showProductLine && deal.product && (
@@ -121,27 +113,28 @@ export function DealView({
 
       {/* A linha do tempo continua com os cinco marcos do corte. Não force
           seis: o pilar de Aprovações não tem marco próprio hoje. */}
-      <section className="mb-10">
-        <h2 className="serif mb-1 text-[22px] leading-tight text-navy">Onde estamos</h2>
+      <section className="mb-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+          <h2 className="serif text-[17px] font-semibold leading-tight text-navy">Onde estamos</h2>
+          <p className="text-[12px] text-muted">
+            {bundle.milestones.filter((m) => m.status === "done").length} de{" "}
+            {bundle.milestones.length} marcos concluídos
+          </p>
+        </div>
         <Freshness trust={review ? "review" : "firm"} mode={mode} />
-        <div className="mt-4">
+        <div className="mt-3">
           <Timeline items={bundle.milestones} mode={mode} />
         </div>
       </section>
 
       {/* O eixo da página é o processo, não a ferramenta: seis pilares. */}
-      <section id="pilares" className="mb-10">
-        <h2 className="serif mb-1 text-[22px] leading-tight text-navy">Pilares do processo</h2>
-        <p className="mb-4 mt-1 max-w-2xl text-[13px] text-muted">
-          {target
-            ? "Cada pilar reúne os documentos pedidos e as pendências formais daquela etapa."
-            : "Cada pilar reúne checklist, riscos, ações e documentos daquela etapa. O semáforo vem dos itens visíveis neste modo."}
-        </p>
+      <section id="pilares" className="mb-6">
+        <h2 className="serif mb-3 text-[17px] font-semibold leading-tight text-navy">Pilares do processo</h2>
         <PillarGrid dealSlug={deal.slug} pillars={pillars} mode={mode} />
       </section>
 
       {!present && (
-        <section id="indicadores" className="mb-10">
+        <section id="indicadores" className="mb-6">
           <h2 className="serif mb-1 text-[22px] leading-tight text-navy">Indicadores</h2>
           <Freshness trust={review ? "review" : "firm"} mode={mode} />
           <p className="mb-4 mt-2 text-sm text-muted">

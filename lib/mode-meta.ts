@@ -62,6 +62,23 @@ export function semaphoreLabelFor(mode: MeetingMode, tone: string) {
 }
 
 /**
+ * Versão curta, para superfícies de varredura como a grade de pilares: ponto
+ * mais duas palavras, no máximo. No Alvo vale o vocabulário da sala, que já é
+ * curto; em Operar "Bloqueia o deal" e "Ainda não começou" encolhem.
+ */
+const SEMAPHORE_SHORT: Record<string, string> = {
+  green: "No prazo",
+  amber: "Atenção",
+  red: "Bloqueado",
+  gray: "Não iniciado",
+};
+
+export function semaphoreShortFor(mode: MeetingMode, tone: string) {
+  if (mode === "target") return TARGET_COPY.semaphore[tone] ?? SEMAPHORE_SHORT[tone];
+  return SEMAPHORE_SHORT[tone] ?? SEMAPHORE_LABEL[tone];
+}
+
+/**
  * Cópia e cromo de cada modo de reunião.
  * A regra de o que entra/sai da tela continua em lib/visibility.ts.
  * Aqui só o que cada público deve ler e quais blocos de UI fazem sentido.
