@@ -9,6 +9,7 @@ import { RisksBoard } from "@/components/deal/risks-board";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getDealBundle, getDealOptions } from "@/lib/data/provider";
 import {
+  ddOutsideSubgroups,
   ddSubgroupCounts,
   filterBySubgroup,
   getPillarView,
@@ -61,6 +62,7 @@ export default async function PillarPage({
   const meta = PILLAR_BY_SLUG[pillar];
   const sub = isDdSubgroup(frente) ? frente : null;
   const chips = pillar === "dd" ? ddSubgroupCounts(view) : [];
+  const fora = pillar === "dd" ? ddOutsideSubgroups(view) : 0;
 
   const checklist = filterBySubgroup(view.checklist, sub);
   const risks = filterBySubgroup(view.risks, sub);
@@ -115,6 +117,14 @@ export default async function PillarPage({
             </Link>
           ))}
         </nav>
+      )}
+
+      {chips.length > 0 && fora > 0 && !sub && (
+        <p className="mt-2 text-[12px] text-muted no-print">
+          {fora} {fora === 1 ? "item fica" : "itens ficam"} fora dos quatro subgrupos
+          (comercial, operacional ou ainda sem frente) e só {fora === 1 ? "aparece" : "aparecem"} em
+          Tudo.
+        </p>
       )}
 
       {vazio ? (
@@ -195,6 +205,6 @@ function resumoDoPilar(workstreams: Workstream[], pillar: string, mode: MeetingM
     .filter((w) => pillarOf({ workstreamSlug: w.slug }) === pillar)
     .map((w) => (mode === "target" ? w.summaryTarget : w.summary))
     .filter(Boolean);
-  if (partes.length === 0) return "Sem leitura registrada para este pilar neste corte.";
+  if (partes.length === 0) return "Ainda sem leitura registrada para este pilar.";
   return partes.slice(0, 2).join(" ");
 }

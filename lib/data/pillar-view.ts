@@ -106,6 +106,16 @@ export function ddSubgroupCounts(view: PillarView): SubgroupCount[] {
   }));
 }
 
+/**
+ * Itens da DD fora dos quatro subgrupos travados (comercial, operacional e
+ * os que chegaram sem frente). Os chips não os alcançam, então a tela diz
+ * quantos são em vez de deixá-los sumidos atrás de "Tudo".
+ */
+export function ddOutsideSubgroups(view: PillarView): number {
+  const itens = [...view.checklist, ...view.risks, ...view.actions, ...view.documents];
+  return itens.filter((i) => ddSubgroupOf(i) === null).length;
+}
+
 export function filterBySubgroup<T extends { workstreamSlug?: string | null; title?: string }>(
   items: T[],
   subgroup: DdSubgroup | null,
