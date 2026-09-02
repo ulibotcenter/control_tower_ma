@@ -5,11 +5,11 @@
  * marco, tipo de documento. Nada aqui inventa fato: só arruma em prateleira
  * o que já estava no corte.
  *
- * Um item pode trazer `pillarSlug` explícito e, quando traz, ele manda. O
- * corte atual não precisou de nenhum: a frente de trabalho resolve todos os
- * casos, e as regras de pilar 4 e 5 (assembleia, sócios, laudo, JUCESP,
- * CADE, closing 51%, exercício 49%) não encontram nenhum item hoje.
- * Item sem frente cai em Due Diligence, fila "A classificar".
+ * Ordem de decisão:
+ *   1. `pillarSlug` explícito no item, quando existir;
+ *   2. regra de Aprovações: id ou título falando de TARGA / anuência;
+ *   3. frente de trabalho;
+ *   4. sem frente, cai em Due Diligence, fila "A classificar".
  */
 import type { Semaphore } from "./types";
 
@@ -105,10 +105,27 @@ export function pillarForLegacyWorkstream(
 type Classificavel = {
   pillarSlug?: string | null;
   workstreamSlug?: string | null;
+  id?: string;
+  title?: string;
 };
+
+function semAcento(texto: string) {
+  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+/**
+ * A anuência da TARGA é ato de aprovação de terceiro, não achado de due
+ * diligence: sai da frente de trabalho e vai para Aprovações. Regra por
+ * id/título porque o seed não tem campo para isso e não se mexe nele.
+ */
+function ehAprovacao(item: Classificavel) {
+  const texto = semAcento(`${item.id ?? ""} ${item.title ?? ""}`);
+  return texto.includes("targa") || texto.includes("anuencia");
+}
 
 export function pillarOf(item: Classificavel): PillarSlug {
   if (isPillarSlug(item.pillarSlug)) return item.pillarSlug;
+  if (ehAprovacao(item)) return "aprovacoes";
   const frente = item.workstreamSlug ?? "";
   return FRENTE_PARA_PILAR[frente] ?? "dd";
 }
