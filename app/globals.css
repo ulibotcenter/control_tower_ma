@@ -326,7 +326,7 @@ header :focus-visible,
   position: absolute;
   left: 0;
   top: calc(100% + 0.4rem);
-  z-index: 40;
+  z-index: 200;
   width: max-content;
   max-width: min(18rem, 80vw);
   padding: 0.45rem 0.65rem;
@@ -370,9 +370,9 @@ header :focus-visible,
   position: absolute;
   left: 0;
   top: calc(100% + 0.45rem);
-  z-index: 50;
+  z-index: 200;
   width: max-content;
-  max-width: min(20rem, 82vw);
+  max-width: min(20rem, 80vw);
   padding: 0.65rem 0.75rem;
   background: #ffffff;
   color: var(--ink);
@@ -386,6 +386,13 @@ header :focus-visible,
   pointer-events: none;
 }
 
+/* Só o balão no document.body. Não reabrir display:block no in-flow. */
+.term-tip.is-portal {
+  display: block;
+  position: fixed;
+  z-index: 200;
+}
+
 .term-tip-kicker {
   display: block;
   margin-bottom: 0.2rem;
@@ -394,12 +401,6 @@ header :focus-visible,
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--wait);
-}
-
-.term-mark:hover .term-tip,
-.term-mark:focus-visible .term-tip,
-.term-mark.is-open .term-tip {
-  display: block;
 }
 
 .nav-sec a,
