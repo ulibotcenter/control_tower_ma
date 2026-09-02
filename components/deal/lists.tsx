@@ -58,16 +58,20 @@ export function DocsList({ items }: { items: DriveDocument[] }) {
 }
 
 function DocRow({ d }: { d: DriveDocument }) {
+  const folderLink = Boolean(d.driveUrl && d.driveUrl.includes("/folders/"));
   return (
     <li className="px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        {d.driveUrl ? (
-          <DriveLink href={d.driveUrl} kind={d.driveId ? "file" : "folder"}>
+        {d.driveUrl && !folderLink ? (
+          <DriveLink href={d.driveUrl}>
             <WithTerms text={d.title} interactive={false} />
           </DriveLink>
         ) : (
-          <span className="font-medium">
-            <WithTerms text={d.title} />
+          <span className="inline-flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="font-medium">
+              <WithTerms text={d.title} />
+            </span>
+            {folderLink && d.driveUrl ? <DriveLink href={d.driveUrl} /> : null}
           </span>
         )}
         <span className="inline-flex flex-wrap items-center gap-2 text-[12px] text-muted">

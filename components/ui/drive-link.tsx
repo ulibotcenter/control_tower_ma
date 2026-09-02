@@ -1,14 +1,22 @@
 import { ArrowUpRight } from "lucide-react";
 
+function kindFromUrl(href: string, fallback: "file" | "folder"): "file" | "folder" {
+  if (href.includes("/folders/")) return "folder";
+  if (href.includes("/file/")) return "file";
+  return fallback;
+}
+
 export function DriveLink({
   href,
   children,
   kind = "file",
 }: {
   href: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   kind?: "file" | "folder";
 }) {
+  const resolved = kindFromUrl(href, kind);
+  const label = resolved === "folder" ? "Abrir pasta" : children;
   return (
     <a
       href={href}
@@ -16,10 +24,10 @@ export function DriveLink({
       rel="noopener noreferrer"
       className="inline-flex items-center gap-1 text-navy underline decoration-line-2 underline-offset-4 hover:decoration-brand"
     >
-      {children}
+      {label}
       <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
       <span className="sr-only">
-        {kind === "folder" ? "Abrir pasta no Google Drive" : "Abrir no Google Drive"}
+        {resolved === "folder" ? "Abrir pasta no Google Drive" : "Abrir no Google Drive"}
       </span>
     </a>
   );
