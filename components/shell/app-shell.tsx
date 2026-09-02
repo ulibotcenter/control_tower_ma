@@ -13,6 +13,7 @@ import { ModeBanner } from "./mode-banner";
 import { PrintMasthead } from "./print-masthead";
 import { Onboarding } from "./onboarding";
 import { SessionGuard } from "./session-guard";
+import { DriveReviewHost } from "./drive-review";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await getSessionPayload();
@@ -56,6 +57,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         Ir para o conteúdo
       </a>
       <SessionGuard />
+      {mode === "operate" && !present && <DriveReviewHost />}
       <Header
         user={user}
         meeting={meeting}

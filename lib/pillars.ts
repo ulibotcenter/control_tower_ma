@@ -88,6 +88,12 @@ export function pillarOfMilestone(slug: string): PillarSlug | null {
   return MARCO_PARA_PILAR[slug] ?? null;
 }
 
+/** Fase do deal → pilar “estamos aqui”. Sem inventar marco. */
+export function pillarOfDealPhase(phase: string): PillarSlug | null {
+  if (phase === "avaliacao") return "preparacao";
+  return MARCO_PARA_PILAR[phase] ?? null;
+}
+
 /**
  * URL antiga de frente de trabalho → pilar de destino, sem tocar no seed.
  * Puro de propósito: a rota chama isto antes de buscar dado, para o redirect

@@ -1,13 +1,15 @@
 import { folderUrl } from "@/lib/constants";
 import { canSeePriceAndThesis } from "@/lib/visibility";
 import { TARGET_COPY, semaphoreLabelFor, viewChrome } from "@/lib/mode-meta";
-import type { PillarView } from "@/lib/data/pillar-view";
+import { blockersFrom, type PillarView } from "@/lib/data/pillar-view";
+import { pillarOfDealPhase } from "@/lib/pillars";
+import type { TemaSlug } from "@/lib/data/temas";
 import type { DealBundle, MeetingMode } from "@/lib/types";
+import { ThemePanel, ThemeRail } from "./theme-rail";
 import { Term } from "@/components/ui/term";
 import { WithTerms } from "@/components/ui/with-terms";
 import { DriveLink } from "@/components/ui/drive-link";
 import { SemaphoreBadge } from "@/components/ui/semaphore";
-import { ExportPdfButton } from "@/components/export/export-pdf-button";
 import { Timeline } from "./timeline";
 import { PillarGrid } from "./pillar-grid";
 import { ThesisPrice } from "./thesis-price";
@@ -19,11 +21,13 @@ export function DealView({
   pillars,
   mode,
   present = false,
+  tema = null,
 }: {
   bundle: DealBundle;
   pillars: PillarView[];
   mode: MeetingMode;
   present?: boolean;
+  tema?: TemaSlug | null;
 }) {
   const { deal } = bundle;
   const chrome = viewChrome(mode, present);
@@ -39,9 +43,11 @@ export function DealView({
   const showPeople = chrome.showPeople && bundle.people.length > 0;
   const showNotes = chrome.showNotes && bundle.notes.length > 0;
   const showElevaRoom = !target && (showThesis || showCap || showPeople || showNotes);
+  const travas = blockersFrom(bundle.risks, bundle.checklist, 3, bundle.actions);
+  const hereSlug = pillarOfDealPhase(deal.phase);
 
   return (
-    <article>
+    <article className={present ? "present-deck" : undefined}>
       {frozen && (
         <p className="mb-4 stamp text-wait">
           {mode === "target" ? "Em análise" : "Em análise · em paralelo"}
@@ -59,15 +65,12 @@ export function DealView({
             <h1 className="serif mt-1 text-[28px] leading-tight text-navy">
               {deal.name}
             </h1>
-            <p className="mt-1 text-[13px] text-muted">
-              {deal.legalName} · {deal.cnpj}
-            </p>
+            {!present && (
+              <p className="mt-1 text-[13px] text-muted">
+                {deal.legalName} · {deal.cnpj}
+              </p>
+            )}
           </div>
-          {present && !target && (
-            <div className="no-print hidden sm:block">
-              <ExportPdfButton present pageLabel={deal.name} surface="page" />
-            </div>
-          )}
         </div>
 
         {/* Situação em 5 segundos: fase, semáforo e próximo marco, sem rolar. */}
@@ -95,9 +98,26 @@ export function DealView({
           </div>
         </dl>
 
-        <p className="mt-4 max-w-3xl text-[15px] leading-relaxed">
-          <WithTerms text={target ? deal.headlineTarget : deal.headline} />
-        </p>
+        <div className={`paper mt-3 px-4 py-3${travas.length > 0 ? " trava-band" : ""}`}>
+          <p className="text-[12px] font-semibold tracking-tight text-muted">O que trava</p>
+          {travas.length === 0 ? (
+            <p className="mt-1 text-[15px] leading-snug text-navy">Nada trava o deal hoje.</p>
+          ) : (
+            <ul className="mt-1 space-y-0.5">
+              {travas.map((t) => (
+                <li key={t.id} className="text-[15px] font-medium leading-snug text-alert">
+                  <WithTerms text={t.line} interactive={false} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {!present && (
+          <p className="mt-4 max-w-3xl text-[15px] leading-relaxed">
+            <WithTerms text={target ? deal.headlineTarget : deal.headline} />
+          </p>
+        )}
         {chrome.showProductLine && deal.product && (
           <p className="mt-2 text-sm text-muted">{deal.product}</p>
         )}
@@ -111,8 +131,7 @@ export function DealView({
         )}
       </header>
 
-      {/* A linha do tempo continua com os cinco marcos do corte. Não force
-          seis: o pilar de Aprovações não tem marco próprio hoje. */}
+      {!present && (
       <section className="mb-6">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4">
           <h2 className="serif text-[17px] font-semibold leading-tight text-navy">Onde estamos</h2>
@@ -126,12 +145,16 @@ export function DealView({
           <Timeline items={bundle.milestones} mode={mode} />
         </div>
       </section>
+      )}
 
       {/* O eixo da página é o processo, não a ferramenta: seis pilares. */}
       <section id="pilares" className="mb-6">
         <h2 className="serif mb-3 text-[17px] font-semibold leading-tight text-navy">Pilares do processo</h2>
-        <PillarGrid dealSlug={deal.slug} pillars={pillars} mode={mode} />
+        <PillarGrid dealSlug={deal.slug} pillars={pillars} mode={mode} hereSlug={hereSlug} />
       </section>
+
+      {!present && <ThemeRail bundle={bundle} tema={tema} />}
+      {!present && tema ? <ThemePanel bundle={bundle} tema={tema} target={target} /> : null}
 
       {!present && (
         <section id="indicadores" className="mb-6">

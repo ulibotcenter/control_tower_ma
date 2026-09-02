@@ -786,15 +786,109 @@ html {
  * título. A ordem fica em corpo miúdo, discreta; o nome é o título.
  */
 .pillar-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
   padding: var(--space-2) var(--space-3);
+  padding-left: calc(var(--space-3) + 3px);
   text-decoration: none;
+}
+
+.pillar-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: var(--radius) 0 0 var(--radius);
+  background: var(--line-strong);
+}
+
+.pillar-card.is-red::before {
+  width: 4px;
+  background: var(--alert);
+}
+
+.pillar-card.is-amber::before {
+  background: var(--wait);
+}
+
+.pillar-card.is-green::before {
+  background: var(--go);
+}
+
+.pillar-card.is-gray::before {
+  background: var(--line-strong);
+}
+
+.pillar-card.is-red {
+  border-color: color-mix(in srgb, var(--alert) 28%, var(--line));
+}
+
+.pillar-card.is-gray {
+  color: var(--muted);
+}
+
+.pillar-card.is-gray .pillar-card-name {
+  color: var(--muted);
+  font-weight: 500;
 }
 
 .pillar-card:hover {
   border-color: var(--ink);
+}
+
+.pillar-card:hover::before {
+  width: 4px;
+}
+
+.pillar-card.is-red:hover {
+  border-color: var(--alert);
+}
+
+.pillar-card.is-red:hover::before {
+  width: 5px;
+}
+
+.pillar-here {
+  margin-top: 0.4rem;
+  width: fit-content;
+  color: var(--logo);
+  border-color: var(--logo);
+}
+
+.present-deck {
+  font-size: 1.0625rem;
+}
+
+.present-deck .serif {
+  letter-spacing: -0.025em;
+}
+
+.present-deck .pillar-card-name {
+  font-size: 1.05rem;
+}
+
+.present-deck .paper dd,
+.present-deck .trava-band li,
+.present-deck .paper p {
+  font-size: 1.05em;
+}
+
+.pillar-card.is-gray:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.pillar-card.is-gray:hover .pillar-card-name {
+  color: var(--ink);
+}
+
+.pillar-card-crit {
+  color: var(--alert);
+  font-weight: 650;
 }
 
 .pillar-card-order {
@@ -832,6 +926,22 @@ html {
   color: var(--ink);
 }
 
+.trava-band {
+  border-color: color-mix(in srgb, var(--alert) 28%, var(--line));
+}
+
+.pillar-col-trava .pillar-section-title {
+  color: var(--alert);
+}
+
+.pillar-col-acao .pillar-section-title {
+  color: var(--logo);
+}
+
+.pillar-col-doc .pillar-section-title {
+  color: var(--brand-2);
+}
+
 /* Chips dos subgrupos da DD. */
 .chip-row {
   display: flex;
@@ -864,6 +974,12 @@ html {
   background: var(--ink);
   color: #ffffff;
   font-weight: 600;
+}
+
+.chip.is-off {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .chip-count {

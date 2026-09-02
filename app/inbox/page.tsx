@@ -6,6 +6,7 @@ import { DOC_STATUS_LABEL, DOC_TYPE_LABEL, folderUrl, DRIVE_FOLDERS } from "@/li
 import { formatDate } from "@/lib/format";
 import Link from "next/link";
 import { InboxForm } from "@/components/inbox/inbox-form";
+import { DriveSyncButton } from "@/components/shell/drive-sync-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { deals } from "@/lib/data/seed";
 
@@ -18,7 +19,10 @@ export default async function InboxPage() {
   return (
     <AppShell>
       <p className="kicker">Só modo Operar</p>
-      <h1 className="serif text-4xl text-navy">Novos arquivos</h1>
+      <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
+        <h1 className="serif text-4xl text-navy">Novos arquivos</h1>
+        <DriveSyncButton variant="page" />
+      </div>
       <p className="mt-3 max-w-2xl text-[16px] leading-relaxed">
         O Drive é a verdade dos documentos. A torre só lê. Arquivo novo cai aqui, um humano
         classifica, e só então o item pode entrar no checklist. Arquivo novo não é item concluído.
@@ -53,7 +57,7 @@ export default async function InboxPage() {
           <div className="mt-3">
             <EmptyState
               title="Bandeja vazia"
-              hint="Sem sync automático neste corte. Registre um arquivo manualmente quando ele entrar no Drive."
+              hint="Atualizar Drive lê a pasta. Sem API do Google, registre o arquivo manualmente. Arquivo novo não conclui o item."
             />
           </div>
         ) : (

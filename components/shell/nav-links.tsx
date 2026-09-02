@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { MeetingMode, Semaphore } from "@/lib/types";
+import { DriveSyncButton } from "./drive-sync-button";
 
 function isActive(path: string, href: string) {
   return href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`);
@@ -92,6 +93,7 @@ export function NavLinks({
             ) : null}
           </Link>
         ))}
+      {mode === "operate" && !present && <DriveSyncButton />}
     </nav>
   );
 }

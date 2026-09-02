@@ -41,12 +41,26 @@ export function DealCard({
         </span>
       </div>
 
+      {deal.status === "standby" && (
+        <p className="stamp mt-3 text-wait">
+          {target ? "Em análise" : "Em análise · em paralelo"}
+        </p>
+      )}
+
       <dl className="mt-4 grid gap-x-4 gap-y-1.5 border-y border-line py-3 text-[13px] sm:grid-cols-[7rem_minmax(0,1fr)]">
         <dt className="text-muted">Fase</dt>
         <dd className="text-navy">
           <WithTerms text={deal.phaseLabel} interactive={false} />
         </dd>
-        <dt className="text-muted">Próximo marco</dt>
+        <dt className="text-muted">O que trava</dt>
+        <dd className={deal.topReds[0] ? "font-medium text-alert" : "text-navy"}>
+          {deal.topReds[0] ? (
+            <WithTerms text={deal.topReds[0]} interactive={false} />
+          ) : (
+            "Nada trava"
+          )}
+        </dd>
+        <dt className="text-muted">Próximo</dt>
         <dd className="text-navy">
           <WithTerms
             text={target ? deal.nextMilestoneTarget : deal.nextMilestone}

@@ -123,3 +123,70 @@ export function filterBySubgroup<T extends { workstreamSlug?: string | null; tit
   if (!subgroup) return items;
   return items.filter((i) => ddSubgroupOf(i) === subgroup);
 }
+
+/** Risco vermelho ou checklist bloqueado. Só o que o bundle já deixou visível. */
+export type Blocker = { id: string; title: string; line: string };
+
+function semAcento(texto: string) {
+  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function tituloCurto(title: string) {
+  const corte = title.split(" — ")[0].split(":")[0].trim();
+  return corte.length <= 52 ? corte : `${corte.slice(0, 50)}…`;
+}
+
+function tokensDe(title: string) {
+  return semAcento(title)
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length >= 4);
+}
+
+function acaoLigada(title: string, workstream: string | null, actions: ActionItem[]) {
+  const abertas = actions.filter((a) => a.status === "open" || a.status === "late");
+  const toks = tokensDe(title);
+  const porToken = abertas.find((a) => toks.some((t) => semAcento(a.title).includes(t)));
+  if (porToken) return porToken;
+  if (!workstream) return null;
+  const naFrente = abertas.filter((a) => a.workstreamSlug === workstream);
+  return naFrente.length === 1 ? naFrente[0] : null;
+}
+
+function linhaTrava(title: string, action: ActionItem | null) {
+  const curto = tituloCurto(title);
+  if (!action) return curto;
+  const dono = action.owner.split("/")[0].trim().split(/\s+/)[0];
+  const hint = /sem valor/i.test(action.title) ? "sem valor" : null;
+  return hint ? `${curto} — ${dono} · ${hint}` : `${curto} — ${dono}`;
+}
+
+export function blockersFrom(
+  risks: Risk[],
+  checklist: ChecklistItem[],
+  limit = 3,
+  actions: ActionItem[] = [],
+): Blocker[] {
+  const out: Blocker[] = [];
+  for (const r of risks) {
+    if (r.severity !== "red") continue;
+    const action = acaoLigada(r.title, r.workstreamSlug, actions);
+    out.push({ id: r.id, title: r.title, line: linhaTrava(r.title, action) });
+    if (out.length >= limit) return out;
+  }
+  for (const c of checklist) {
+    if (c.status !== "bloqueado") continue;
+    const action = acaoLigada(c.title, c.workstreamSlug, actions);
+    out.push({ id: c.id, title: c.title, line: linhaTrava(c.title, action) });
+    if (out.length >= limit) return out;
+  }
+  return out;
+}
+
+/** Primeira ação atrasada; se não houver, a primeira aberta. Ordem do seed. */
+export function firstOpenAction(actions: ActionItem[]): ActionItem | null {
+  return (
+    actions.find((a) => a.status === "late") ??
+    actions.find((a) => a.status === "open") ??
+    null
+  );
+}
