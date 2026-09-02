@@ -386,11 +386,16 @@ header :focus-visible,
   pointer-events: none;
 }
 
-/* Só o balão no document.body. Não reabrir display:block no in-flow. */
+/*
+ * Balão aberto vive no document.body (portal). display:none fica só no
+ * in-flow, para não reabrir rolagem horizontal. O portal força o bloco
+ * aqui e também por style inline no componente.
+ */
 .term-tip.is-portal {
   display: block;
   position: fixed;
   z-index: 200;
+  visibility: visible;
 }
 
 .term-tip-kicker {

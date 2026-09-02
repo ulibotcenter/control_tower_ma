@@ -1,14 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { GLOSSARY, type GlossaryId } from "@/lib/glossary";
 
 /**
  * Sigla com marca discreta. A definição é a mesma da página Glossário.
- * interactive={false} quando o termo está dentro de um <a>/<Link>.
- * O balão aberto vai para document.body (position:fixed) para não ficar
- * atrás dos cards da home.
+ * interactive={false} quando o termo está dentro de um <a>/<Link>: o clique
+ * continua no link; o balão ainda abre no hover, em portal no document.body.
  */
 export function Term({
   id,
@@ -21,43 +20,45 @@ export function Term({
 }) {
   const entry = GLOSSARY[id];
   const tipId = useId();
-  const ref = useRef<HTMLSpanElement>(null);
+  const anchorRef = useRef<HTMLSpanElement>(null);
   const tipRef = useRef<HTMLSpanElement>(null);
   const [hover, setHover] = useState(false);
   const [pinned, setPinned] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-  const open = interactive && (hover || pinned);
+  const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const open = hover || pinned;
 
   const place = useCallback(() => {
-    const anchor = ref.current;
-    const tip = tipRef.current;
-    if (!anchor || !tip) return;
+    const anchor = anchorRef.current;
+    if (!anchor) return;
     const ar = anchor.getBoundingClientRect();
-    const tr = tip.getBoundingClientRect();
-    const gap = 8;
-    const pad = 8;
+    const tip = tipRef.current;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const width = Math.min(tr.width, vw * 0.8);
+    const gap = 8;
+    const pad = 8;
+    const maxW = Math.min(320, vw * 0.8);
+    const width = tip && tip.offsetWidth > 0 ? Math.min(tip.offsetWidth, maxW) : maxW;
+    const height = tip && tip.offsetHeight > 0 ? tip.offsetHeight : 0;
     let left = ar.left;
     if (left + width > vw - pad) left = ar.right - width;
     if (left < pad) left = pad;
     let top = ar.bottom + gap;
-    if (top + tr.height > vh - pad) top = ar.top - gap - tr.height;
+    if (height > 0 && top + height > vh - pad) top = ar.top - gap - height;
     if (top < pad) top = pad;
     setPos({ top, left });
   }, []);
 
-  useLayoutEffect(() => {
-    if (!open) {
-      setPos(null);
-      return;
-    }
-    place();
-  }, [open, place, entry?.def]);
+  const setTipNode = useCallback(
+    (node: HTMLSpanElement | null) => {
+      tipRef.current = node;
+      if (node) place();
+    },
+    [place],
+  );
 
   useEffect(() => {
     if (!open) return;
+    place();
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         setPinned(false);
@@ -65,7 +66,9 @@ export function Term({
       }
     }
     function onDoc(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setPinned(false);
+      if (anchorRef.current && !anchorRef.current.contains(e.target as Node)) {
+        setPinned(false);
+      }
     }
     function onMove() {
       place();
@@ -84,15 +87,33 @@ export function Term({
 
   if (!entry) return <>{children}</>;
 
+  function show() {
+    place();
+    setHover(true);
+  }
+
+  function hide() {
+    setHover(false);
+  }
+
   const tip =
     open && typeof document !== "undefined"
       ? createPortal(
           <span
-            ref={tipRef}
+            ref={setTipNode}
             id={tipId}
             role="tooltip"
             className="term-tip is-portal"
-            style={pos ? { top: pos.top, left: pos.left } : { top: 0, left: 0, visibility: "hidden" }}
+            style={{
+              display: "block",
+              position: "fixed",
+              top: pos.top,
+              left: pos.left,
+              zIndex: 200,
+              visibility: "visible",
+              pointerEvents: "none",
+              maxWidth: "min(20rem, 80vw)",
+            }}
           >
             <span className="term-tip-kicker">{entry.term}</span>
             {entry.def}
@@ -103,18 +124,16 @@ export function Term({
 
   return (
     <span
-      ref={ref}
+      ref={anchorRef}
       className={`term-mark${open ? " is-open" : ""}`}
       tabIndex={interactive ? 0 : undefined}
       aria-describedby={open ? tipId : undefined}
-      onMouseEnter={() => {
-        if (interactive) setHover(true);
-      }}
-      onMouseLeave={() => setHover(false)}
+      onMouseEnter={show}
+      onMouseLeave={hide}
       onFocus={() => {
-        if (interactive) setHover(true);
+        if (interactive) show();
       }}
-      onBlur={() => setHover(false)}
+      onBlur={hide}
       onClick={(e) => {
         if (!interactive) return;
         e.preventDefault();
