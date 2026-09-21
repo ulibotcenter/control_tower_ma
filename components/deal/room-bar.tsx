@@ -99,8 +99,9 @@ export function RoomProvider({
     setError(null);
     const form = new FormData(event.currentTarget);
     const kind = draft.kind;
+    const editing = draft.mode === "edit";
+    let res: Response;
     try {
-      let res: Response;
       if (draft.kind === "note") {
         res = await fetch(`/api/notes/${draft.note.id}`, {
           method: "PATCH",
@@ -111,7 +112,7 @@ export function RoomProvider({
           }),
         });
       } else {
-        const current = draft.mode === "edit" ? (draft.kind === "opl" ? draft.point : draft.action) : null;
+        const current = editing ? (draft.kind === "opl" ? draft.point : draft.action) : null;
         const originalDue = current?.due ?? "";
         let due = String(form.get("due") || "");
         if (!due && originalDue && !dateValue(originalDue)) due = originalDue;
@@ -136,20 +137,28 @@ export function RoomProvider({
           body: JSON.stringify(payload),
         });
       }
-      const data = (await res.json().catch(() => ({}))) as { message?: string };
-      if (!res.ok) {
-        setError(data.message || "Não foi possível gravar.");
-        return;
-      }
-      toast(draft.mode === "edit" ? "Alteração registrada." : kind === "opl" ? "Ponto em aberto registrado." : "Tarefa registrada.");
-      const dialog = dialogRef.current;
-      if (dialog?.open) dialog.close();
-      router.refresh();
     } catch {
       setError("Falha de rede.");
-    } finally {
       setBusy(false);
+      return;
     }
+
+    let data: { message?: string } = {};
+    try {
+      data = (await res.json()) as { message?: string };
+    } catch {
+      data = {};
+    }
+    if (!res.ok) {
+      setError(data.message || "Não foi possível gravar.");
+      setBusy(false);
+      return;
+    }
+    toast(editing ? "Alteração registrada." : kind === "opl" ? "Ponto em aberto registrado." : "Tarefa registrada.");
+    const dialog = dialogRef.current;
+    if (dialog?.open) dialog.close();
+    setBusy(false);
+    router.refresh();
   }
 
   const editing = draft?.mode === "edit" ? draft : null;

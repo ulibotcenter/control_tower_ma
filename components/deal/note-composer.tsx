@@ -11,11 +11,13 @@ export function NoteComposer({ dealSlug }: { dealSlug: string }) {
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formEl = event.currentTarget;
     setBusy(true);
     setError(null);
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formEl);
+    let res: Response;
     try {
-      const res = await fetch("/api/notes", {
+      res = await fetch("/api/notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -24,19 +26,27 @@ export function NoteComposer({ dealSlug }: { dealSlug: string }) {
           visibility: String(form.get("visibility") || "operate"),
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { message?: string };
-      if (!res.ok) {
-        setError(data.message || "Não foi possível gravar a nota.");
-        return;
-      }
-      toast("Nota registrada.");
-      event.currentTarget.reset();
-      router.refresh();
     } catch {
       setError("Falha de rede.");
-    } finally {
       setBusy(false);
+      return;
     }
+
+    let data: { message?: string } = {};
+    try {
+      data = (await res.json()) as { message?: string };
+    } catch {
+      data = {};
+    }
+    if (!res.ok) {
+      setError(data.message || "Não foi possível gravar a nota.");
+      setBusy(false);
+      return;
+    }
+    toast("Nota registrada.");
+    formEl.reset();
+    setBusy(false);
+    router.refresh();
   }
 
   return (
