@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
-import { cleanText, parseOpenPointStatus, parsePillar, parseVisibility } from "@/lib/data/room-input";
-import { updateOpenPoint } from "@/lib/data/store";
+import { cleanText, isUuid, parseOpenPointStatus, parsePillar, parseVisibility } from "@/lib/data/room-input";
+import { deleteOpenPoint, updateOpenPoint } from "@/lib/data/store";
 import { denyUnlessOperate } from "@/lib/room-write";
 import type { OpenPoint } from "@/lib/types";
+
+function rejectSeed(id: string) {
+  if (isUuid(id)) return null;
+  return NextResponse.json({ error: "seed" }, { status: 400 });
+}
 
 export async function PATCH(
   req: Request,
@@ -12,6 +17,8 @@ export async function PATCH(
   if (denied) return denied;
 
   const { id } = await params;
+  const seeded = rejectSeed(id);
+  if (seeded) return seeded;
   const body = (await req.json().catch(() => null)) as {
     title?: string;
     owner?: string;
@@ -53,6 +60,28 @@ export async function PATCH(
     return NextResponse.json({ point });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Falha ao atualizar o ponto";
+    console.error("[api/open-points]", message);
+    return NextResponse.json({ error: "store", message }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const denied = await denyUnlessOperate();
+  if (denied) return denied;
+
+  const { id } = await params;
+  const seeded = rejectSeed(id);
+  if (seeded) return seeded;
+
+  try {
+    const ok = await deleteOpenPoint(id);
+    if (!ok) return NextResponse.json({ error: "missing" }, { status: 404 });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Falha ao excluir o ponto";
     console.error("[api/open-points]", message);
     return NextResponse.json({ error: "store", message }, { status: 500 });
   }

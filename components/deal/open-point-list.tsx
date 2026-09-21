@@ -1,9 +1,11 @@
 import { formatDate } from "@/lib/format";
+import { isUuid } from "@/lib/data/room-input";
 import { isPillarSlug, PILLAR_BY_SLUG } from "@/lib/pillars";
 import type { OpenPoint, OpenPointStatus } from "@/lib/types";
 import { EmptyState } from "@/components/ui/empty-state";
 import { WithTerms } from "@/components/ui/with-terms";
 import { MutableStatus } from "./mutable-status";
+import { PointRowMenu } from "./room-bar";
 
 const STATUS_OPTIONS: { value: OpenPointStatus; label: string }[] = [
   { value: "aberto", label: "Aberto" },
@@ -82,6 +84,7 @@ function PointTable({ rows, canEdit }: { rows: OpenPoint[]; canEdit: boolean }) 
                 <span className="ops-strong">
                   <WithTerms text={item.title} interactive={false} />
                 </span>
+                {canEdit && isUuid(item.id) ? <PointRowMenu point={item} /> : null}
               </td>
               <td className="ops-owner">{item.owner || "—"}</td>
               <td className="ops-due">{item.due ? formatDate(item.due) : "—"}</td>

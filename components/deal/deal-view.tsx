@@ -17,7 +17,7 @@ import { ActionBoard } from "./action-board";
 import { MeetingTabs } from "./meeting-tabs";
 import { NoteComposer } from "./note-composer";
 import { OpenPointList } from "./open-point-list";
-import { RoomBar } from "./room-bar";
+import { RoomProvider, RoomStrip } from "./room-bar";
 import { Freshness } from "@/components/ui/freshness";
 
 export function DealView({
@@ -209,8 +209,10 @@ export function DealView({
         </section>
       )}
 
+      <RoomProvider dealSlug={deal.slug}>
       <section id="opl" className="war-block war-opl">
         <MeetingTabs
+          tools={canWrite ? <RoomStrip /> : null}
           pendencias={
             <>
               <h2 className="war-label">Pontos em aberto</h2>
@@ -236,6 +238,7 @@ export function DealView({
               <NotesList
                 items={bundle.notes}
                 compact
+                canEdit={canWrite}
                 compose={canWrite ? <NoteComposer dealSlug={deal.slug} /> : null}
               />
             ) : (
@@ -244,9 +247,7 @@ export function DealView({
           }
         />
       </section>
-
-      {canWrite && <RoomBar dealSlug={deal.slug} />}
-      {canWrite && <div className="room-bar-spacer" aria-hidden />}
+      </RoomProvider>
 
       {showElevaRoom && (
         <section id="tese" className="eleva-room mb-4">

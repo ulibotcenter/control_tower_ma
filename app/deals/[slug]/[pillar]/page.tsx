@@ -5,7 +5,7 @@ import { ChecklistTable } from "@/components/deal/checklist-table";
 import { DocsList } from "@/components/deal/lists";
 import { ActionBoard } from "@/components/deal/action-board";
 import { OpenPointList } from "@/components/deal/open-point-list";
-import { RoomBar } from "@/components/deal/room-bar";
+import { RoomProvider, RoomStrip } from "@/components/deal/room-bar";
 import { RisksBoard } from "@/components/deal/risks-board";
 import { getDealBundle } from "@/lib/data/provider";
 import {
@@ -178,7 +178,12 @@ export default async function PillarPage({
         </p>
       )}
 
-      {canWrite && <RoomBar dealSlug={slug} pillarSlug={pillar} />}
+      <RoomProvider dealSlug={slug} pillarSlug={pillar}>
+      {canWrite ? (
+        <div className="meet-actions pillar-meet-actions">
+          <RoomStrip />
+        </div>
+      ) : null}
 
       <section id="opl" className="war-block">
         <h2 className="war-label">Pontos em aberto</h2>
@@ -233,7 +238,7 @@ export default async function PillarPage({
         </p>
       )}
 
-      {canWrite && <div className="room-bar-spacer" aria-hidden />}
+      </RoomProvider>
 
       <nav className="pillar-others no-print" aria-label="Outros pilares">
         <ul>

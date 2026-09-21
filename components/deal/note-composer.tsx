@@ -52,7 +52,7 @@ export function NoteComposer({ dealSlug }: { dealSlug: string }) {
           <option value="advisors">Assessores</option>
           <option value="target">Alvo</option>
         </select>
-        <button type="submit" className="btn btn-primary" disabled={busy}>
+        <button type="submit" className="btn btn-soft" disabled={busy}>
           {busy ? "Gravando…" : "Guardar nota"}
         </button>
       </div>

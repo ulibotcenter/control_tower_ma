@@ -6,6 +6,7 @@ import { DriveLink } from "@/components/ui/drive-link";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, documentTone } from "@/components/ui/status-badge";
 import { WithTerms } from "@/components/ui/with-terms";
+import { NoteRowMenu } from "./room-bar";
 
 export function MetricsGrid({ items, mode }: { items: Metric[]; mode: MeetingMode }) {
   if (!items.length) {
@@ -90,10 +91,12 @@ export function NotesList({
   items,
   compose = null,
   compact = false,
+  canEdit = false,
 }: {
   items: Note[];
   compose?: ReactNode;
   compact?: boolean;
+  canEdit?: boolean;
 }) {
   if (!items.length && !compose) return null;
   return (
@@ -104,6 +107,7 @@ export function NotesList({
           {items.map((n) => (
             <li key={n.id} className="border-l-2 border-brand pl-3 text-sm leading-relaxed">
               <WithTerms text={n.body} />
+              {canEdit ? <NoteRowMenu note={n} /> : null}
             </li>
           ))}
         </ul>

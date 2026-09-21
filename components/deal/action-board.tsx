@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, actionTone } from "@/components/ui/status-badge";
 import { WithTerms } from "@/components/ui/with-terms";
 import { MutableStatus } from "./mutable-status";
+import { TaskRowMenu } from "./room-bar";
 
 const ACTION_OPTIONS: { value: ActionItem["status"]; label: string }[] = [
   { value: "open", label: "Aberta" },
@@ -88,6 +89,7 @@ export function ActionBoard({
                   {a.workstreamSlug ? (
                     <span className="ops-meta">{workstreamLabel(a.workstreamSlug)}</span>
                   ) : null}
+                  {canEdit && isUuid(a.id) ? <TaskRowMenu action={a} /> : null}
                 </td>
                 <td className="ops-owner">{a.owner}</td>
                 <td className={a.status === "late" ? "ops-due is-late" : "ops-due"}>{formatDate(a.due)}</td>

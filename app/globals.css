@@ -126,6 +126,36 @@ a.btn:visited {
   background: var(--canvas);
   color: var(--ink);
 }
+.btn.btn-soft {
+  background: color-mix(in srgb, var(--logo) 18%, var(--paper));
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--logo) 48%, var(--line));
+  box-shadow: none;
+}
+.btn.btn-soft:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--logo) 28%, var(--paper));
+  color: var(--ink);
+}
+.btn.btn-line {
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--logo) 62%, var(--line-strong));
+  box-shadow: none;
+}
+.btn.btn-line:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--logo) 10%, var(--paper));
+  color: var(--ink);
+}
+.btn.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  box-shadow: none;
+}
+.btn.btn-ghost:hover:not(:disabled) {
+  background: transparent;
+  color: var(--ink);
+}
 .btn-primary {
   /* Laranja mais fundo: branco em cima do #E05A24 não segura leitura. */
   background: #c2410c;
@@ -1148,6 +1178,10 @@ html:has(.shell[data-work="1"]) {
   white-space: nowrap;
 }
 
+td.ops-meta-cell {
+  display: table-cell;
+}
+
 .ops-owner,
 .ops-due {
   font-weight: 650;
@@ -1179,24 +1213,32 @@ html:has(.shell[data-work="1"]) {
   vertical-align: middle;
 }
 
-.data-table.ops-table tbody tr.is-hot td {
+.data-table.ops-table tbody tr.is-hot {
   background: color-mix(in srgb, var(--alert) 10%, var(--paper));
 }
 
-.data-table.ops-table tbody tr.is-aberto td {
+.data-table.ops-table tbody tr.is-aberto {
   background: color-mix(in srgb, var(--wait) 12%, var(--paper));
 }
 
-.data-table.ops-table tbody tr.is-course td {
+.data-table.ops-table tbody tr.is-course {
   background: color-mix(in srgb, #94a3b8 18%, var(--paper));
 }
 
-.data-table.ops-table tbody tr.is-travado td {
+.data-table.ops-table tbody tr.is-travado {
   background: color-mix(in srgb, var(--alert) 12%, var(--paper));
 }
 
-.data-table.ops-table tbody tr.is-feita td {
+.data-table.ops-table tbody tr.is-feita {
   background: color-mix(in srgb, var(--go) 12%, var(--paper));
+}
+
+.data-table.ops-table tbody tr.is-hot td,
+.data-table.ops-table tbody tr.is-aberto td,
+.data-table.ops-table tbody tr.is-course td,
+.data-table.ops-table tbody tr.is-travado td,
+.data-table.ops-table tbody tr.is-feita td {
+  background: transparent;
 }
 
 .data-table.ops-table tbody tr.is-wash td,
@@ -2415,31 +2457,12 @@ html:has(.shell[data-work="1"]) {
   margin-top: 0.2rem;
 }
 
-.room-bar {
-  position: fixed;
-  right: max(0.75rem, env(safe-area-inset-right));
-  bottom: max(0.75rem, env(safe-area-inset-bottom));
-  z-index: 30;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.4rem;
-  max-width: calc(100vw - 1.5rem);
-  padding: 0.4rem;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 12%, transparent);
-}
-
-.room-bar .btn {
+.meet-actions .btn,
+.room-dialog .btn {
   min-height: 2rem;
   padding: 0.3rem 0.75rem;
   font-size: 0.8125rem;
-}
-
-.room-bar-spacer {
-  height: 3.25rem;
+  box-shadow: none;
 }
 
 .room-dialog {
@@ -2461,11 +2484,51 @@ html:has(.shell[data-work="1"]) {
   gap: 0.4rem;
 }
 
+.meet-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  margin: 0.35rem 0 0.75rem;
+}
+
 .meet-tablist {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin: 0.35rem 0 0.75rem;
+  margin: 0;
+}
+
+.meet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.pillar-meet-actions {
+  margin: 0.15rem 0 0.75rem;
+}
+
+.row-menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.2rem;
+}
+
+.row-menu button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.75rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
 }
 
 .meet-tablist .chip {
@@ -2483,6 +2546,8 @@ html:has(.shell[data-work="1"]) {
   max-width: 9.5rem;
   padding: 0.15rem 0.35rem;
   font-size: 0.75rem;
+  background: var(--paper);
+  color: var(--ink);
 }
 
 .opl-resolved {

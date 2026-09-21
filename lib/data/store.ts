@@ -36,7 +36,11 @@ import {
   listInboxLocal,
   listOpenPointsLocal,
   unclassifiedCountLocal,
+  deleteActionLocal,
+  deleteNoteLocal,
+  deleteOpenPointLocal,
   updateActionLocal,
+  updateNoteLocal,
   updateOpenPointLocal,
 } from "./store-local";
 import {
@@ -56,7 +60,11 @@ import {
   listInboxRemote,
   listOpenPointsRemote,
   unclassifiedCountRemote,
+  deleteActionRemote,
+  deleteNoteRemote,
+  deleteOpenPointRemote,
   updateActionRemote,
+  updateNoteRemote,
   updateOpenPointRemote,
 } from "./store-supabase";
 
@@ -211,6 +219,13 @@ export async function updateOpenPoint(
   return updateOpenPointLocal(id, patch);
 }
 
+export async function deleteOpenPoint(id: string): Promise<boolean> {
+  const sb = remote();
+  if (sb) return deleteOpenPointRemote(sb, id);
+  if (forbidLocalStore()) refuseLocalWrite("deleteOpenPoint");
+  return deleteOpenPointLocal(id);
+}
+
 export async function listExtraActions(): Promise<ActionItem[]> {
   const sb = remote();
   if (sb) return safeRead("listExtraActions", () => listExtraActionsRemote(sb), []);
@@ -225,11 +240,21 @@ export async function addAction(input: Omit<ActionItem, "id"> & { slug: string }
   return addActionLocal(dropSlug(input));
 }
 
-export async function updateAction(id: string, status: ActionItem["status"]): Promise<ActionItem | null> {
+export async function updateAction(
+  id: string,
+  patch: Partial<Pick<ActionItem, "title" | "owner" | "due" | "pillarSlug" | "status" | "visibility">>,
+): Promise<ActionItem | null> {
   const sb = remote();
-  if (sb) return updateActionRemote(sb, id, status);
+  if (sb) return updateActionRemote(sb, id, patch);
   if (forbidLocalStore()) refuseLocalWrite("updateAction");
-  return updateActionLocal(id, status);
+  return updateActionLocal(id, patch);
+}
+
+export async function deleteAction(id: string): Promise<boolean> {
+  const sb = remote();
+  if (sb) return deleteActionRemote(sb, id);
+  if (forbidLocalStore()) refuseLocalWrite("deleteAction");
+  return deleteActionLocal(id);
 }
 
 export async function listExtraNotes(): Promise<Note[]> {
@@ -244,6 +269,23 @@ export async function addNote(input: Omit<Note, "id"> & { slug: string }): Promi
   if (sb) return addNoteRemote(sb, input);
   if (forbidLocalStore()) refuseLocalWrite("addNote");
   return addNoteLocal(dropSlug(input));
+}
+
+export async function updateNote(
+  id: string,
+  patch: Partial<Pick<Note, "body" | "visibility">>,
+): Promise<Note | null> {
+  const sb = remote();
+  if (sb) return updateNoteRemote(sb, id, patch);
+  if (forbidLocalStore()) refuseLocalWrite("updateNote");
+  return updateNoteLocal(id, patch);
+}
+
+export async function deleteNote(id: string): Promise<boolean> {
+  const sb = remote();
+  if (sb) return deleteNoteRemote(sb, id);
+  if (forbidLocalStore()) refuseLocalWrite("deleteNote");
+  return deleteNoteLocal(id);
 }
 
 export async function unclassifiedCount() {

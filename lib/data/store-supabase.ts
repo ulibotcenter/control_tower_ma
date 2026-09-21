@@ -287,6 +287,12 @@ export async function updateOpenPointRemote(
   return mapOpenPointRow(data as Record<string, unknown>, canon(String((data as { deal_id?: string }).deal_id ?? "")));
 }
 
+export async function deleteOpenPointRemote(sb: SupabaseClient, id: string): Promise<boolean> {
+  const { data, error } = await sb.from("open_points").delete().eq("id", id).select("id");
+  if (error) fail("delete open point", error);
+  return Boolean(data && data.length);
+}
+
 export async function listExtraActionsRemote(sb: SupabaseClient): Promise<ActionItem[]> {
   const canon = await dealCanon(sb);
   const { data, error } = await sb.from("actions").select("*");
@@ -332,13 +338,32 @@ export async function addActionRemote(
 export async function updateActionRemote(
   sb: SupabaseClient,
   id: string,
-  status: ActionItem["status"],
+  patch: Partial<Pick<ActionItem, "title" | "owner" | "due" | "pillarSlug" | "status" | "visibility">>,
 ): Promise<ActionItem | null> {
-  const { data, error } = await sb.from("actions").update({ status }).eq("id", id).select("*").maybeSingle();
+  const payload: Record<string, unknown> = {};
+  if (patch.title != null) payload.title = patch.title;
+  if (patch.owner != null) payload.owner = patch.owner || null;
+  if (patch.due != null) payload.due = patch.due || null;
+  if (patch.pillarSlug !== undefined) payload.pillar_slug = patch.pillarSlug;
+  if (patch.status) payload.status = patch.status;
+  if (patch.visibility) payload.visibility = patch.visibility;
+  let { data, error } = await sb.from("actions").update(payload).eq("id", id).select("*").maybeSingle();
+  if (error && /pillar_slug/i.test(error.message)) {
+    delete payload.pillar_slug;
+    ({ data, error } = await sb.from("actions").update(payload).eq("id", id).select("*").maybeSingle());
+  }
   if (error) fail("update action", error);
   if (!data) return null;
   const canon = await dealCanon(sb);
-  return mapActionRow(data as Record<string, unknown>, canon(String((data as { deal_id?: string }).deal_id ?? "")));
+  const row = mapActionRow(data as Record<string, unknown>, canon(String((data as { deal_id?: string }).deal_id ?? "")));
+  if (!row.pillarSlug && patch.pillarSlug) row.pillarSlug = patch.pillarSlug;
+  return row;
+}
+
+export async function deleteActionRemote(sb: SupabaseClient, id: string): Promise<boolean> {
+  const { data, error } = await sb.from("actions").delete().eq("id", id).select("id");
+  if (error) fail("delete action", error);
+  return Boolean(data && data.length);
 }
 
 export async function listExtraNotesRemote(sb: SupabaseClient): Promise<Note[]> {
@@ -372,6 +397,28 @@ export async function addNoteRemote(
     fail("insert note", error);
   }
   return mapNoteRow(data as Record<string, unknown>, input.dealId);
+}
+
+export async function updateNoteRemote(
+  sb: SupabaseClient,
+  id: string,
+  patch: Partial<Pick<Note, "body" | "visibility">>,
+): Promise<Note | null> {
+  const payload: Record<string, unknown> = {};
+  if (patch.body != null) payload.body = patch.body;
+  if (patch.visibility) payload.visibility = patch.visibility;
+  const { data, error } = await sb.from("notes").update(payload).eq("id", id).select("*").maybeSingle();
+  if (error) fail("update note", error);
+  if (!data) return null;
+  const canon = await dealCanon(sb);
+  const raw = (data as { deal_id?: string | null }).deal_id;
+  return mapNoteRow(data as Record<string, unknown>, raw ? canon(String(raw)) : null);
+}
+
+export async function deleteNoteRemote(sb: SupabaseClient, id: string): Promise<boolean> {
+  const { data, error } = await sb.from("notes").delete().eq("id", id).select("id");
+  if (error) fail("delete note", error);
+  return Boolean(data && data.length);
 }
 
 export async function unclassifiedCountRemote(sb: SupabaseClient) {

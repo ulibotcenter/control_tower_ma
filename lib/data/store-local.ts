@@ -202,6 +202,16 @@ export async function updateOpenPointLocal(
   return row;
 }
 
+export async function deleteOpenPointLocal(id: string): Promise<boolean> {
+  const s = await load();
+  const next = s.openPoints.filter((item) => item.id !== id);
+  if (next.length === s.openPoints.length) return false;
+  s.openPoints = next;
+  memory = s;
+  await writeStore(s);
+  return true;
+}
+
 export async function listExtraActionsLocal(): Promise<ActionItem[]> {
   const s = await load();
   return [...s.actions];
@@ -218,15 +228,30 @@ export async function addActionLocal(input: Omit<ActionItem, "id">): Promise<Act
 
 export async function updateActionLocal(
   id: string,
-  status: ActionItem["status"],
+  patch: Partial<Pick<ActionItem, "title" | "owner" | "due" | "pillarSlug" | "status" | "visibility">>,
 ): Promise<ActionItem | null> {
   const s = await load();
   const row = s.actions.find((item) => item.id === id);
   if (!row) return null;
-  row.status = status;
+  if (patch.title != null) row.title = patch.title;
+  if (patch.owner != null) row.owner = patch.owner;
+  if (patch.due != null) row.due = patch.due;
+  if (patch.pillarSlug !== undefined) row.pillarSlug = patch.pillarSlug;
+  if (patch.status) row.status = patch.status;
+  if (patch.visibility) row.visibility = patch.visibility;
   memory = s;
   await writeStore(s);
   return row;
+}
+
+export async function deleteActionLocal(id: string): Promise<boolean> {
+  const s = await load();
+  const next = s.actions.filter((item) => item.id !== id);
+  if (next.length === s.actions.length) return false;
+  s.actions = next;
+  memory = s;
+  await writeStore(s);
+  return true;
 }
 
 export async function listExtraNotesLocal(): Promise<Note[]> {
@@ -241,4 +266,28 @@ export async function addNoteLocal(input: Omit<Note, "id">): Promise<Note> {
   memory = s;
   await writeStore(s);
   return row;
+}
+
+export async function updateNoteLocal(
+  id: string,
+  patch: Partial<Pick<Note, "body" | "visibility">>,
+): Promise<Note | null> {
+  const s = await load();
+  const row = s.notes.find((item) => item.id === id);
+  if (!row) return null;
+  if (patch.body != null) row.body = patch.body;
+  if (patch.visibility) row.visibility = patch.visibility;
+  memory = s;
+  await writeStore(s);
+  return row;
+}
+
+export async function deleteNoteLocal(id: string): Promise<boolean> {
+  const s = await load();
+  const next = s.notes.filter((item) => item.id !== id);
+  if (next.length === s.notes.length) return false;
+  s.notes = next;
+  memory = s;
+  await writeStore(s);
+  return true;
 }
