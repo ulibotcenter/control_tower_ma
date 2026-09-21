@@ -3,8 +3,11 @@ import { getSessionPayload } from "@/lib/auth";
 import { lockedDeal } from "@/lib/meeting";
 import { getPresent } from "@/lib/present";
 import { unclassifiedCount } from "@/lib/data/store";
-import { getDealOptions } from "@/lib/data/provider";
+import { getDealBundle, getDealOptions } from "@/lib/data/provider";
+import { getPillarViews } from "@/lib/data/pillar-view";
+import { pillarOfDealPhase } from "@/lib/pillars";
 import { canSeeInbox } from "@/lib/visibility";
+import type { MeetingMode } from "@/lib/types";
 import { MODE_META } from "@/lib/mode-meta";
 import { isOnboardedCookie, ONBOARD_COOKIE } from "@/lib/onboarding";
 import { redirect } from "next/navigation";
@@ -18,12 +21,32 @@ import { DriveReviewHost } from "./drive-review";
 import { SidebarProvider, SideNav } from "./sidebar";
 import type { ShellDealNav } from "./shell-nav";
 
+async function shellNavFor(slug: string, mode: MeetingMode): Promise<ShellDealNav | null> {
+  const bundle = await getDealBundle(slug, mode);
+  if (!bundle) return null;
+  const pillars = getPillarViews(bundle);
+  return {
+    slug: bundle.deal.slug,
+    name: bundle.deal.name,
+    phasePillar: pillarOfDealPhase(bundle.deal.phase),
+    pillars: pillars.map((p) => ({
+      slug: p.slug,
+      order: p.order,
+      short: p.short,
+      health: p.health,
+    })),
+  };
+}
+
 export async function AppShell({
   children,
   nav = null,
+  focusSlug = null,
 }: {
   children: React.ReactNode;
   nav?: ShellDealNav | null;
+  /** `?deal=` nas rotas fora de `/deals`. Ignorado se o Alvo travou outro deal. */
+  focusSlug?: string | null;
 }) {
   const session = await getSessionPayload();
   if (!session) redirect("/login");
@@ -53,8 +76,12 @@ export async function AppShell({
     minute: "2-digit",
   });
   const showWork = canSeeInbox(mode) && !present;
-  // No Alvo a sidebar só existe para o deal travado. Fora dele, navegação de produto.
-  const dealNav = nav && (!onlyDeal || nav.slug === onlyDeal) ? nav : null;
+  // No Alvo a sidebar só existe para o deal travado. O outro nem é buscado.
+  let dealNav = nav && (!onlyDeal || nav.slug === onlyDeal) ? nav : null;
+  const focused = focusSlug && (!onlyDeal || focusSlug === onlyDeal) ? focusSlug : null;
+  if (!dealNav && focused && dealOptions.some((d) => d.slug === focused)) {
+    dealNav = await shellNavFor(focused, mode);
+  }
 
   return (
     <SidebarProvider>

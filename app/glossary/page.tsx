@@ -1,11 +1,17 @@
 import { AppShell } from "@/components/shell/app-shell";
 import { GlossaryExplorer } from "@/components/glossary/glossary-explorer";
 import { getMode } from "@/lib/mode";
+import { focusSlugFromQuery } from "@/components/shell/focus-deal";
 
-export default async function GlossaryPage() {
+export default async function GlossaryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ deal?: string }>;
+}) {
+  const { deal } = await searchParams;
   const mode = await getMode();
   return (
-    <AppShell>
+    <AppShell focusSlug={focusSlugFromQuery(deal)}>
       <h1 className="serif text-4xl text-navy">Glossário</h1>
       <p className="mt-3 max-w-2xl text-[15px] leading-relaxed">
         Os mesmos termos que aparecem com um «?» na tela. Feito para quem conhece rádio e ainda

@@ -2,10 +2,11 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { isTypingTarget, keyboardNavEnabled, shortcutsFor } from "@/lib/shortcuts";
 import { toast } from "@/lib/toast";
 import type { MeetingMode } from "@/lib/types";
+import { focusSlugFromQuery, hrefWithDeal } from "./focus-deal";
 import { openOnboarding } from "./onboarding";
 
 export function Shortcuts({
@@ -19,6 +20,10 @@ export function Shortcuts({
 }) {
   const router = useRouter();
   const path = usePathname();
+  const params = useSearchParams();
+  const fromDeal = path.match(/^\/deals\/([^/]+)/)?.[1] ?? null;
+  const focus = focusSlugFromQuery(fromDeal) ?? focusSlugFromQuery(params.get("deal"));
+  const glossaryHref = focus ? hrefWithDeal("/glossary", focus) : "/glossary";
   const [open, setOpen] = useState(false);
   const [box, setBox] = useState<{ top: number; right: number } | null>(null);
   const panelId = useId();
@@ -146,7 +151,7 @@ export function Shortcuts({
           )}
           <div className="mt-3 flex flex-col items-start gap-1.5">
             <Link
-              href="/glossary"
+              href={glossaryHref}
               className="text-[13px] font-semibold text-navy underline-offset-2 hover:underline"
               onClick={() => setOpen(false)}
             >

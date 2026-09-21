@@ -512,6 +512,18 @@ a.nav-sec.is-on:visited {
   font-weight: 650;
 }
 
+.hdr-btn.is-exit {
+  background: var(--logo);
+  border-color: var(--logo);
+  color: #ffffff;
+  font-weight: 650;
+}
+
+.hdr-btn.is-exit:hover:not(:disabled) {
+  background: #c2410c;
+  color: #ffffff;
+}
+
 .hdr-seg {
   display: inline-flex;
   align-items: stretch;

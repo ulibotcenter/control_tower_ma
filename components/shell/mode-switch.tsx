@@ -125,7 +125,18 @@ export function ModeSwitch({
   const phraseOk = phrase.trim().toUpperCase() === TARGET_EXIT_PHRASE;
 
   return (
-    <div className="relative no-print">
+    <div className="relative no-print flex items-center gap-1">
+      {mode === "target" && (
+        <button
+          type="button"
+          className="hdr-btn is-exit"
+          onClick={() => {
+            if (!busy) setLeavingTo("operate");
+          }}
+        >
+          Sair do Alvo
+        </button>
+      )}
       <div
         className={`hdr-seg${quiet ? " is-quiet" : ""}`}
         role="radiogroup"

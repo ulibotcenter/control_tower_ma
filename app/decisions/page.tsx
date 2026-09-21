@@ -8,8 +8,15 @@ import { redirect } from "next/navigation";
 import { getPresent } from "@/lib/present";
 import { Freshness } from "@/components/ui/freshness";
 import { DecisionHistory } from "@/components/decisions/decision-history";
+import { focusSlugFromQuery } from "@/components/shell/focus-deal";
 
-export default async function DecisionsPage() {
+export default async function DecisionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ deal?: string }>;
+}) {
+  const { deal } = await searchParams;
+  const focus = focusSlugFromQuery(deal);
   const mode = await getMode();
   const present = await getPresent();
   const access = canSeeDecisions(mode);
@@ -20,7 +27,7 @@ export default async function DecisionsPage() {
   const dealNames = Object.fromEntries(deals.map((d) => [d.id, d.name]));
 
   return (
-    <AppShell>
+    <AppShell focusSlug={focus}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="kicker">Histórico</p>
@@ -33,7 +40,7 @@ export default async function DecisionsPage() {
           </p>
         </div>
         {access === "full" && !present && (
-          <Link href="/decisions/nova" className="btn no-print">
+          <Link href={focus ? `/decisions/nova?deal=${focus}` : "/decisions/nova"} className="btn no-print">
             Registrar decisão
           </Link>
         )}

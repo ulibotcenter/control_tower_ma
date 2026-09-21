@@ -9,15 +9,22 @@ import { InboxForm } from "@/components/inbox/inbox-form";
 import { DriveSyncButton } from "@/components/shell/drive-sync-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { deals } from "@/lib/data/seed";
+import { focusSlugFromQuery } from "@/components/shell/focus-deal";
 
-export default async function InboxPage() {
+export default async function InboxPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ deal?: string }>;
+}) {
+  const { deal } = await searchParams;
+  const focus = focusSlugFromQuery(deal);
   const files = await listInbox();
   const drive = getDriveStatus();
   const open = files.filter((f) => !f.classified);
   const done = files.filter((f) => f.classified);
 
   return (
-    <AppShell>
+    <AppShell focusSlug={focus}>
       <p className="kicker">Só modo Operar</p>
       <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
         <h1 className="serif text-4xl text-navy">Novos arquivos</h1>
@@ -71,7 +78,7 @@ export default async function InboxPage() {
                   </p>
                 </div>
                 <Link
-                  href={`/inbox/${f.id}`}
+                  href={focus ? `/inbox/${f.id}?deal=${focus}` : `/inbox/${f.id}`}
                   className="btn"
                 >
                   Classificar

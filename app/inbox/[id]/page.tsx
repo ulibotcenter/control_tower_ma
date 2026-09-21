@@ -4,18 +4,22 @@ import { getInboxFile } from "@/lib/data/store";
 import { ClassifyForm } from "@/components/inbox/classify-form";
 import { deals, workstreams } from "@/lib/data/seed";
 import { DriveLink } from "@/components/ui/drive-link";
+import { focusSlugFromQuery } from "@/components/shell/focus-deal";
 
 export default async function ClassifyPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ deal?: string }>;
 }) {
   const { id } = await params;
+  const { deal } = await searchParams;
   const file = await getInboxFile(id);
   if (!file) notFound();
 
   return (
-    <AppShell>
+    <AppShell focusSlug={focusSlugFromQuery(deal)}>
       <p className="kicker">Classificação humana</p>
       <h1 className="serif text-3xl text-navy">{file.name}</h1>
       <p className="mt-2 max-w-xl text-sm text-muted">

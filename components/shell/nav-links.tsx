@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { MeetingMode, Semaphore } from "@/lib/types";
 import { DriveSyncButton } from "./drive-sync-button";
+import { focusSlugFromQuery, hrefWithDeal, isFocusRoute } from "./focus-deal";
 import { canSeeInbox } from "@/lib/visibility";
 
 function isActive(path: string, href: string) {
@@ -24,14 +25,19 @@ export function DealPick({
   onlyDeal?: string | null;
 }) {
   const path = usePathname();
+  const params = useSearchParams();
   const visible = onlyDeal ? deals.filter((d) => d.slug === onlyDeal) : deals;
   if (visible.length === 0) return null;
+  const stay = isFocusRoute(path);
+  const focused = focusSlugFromQuery(params.get("deal"));
 
   return (
     <div className="deal-pick" role="tablist" aria-label="Operações">
       {visible.map((deal) => {
-        const href = `/deals/${deal.slug}`;
-        const active = isActive(path, href);
+        const href = stay ? hrefWithDeal(path, deal.slug, params.toString()) : `/deals/${deal.slug}`;
+        const active = path.startsWith("/deals/")
+          ? isActive(path, `/deals/${deal.slug}`)
+          : focused === deal.slug;
         return (
           <Link
             key={deal.slug}
@@ -63,7 +69,10 @@ export function WorkNav({
   inboxCount: number;
 }) {
   const path = usePathname();
+  const params = useSearchParams();
   if (!canSeeInbox(mode)) return null;
+  const fromDeal = path.match(/^\/deals\/([^/]+)/)?.[1] ?? null;
+  const focus = focusSlugFromQuery(fromDeal) ?? focusSlugFromQuery(params.get("deal"));
 
   const items = [
     { href: "/inbox", label: "Bandeja", badge: inboxCount },
@@ -75,7 +84,11 @@ export function WorkNav({
     <div className="work-nav no-print">
       <nav className="px-3 sm:px-4" aria-label="Trabalho">
         {items.map((item) => (
-          <Link key={item.href} href={item.href} className={isActive(path, item.href) ? "is-on" : undefined}>
+          <Link
+            key={item.href}
+            href={focus ? `${item.href}?deal=${encodeURIComponent(focus)}` : item.href}
+            className={isActive(path, item.href) ? "is-on" : undefined}
+          >
             {item.label}
             {item.badge ? (
               <span className="ml-1.5 bg-alert px-1.5 py-0.5 text-[11px] font-semibold text-cream">

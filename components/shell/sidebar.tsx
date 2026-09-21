@@ -144,9 +144,11 @@ function DealNav({
   path: string;
 }) {
   const prefix = `/deals/${deal.slug}`;
-  const segment = path.startsWith(`${prefix}/`) ? path.slice(prefix.length + 1).split("/")[0] : "";
+  const onDeal = path === prefix || path.startsWith(`${prefix}/`);
+  const segment = onDeal && path.startsWith(`${prefix}/`) ? path.slice(prefix.length + 1).split("/")[0] : "";
   const reading = deal.pillars.some((p) => p.slug === segment) ? (segment as PillarSlug) : null;
-  const here = reading ?? deal.phasePillar;
+  // Fora da URL do deal, “aqui” não marca um pilar: quem está aceso é Decisões.
+  const here = reading ?? (onDeal ? deal.phasePillar : null);
   const docPillar = reading ?? deal.phasePillar ?? deal.pillars[0]?.slug ?? null;
   const docsHref = docPillar ? `${prefix}/${docPillar}#documentos` : prefix;
 
@@ -176,7 +178,10 @@ function DealNav({
       </nav>
       <nav className="side-more" aria-label="Neste deal">
         {canSeeDecisions(mode) !== "hidden" && (
-          <Link href="/decisions" className={isOn(path, "/decisions") ? "is-on" : undefined}>
+          <Link
+            href={`/decisions?deal=${deal.slug}`}
+            className={isOn(path, "/decisions") ? "is-on" : undefined}
+          >
             Decisões
           </Link>
         )}

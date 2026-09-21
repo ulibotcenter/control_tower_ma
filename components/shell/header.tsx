@@ -88,7 +88,7 @@ export function Header({
             <span className="hdr-user">{user.name}</span>
             <form action="/api/auth/logout" method="post" className="hdr-sair">
               <button type="submit" className="hdr-btn" title="Encerrar a sessão">
-                Sair
+                {mode === "target" ? "Encerrar sessão" : "Sair"}
               </button>
             </form>
           </>

@@ -14,8 +14,14 @@ import { DriveLink } from "@/components/ui/drive-link";
 import { Freshness } from "@/components/ui/freshness";
 import { ActivityFeed } from "@/components/home/activity-feed";
 import { SemaphoreLegend } from "@/components/ui/legend";
+import { focusSlugFromQuery } from "@/components/shell/focus-deal";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ deal?: string }>;
+}) {
+  const { deal } = await searchParams;
   const mode = await getMode();
   const onlyDeal = await getLockedDeal();
   const present = await getPresent();
@@ -33,7 +39,7 @@ export default async function HomePage() {
   const attention = showRail ? getAttentionItems(mode, { onlyDeal }) : [];
 
   return (
-    <AppShell>
+    <AppShell focusSlug={focusSlugFromQuery(deal)}>
       <header className="max-w-3xl">
         <p className="kicker">
           {target ? (

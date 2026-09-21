@@ -7,15 +7,21 @@ import { CORTE, DRIVE_EXPORTS_PATH, SEMAPHORE_LABEL } from "@/lib/constants";
 import { isDriveConfigured } from "@/lib/config";
 import { formatDate } from "@/lib/format";
 import { PackButton } from "@/components/export/pack-button";
+import { focusSlugFromQuery } from "@/components/shell/focus-deal";
 
-export default async function PackPage() {
+export default async function PackPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ deal?: string }>;
+}) {
+  const { deal } = await searchParams;
   const mode = await getMode();
   if (mode !== "operate") redirect("/");
   const program = await getProgram("operate");
   const decisions = await listDecisions();
 
   return (
-    <AppShell>
+    <AppShell focusSlug={focusSlugFromQuery(deal)}>
       <p className="kicker">Artefato novo · sem mexer no data room</p>
       <h1 className="serif text-4xl text-navy">Pack da semana</h1>
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
