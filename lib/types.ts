@@ -207,6 +207,8 @@ export interface InboxFile {
   source: "manual" | "drive";
   driveUrl: string | null;
   driveId: string | null;
+  /** modifiedTime lido no Drive. Ausente até a primeira varredura que gravou. */
+  driveModifiedAt?: string | null;
   receivedAt: string;
   classified: boolean;
   classification?: {

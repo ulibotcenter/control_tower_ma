@@ -83,15 +83,22 @@ export async function addInboxFileLocal(input: {
   name: string;
   driveUrl?: string | null;
   driveId?: string | null;
+  driveModifiedAt?: string | null;
   source?: "manual" | "drive";
 }): Promise<InboxFile> {
   const s = await load();
+  const driveId = input.driveId?.trim() || null;
+  if (driveId) {
+    const existing = s.inbox.find((file) => file.driveId === driveId);
+    if (existing) return existing;
+  }
   const file: InboxFile = {
     id: randomUUID(),
     name: input.name.trim(),
     source: input.source ?? "manual",
     driveUrl: sanitizeDriveUrl(input.driveUrl),
-    driveId: input.driveId?.trim() || null,
+    driveId,
+    driveModifiedAt: input.driveModifiedAt || null,
     receivedAt: new Date().toISOString(),
     classified: false,
   };
@@ -99,6 +106,53 @@ export async function addInboxFileLocal(input: {
   memory = s;
   await writeStore(s);
   return file;
+}
+
+/** Atualiza nome/link/hora. Não classifica e não conclui checklist. */
+export async function updateInboxDriveLocal(
+  driveId: string,
+  patch: { name?: string; driveUrl?: string | null; driveModifiedAt?: string | null },
+): Promise<InboxFile | null> {
+  const s = await load();
+  const file = s.inbox.find((item) => item.driveId === driveId);
+  if (!file) return null;
+  if (patch.name != null) file.name = patch.name.trim();
+  if (patch.driveUrl !== undefined) file.driveUrl = sanitizeDriveUrl(patch.driveUrl);
+  if (patch.driveModifiedAt !== undefined) file.driveModifiedAt = patch.driveModifiedAt;
+  if (patch.name != null || patch.driveUrl !== undefined) {
+    for (const doc of s.documents) {
+      if (doc.driveId !== driveId) continue;
+      if (patch.name != null) doc.title = patch.name.trim();
+      if (patch.driveUrl !== undefined) doc.driveUrl = file.driveUrl || "";
+    }
+    const checklistId = `inbox-${file.id}`;
+    for (const item of s.checklist) {
+      if (item.documentId !== checklistId) continue;
+      if (patch.name != null) item.title = patch.name.trim();
+      if (patch.driveUrl !== undefined) item.driveUrl = file.driveUrl;
+    }
+  }
+  memory = s;
+  await writeStore(s);
+  return file;
+}
+
+export async function updateStoredDocumentDriveLocal(
+  driveId: string,
+  patch: { title?: string; driveUrl?: string | null },
+): Promise<boolean> {
+  const s = await load();
+  let hit = false;
+  for (const doc of s.documents) {
+    if (doc.driveId !== driveId) continue;
+    hit = true;
+    if (patch.title != null) doc.title = patch.title.trim();
+    if (patch.driveUrl !== undefined) doc.driveUrl = sanitizeDriveUrl(patch.driveUrl) || "";
+  }
+  if (!hit) return false;
+  memory = s;
+  await writeStore(s);
+  return true;
 }
 
 export async function classifyInboxFileLocal(

@@ -12,7 +12,7 @@ import { WithTerms } from "@/components/ui/with-terms";
 import { DriveLink } from "@/components/ui/drive-link";
 import { Timeline } from "./timeline";
 import { ThesisPrice } from "./thesis-price";
-import { CapTable, MetricsGrid, NotesList } from "./lists";
+import { CapTable, DocsList, MetricsGrid, NotesList } from "./lists";
 import { MeetingTabs } from "./meeting-tabs";
 import { NoteComposer } from "./note-composer";
 import { PendingTable } from "./pending-table";
@@ -201,10 +201,13 @@ export function DealView({
         <section id="documentos" className="war-block">
           <h2 className="war-label">Data room</h2>
           <p className="mt-1 text-sm">
-            <DriveLink href={folderUrl(deal.driveFolderId)} kind="folder">
+            <DriveLink href={deal.driveFolderId ? folderUrl(deal.driveFolderId) : ""} kind="folder">
               {deal.driveFolderLabel}
             </DriveLink>
           </p>
+          <div className="mt-4">
+            <DocsList items={bundle.documents} />
+          </div>
         </section>
       )}
 

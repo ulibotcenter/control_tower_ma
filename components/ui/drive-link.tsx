@@ -1,4 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
+import { driveResourceId } from "@/lib/http";
+
+export const UNCONFIGURED_FOLDER = "Pasta não configurada";
 
 function kindFromUrl(href: string, fallback: "file" | "folder"): "file" | "folder" {
   if (href.includes("/folders/")) return "folder";
@@ -15,6 +18,9 @@ export function DriveLink({
   children?: React.ReactNode;
   kind?: "file" | "folder";
 }) {
+  if (!driveResourceId(href)) {
+    return <span className="ops-missing">{UNCONFIGURED_FOLDER}</span>;
+  }
   const resolved = kindFromUrl(href, kind);
   const label = resolved === "folder" ? "Abrir pasta" : children;
   return (

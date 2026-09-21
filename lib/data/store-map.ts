@@ -55,6 +55,7 @@ export function mapInboxRow(row: {
   source: string;
   drive_url: string | null;
   drive_id: string | null;
+  drive_modified_at?: string | null;
   received_at: string;
   classified: boolean;
   deal_id: string | null;
@@ -68,6 +69,7 @@ export function mapInboxRow(row: {
     source: row.source === "drive" ? "drive" : "manual",
     driveUrl: row.drive_url || null,
     driveId: row.drive_id,
+    driveModifiedAt: row.drive_modified_at || null,
     receivedAt: row.received_at,
     classified: row.classified,
   };

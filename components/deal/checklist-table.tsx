@@ -42,11 +42,7 @@ export function ChecklistTable({ items }: { items: ChecklistItem[] }) {
                 <Status status={item.status} />
               </td>
               <td>
-                {item.driveUrl ? (
-                  <DriveLink href={item.driveUrl}>Abrir</DriveLink>
-                ) : (
-                  <span className="ops-missing">sem arquivo</span>
-                )}
+                <DriveLink href={item.driveUrl || ""}>Abrir</DriveLink>
               </td>
             </tr>
           ))}

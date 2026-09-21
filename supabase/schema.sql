@@ -156,6 +156,7 @@ create table inbox_files (
   source text not null default 'manual',
   drive_url text,
   drive_id text,
+  drive_modified_at timestamptz,
   received_at timestamptz not null default now(),
   classified boolean not null default false,
   deal_id uuid references deals(id) on delete set null,

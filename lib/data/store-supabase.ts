@@ -49,21 +49,88 @@ export async function addInboxFileRemote(
     name: string;
     driveUrl?: string | null;
     driveId?: string | null;
+    driveModifiedAt?: string | null;
     source?: "manual" | "drive";
   },
 ): Promise<InboxFile> {
-  const row = {
+  const driveId = input.driveId?.trim() || null;
+  if (driveId) {
+    const { data: existing, error: existingErr } = await sb
+      .from("inbox_files")
+      .select("*")
+      .eq("drive_id", driveId)
+      .limit(1);
+    if (existingErr) fail("lookup inbox drive_id", existingErr);
+    if (existing && existing.length) return mapInboxRow(existing[0]);
+  }
+  const row: Record<string, unknown> = {
     id: randomUUID(),
     name: input.name.trim(),
     source: input.source ?? "manual",
     drive_url: sanitizeDriveUrl(input.driveUrl),
-    drive_id: input.driveId?.trim() || null,
+    drive_id: driveId,
+    drive_modified_at: input.driveModifiedAt || null,
     received_at: new Date().toISOString(),
     classified: false,
   };
-  const { data, error } = await sb.from("inbox_files").insert(row).select("*").single();
+  let { data, error } = await sb.from("inbox_files").insert(row).select("*").single();
+  if (error && /drive_modified_at/i.test(error.message)) {
+    delete row.drive_modified_at;
+    ({ data, error } = await sb.from("inbox_files").insert(row).select("*").single());
+  }
   if (error || !data) fail("insert inbox", error);
   return mapInboxRow(data);
+}
+
+/** Nome, link e hora. Não mexe em classified nem no status do checklist. */
+export async function updateInboxDriveRemote(
+  sb: SupabaseClient,
+  driveId: string,
+  patch: { name?: string; driveUrl?: string | null; driveModifiedAt?: string | null },
+): Promise<InboxFile | null> {
+  const payload: Record<string, unknown> = {};
+  if (patch.name != null) payload.name = patch.name.trim();
+  if (patch.driveUrl !== undefined) payload.drive_url = sanitizeDriveUrl(patch.driveUrl);
+  if (patch.driveModifiedAt !== undefined) payload.drive_modified_at = patch.driveModifiedAt;
+  if (Object.keys(payload).length === 0) return null;
+  let { data, error } = await sb.from("inbox_files").update(payload).eq("drive_id", driveId).select("*");
+  if (error && /drive_modified_at/i.test(error.message)) {
+    delete payload.drive_modified_at;
+    if (Object.keys(payload).length === 0) {
+      const { data: current, error: readErr } = await sb
+        .from("inbox_files")
+        .select("*")
+        .eq("drive_id", driveId)
+        .limit(1);
+      if (readErr) fail("update inbox drive", readErr);
+      return current?.[0] ? mapInboxRow(current[0]) : null;
+    }
+    ({ data, error } = await sb.from("inbox_files").update(payload).eq("drive_id", driveId).select("*"));
+  }
+  if (error) fail("update inbox drive", error);
+  const row = data?.[0];
+  if (!row) return null;
+  if (patch.name != null || patch.driveUrl !== undefined) {
+    const docPayload: Record<string, unknown> = {};
+    if (patch.name != null) docPayload.title = patch.name.trim();
+    if (patch.driveUrl !== undefined) docPayload.drive_url = sanitizeDriveUrl(patch.driveUrl) || "";
+    const { error: docErr } = await sb.from("documents").update(docPayload).eq("drive_id", driveId);
+    if (docErr) console.error("[drive/sync] document rename", docErr.message);
+  }
+  return mapInboxRow(row);
+}
+
+export async function updateStoredDocumentDriveRemote(
+  sb: SupabaseClient,
+  driveId: string,
+  patch: { title?: string; driveUrl?: string | null },
+): Promise<boolean> {
+  const payload: Record<string, unknown> = {};
+  if (patch.title != null) payload.title = patch.title.trim();
+  if (patch.driveUrl !== undefined) payload.drive_url = sanitizeDriveUrl(patch.driveUrl) || "";
+  const { data, error } = await sb.from("documents").update(payload).eq("drive_id", driveId).select("id");
+  if (error) fail("update document drive", error);
+  return Boolean(data && data.length);
 }
 
 export async function classifyInboxFileRemote(

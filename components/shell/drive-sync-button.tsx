@@ -26,6 +26,8 @@ export function DriveSyncButton({ variant = "nav" }: { variant?: "nav" | "page" 
         ok?: boolean;
         message?: string;
         files?: DriveReviewItem[];
+        missing?: unknown[];
+        folderIssues?: { status?: number }[];
         error?: string;
       };
       if (!res.ok) {
@@ -36,12 +38,16 @@ export function DriveSyncButton({ variant = "nav" }: { variant?: "nav" | "page" 
         toast(data.message || "API do Google não configurada. Use a bandeja manual.", "warn");
         return;
       }
-      const files = data.files ?? [];
-      if (files.length === 0) {
-        toast(data.message || "Nada novo no Drive", "ok");
+      if (!data.ok) {
+        toast(data.message || "Falha ao atualizar o Drive.", "err");
         return;
       }
-      window.dispatchEvent(new CustomEvent(DRIVE_REVIEW_EVENT, { detail: { files } }));
+      const attention = (data.folderIssues?.length ?? 0) > 0 || (data.missing?.length ?? 0) > 0;
+      toast(data.message || "Drive atualizado", attention ? "warn" : "ok");
+      const files = data.files ?? [];
+      if (files.length) {
+        window.dispatchEvent(new CustomEvent(DRIVE_REVIEW_EVENT, { detail: { files } }));
+      }
     } catch {
       toast("Falha ao atualizar o Drive.", "err");
     } finally {
@@ -65,7 +71,7 @@ export function DriveSyncButton({ variant = "nav" }: { variant?: "nav" | "page" 
       className={variant === "work" ? "work-btn" : "hdr-btn"}
       onClick={run}
       disabled={busy}
-      title="Ler a pasta do Drive. Arquivo novo cai na bandeja, a classificar."
+      title="Ler a árvore do Drive. Arquivo novo cai na bandeja, a classificar."
     >
       {busy ? "Drive…" : variant === "work" ? "Sincronizar Drive" : "Atualizar Drive"}
     </button>

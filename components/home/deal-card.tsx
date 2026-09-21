@@ -149,7 +149,7 @@ export function DealCard({
               {showDrive && (
                 <span className="cover-drive">
                   <span>{deal.driveFolderLabel}</span>
-                  <DriveLink href={folderUrl(deal.driveFolderId)} kind="folder" />
+                  <DriveLink href={deal.driveFolderId ? folderUrl(deal.driveFolderId) : ""} kind="folder" />
                 </span>
               )}
               {showDecisions && (

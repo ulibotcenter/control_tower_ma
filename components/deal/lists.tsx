@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { CapRow, DriveDocument, MeetingMode, Metric, Note } from "@/lib/types";
 import { TARGET_COPY } from "@/lib/mode-meta";
 import { DOC_STATUS_LABEL, DOC_TYPE_LABEL } from "@/lib/constants";
+import { groupDocuments } from "@/lib/data/doc-groups";
 import { DriveLink } from "@/components/ui/drive-link";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, documentTone } from "@/components/ui/status-badge";
@@ -45,45 +46,74 @@ export function DocsList({ items }: { items: DriveDocument[] }) {
   if (!items.length) {
     return <EmptyState compact title="Nenhum documento" />;
   }
+  const groups = groupDocuments(items);
   return (
-    <div className="ops-scroll">
-      <table className="data-table ops-table">
-        <thead>
-          <tr>
-            <th scope="col">Documento</th>
-            <th scope="col">Drive</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((d) => (
-            <tr key={d.id}>
-              <td>
-                <span className="ops-strong">
-                  <WithTerms text={d.title} />
-                </span>
-                <span className="ops-meta">
-                  {DOC_TYPE_LABEL[d.type]}
-                  {" · "}
-                  <StatusBadge tone={documentTone(d.status)}>{DOC_STATUS_LABEL[d.status]}</StatusBadge>
-                </span>
-                {d.note ? (
-                  <span className="ops-meta">
-                    <WithTerms text={d.note} />
-                  </span>
-                ) : null}
-              </td>
-              <td className="ops-drive">
-                {d.driveUrl ? (
-                  <DriveLink href={d.driveUrl}>Abrir</DriveLink>
-                ) : (
-                  <span className="ops-missing">sem link</span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="doc-folders">
+      {groups.map((group) => (
+        <section key={group.folderId ?? "sem-pasta"} className="doc-folder">
+          <h3 className="doc-folder-name">{group.folderName}</h3>
+          <div className="ops-scroll">
+            <table className="data-table ops-table">
+              <thead>
+                <tr>
+                  <th scope="col">Documento</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Drive</th>
+                </tr>
+              </thead>
+              <tbody>
+                {group.fronts.map((front) => (
+                  <FrontRows key={front.slug ?? "geral"} front={front} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ))}
     </div>
+  );
+}
+
+function FrontRows({
+  front,
+}: {
+  front: { slug: string | null; label: string | null; items: DriveDocument[] };
+}) {
+  return (
+    <>
+      {front.label ? (
+        <tr className="doc-front">
+          <th scope="colgroup" colSpan={3}>
+            {front.label}
+          </th>
+        </tr>
+      ) : null}
+      {front.items.map((d) => (
+        <tr key={d.id}>
+          <td>
+            <span className="ops-strong">
+              <WithTerms text={d.title} />
+            </span>
+            <span className="ops-meta">{DOC_TYPE_LABEL[d.type]}</span>
+            {d.note ? (
+              <span className="ops-meta">
+                <WithTerms text={d.note} />
+              </span>
+            ) : null}
+          </td>
+          <td>
+            {DOC_STATUS_LABEL[d.status] ? (
+              <StatusBadge tone={documentTone(d.status)}>{DOC_STATUS_LABEL[d.status]}</StatusBadge>
+            ) : (
+              <span className="ops-missing">—</span>
+            )}
+          </td>
+          <td className="ops-drive">
+            <DriveLink href={d.driveUrl}>Abrir</DriveLink>
+          </td>
+        </tr>
+      ))}
+    </>
   );
 }
 

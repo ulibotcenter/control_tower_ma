@@ -20,6 +20,25 @@ export function cookieSecure(req: Request) {
   return proto === "https";
 }
 
+/** Id de arquivo ou pasta dentro de um link do Drive. Vazio não vira âncora. */
+export function driveResourceId(raw: string | null | undefined): string | null {
+  const value = raw?.trim();
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    if (host !== "drive.google.com" && host !== "docs.google.com") return null;
+    const folder = url.pathname.match(/\/folders\/([^/]+)/);
+    if (folder?.[1]) return decodeURIComponent(folder[1]);
+    const file = url.pathname.match(/\/d\/([^/]+)/);
+    if (file?.[1]) return decodeURIComponent(file[1]);
+    const query = url.searchParams.get("id")?.trim();
+    return query || null;
+  } catch {
+    return null;
+  }
+}
+
 /** Accept only Google Drive http(s) links. Empty is allowed. */
 export function sanitizeDriveUrl(raw: string | null | undefined): string | null {
   const value = raw?.trim();
