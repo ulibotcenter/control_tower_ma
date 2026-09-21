@@ -6,39 +6,58 @@
  * local: produção não pode fingir persistência em .data/.
  *
  * Coleções aqui (já migráveis / já migradas):
- *   inbox_files, decisions, documents extras, checklist extras.
+ *   inbox_files, decisions, documents extras, checklist extras,
+ *   open_points, actions novas, notes novas.
+ *
+ * Actions e notes do corte continuam no seed. O que se grava aqui soma por cima.
  *
  * Coleções que AINDA NÃO passam por aqui (seed.ts):
- *   deals, risks, actions, milestones, metrics, thesis, prices, …
+ *   deals, risks, milestones, metrics, thesis, prices, …
  *   → ver lib/data/sources.ts
  */
-import type { Decision, DocumentStatus, DocumentType, InboxFile } from "../types";
+import type { ActionItem, Decision, DocumentStatus, DocumentType, InboxFile, Note, OpenPoint } from "../types";
 import { forbidLocalStore, isSupabaseConfigured } from "../config";
 import { createSupabaseAdmin } from "../supabase/server";
 import { decisions as seedDecisions } from "./seed";
 import {
+  addActionLocal,
   addDecisionLocal,
   addInboxFileLocal,
+  addNoteLocal,
+  addOpenPointLocal,
   classifyInboxFileLocal,
   extraChecklistLocal,
   extraDocumentsLocal,
   getDecisionLocal,
   getInboxFileLocal,
   listDecisionsLocal,
+  listExtraActionsLocal,
+  listExtraNotesLocal,
   listInboxLocal,
+  listOpenPointsLocal,
   unclassifiedCountLocal,
+  updateActionLocal,
+  updateOpenPointLocal,
 } from "./store-local";
 import {
+  addActionRemote,
   addDecisionRemote,
   addInboxFileRemote,
+  addNoteRemote,
+  addOpenPointRemote,
   classifyInboxFileRemote,
   extraChecklistRemote,
   extraDocumentsRemote,
   getDecisionRemote,
   getInboxFileRemote,
   listDecisionsRemote,
+  listExtraActionsRemote,
+  listExtraNotesRemote,
   listInboxRemote,
+  listOpenPointsRemote,
   unclassifiedCountRemote,
+  updateActionRemote,
+  updateOpenPointRemote,
 } from "./store-supabase";
 
 function remote() {
@@ -53,6 +72,10 @@ async function safeRead<T>(kind: string, run: () => Promise<T>, fallback: T): Pr
     console.error(`[data] ${kind}: leitura falhou — torre sobe com fallback`, err);
     return fallback;
   }
+}
+
+function dropSlug<T extends { slug: string }>(input: T): Omit<T, "slug"> {
+  return Object.fromEntries(Object.entries(input).filter(([key]) => key !== "slug")) as Omit<T, "slug">;
 }
 
 function refuseLocalWrite(kind: string): never {
@@ -160,6 +183,67 @@ export async function addDecision(input: Omit<Decision, "id">): Promise<Decision
   if (sb) return addDecisionRemote(sb, input);
   if (forbidLocalStore()) refuseLocalWrite("addDecision");
   return addDecisionLocal(input);
+}
+
+export async function listOpenPoints(): Promise<OpenPoint[]> {
+  const sb = remote();
+  if (sb) return safeRead("listOpenPoints", () => listOpenPointsRemote(sb), []);
+  if (forbidLocalStore()) return [];
+  return listOpenPointsLocal();
+}
+
+export async function addOpenPoint(
+  input: Omit<OpenPoint, "id" | "createdAt" | "updatedAt"> & { slug: string },
+): Promise<OpenPoint> {
+  const sb = remote();
+  if (sb) return addOpenPointRemote(sb, input);
+  if (forbidLocalStore()) refuseLocalWrite("addOpenPoint");
+  return addOpenPointLocal(dropSlug(input));
+}
+
+export async function updateOpenPoint(
+  id: string,
+  patch: Partial<Pick<OpenPoint, "title" | "owner" | "due" | "pillarSlug" | "status" | "visibility">>,
+): Promise<OpenPoint | null> {
+  const sb = remote();
+  if (sb) return updateOpenPointRemote(sb, id, patch);
+  if (forbidLocalStore()) refuseLocalWrite("updateOpenPoint");
+  return updateOpenPointLocal(id, patch);
+}
+
+export async function listExtraActions(): Promise<ActionItem[]> {
+  const sb = remote();
+  if (sb) return safeRead("listExtraActions", () => listExtraActionsRemote(sb), []);
+  if (forbidLocalStore()) return [];
+  return listExtraActionsLocal();
+}
+
+export async function addAction(input: Omit<ActionItem, "id"> & { slug: string }): Promise<ActionItem> {
+  const sb = remote();
+  if (sb) return addActionRemote(sb, input);
+  if (forbidLocalStore()) refuseLocalWrite("addAction");
+  return addActionLocal(dropSlug(input));
+}
+
+export async function updateAction(id: string, status: ActionItem["status"]): Promise<ActionItem | null> {
+  const sb = remote();
+  if (sb) return updateActionRemote(sb, id, status);
+  if (forbidLocalStore()) refuseLocalWrite("updateAction");
+  return updateActionLocal(id, status);
+}
+
+export async function listExtraNotes(): Promise<Note[]> {
+  const sb = remote();
+  if (sb) return safeRead("listExtraNotes", () => listExtraNotesRemote(sb), []);
+  if (forbidLocalStore()) return [];
+  return listExtraNotesLocal();
+}
+
+export async function addNote(input: Omit<Note, "id"> & { slug: string }): Promise<Note> {
+  const sb = remote();
+  if (sb) return addNoteRemote(sb, input);
+  if (forbidLocalStore()) refuseLocalWrite("addNote");
+  return addNoteLocal(dropSlug(input));
 }
 
 export async function unclassifiedCount() {

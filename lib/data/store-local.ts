@@ -2,12 +2,15 @@ import { randomUUID } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 import type {
+  ActionItem,
   ChecklistItem,
   Decision,
   DocumentStatus,
   DocumentType,
   DriveDocument,
   InboxFile,
+  Note,
+  OpenPoint,
 } from "../types";
 import { sanitizeDriveUrl } from "../http";
 import { decisions as seedDecisions, inboxSeed } from "./seed";
@@ -18,6 +21,10 @@ type Store = {
   decisions: Decision[];
   documents: DriveDocument[];
   checklist: ChecklistItem[];
+  /** Itens novos. O seed de actions/notes continua sendo a base, fora daqui. */
+  openPoints: OpenPoint[];
+  actions: ActionItem[];
+  notes: Note[];
 };
 
 const defaultStore = (): Store => ({
@@ -25,6 +32,9 @@ const defaultStore = (): Store => ({
   decisions: [...seedDecisions],
   documents: [],
   checklist: [],
+  openPoints: [],
+  actions: [],
+  notes: [],
 });
 
 const filePath = path.join(process.cwd(), ".data", "store.json");
@@ -49,6 +59,9 @@ async function load(): Promise<Store> {
       decisions: parsed.decisions?.length ? parsed.decisions : [...seedDecisions],
       documents: parsed.documents ?? [],
       checklist: parsed.checklist ?? [],
+      openPoints: parsed.openPoints ?? [],
+      actions: parsed.actions ?? [],
+      notes: parsed.notes ?? [],
     };
     return memory;
   } catch {
@@ -151,4 +164,81 @@ export async function addDecisionLocal(input: Omit<Decision, "id">): Promise<Dec
 export async function unclassifiedCountLocal() {
   const s = await load();
   return s.inbox.filter((f) => !f.classified).length;
+}
+
+export async function listOpenPointsLocal(): Promise<OpenPoint[]> {
+  const s = await load();
+  return [...s.openPoints];
+}
+
+export async function addOpenPointLocal(
+  input: Omit<OpenPoint, "id" | "createdAt" | "updatedAt">,
+): Promise<OpenPoint> {
+  const s = await load();
+  const now = new Date().toISOString();
+  const row: OpenPoint = { ...input, id: randomUUID(), createdAt: now, updatedAt: now };
+  s.openPoints.unshift(row);
+  memory = s;
+  await writeStore(s);
+  return row;
+}
+
+export async function updateOpenPointLocal(
+  id: string,
+  patch: Partial<Pick<OpenPoint, "title" | "owner" | "due" | "pillarSlug" | "status" | "visibility">>,
+): Promise<OpenPoint | null> {
+  const s = await load();
+  const row = s.openPoints.find((item) => item.id === id);
+  if (!row) return null;
+  if (patch.title != null) row.title = patch.title;
+  if (patch.owner != null) row.owner = patch.owner;
+  if (patch.due != null) row.due = patch.due;
+  if (patch.pillarSlug !== undefined) row.pillarSlug = patch.pillarSlug;
+  if (patch.status) row.status = patch.status;
+  if (patch.visibility) row.visibility = patch.visibility;
+  row.updatedAt = new Date().toISOString();
+  memory = s;
+  await writeStore(s);
+  return row;
+}
+
+export async function listExtraActionsLocal(): Promise<ActionItem[]> {
+  const s = await load();
+  return [...s.actions];
+}
+
+export async function addActionLocal(input: Omit<ActionItem, "id">): Promise<ActionItem> {
+  const s = await load();
+  const row: ActionItem = { ...input, id: randomUUID() };
+  s.actions.unshift(row);
+  memory = s;
+  await writeStore(s);
+  return row;
+}
+
+export async function updateActionLocal(
+  id: string,
+  status: ActionItem["status"],
+): Promise<ActionItem | null> {
+  const s = await load();
+  const row = s.actions.find((item) => item.id === id);
+  if (!row) return null;
+  row.status = status;
+  memory = s;
+  await writeStore(s);
+  return row;
+}
+
+export async function listExtraNotesLocal(): Promise<Note[]> {
+  const s = await load();
+  return [...s.notes];
+}
+
+export async function addNoteLocal(input: Omit<Note, "id">): Promise<Note> {
+  const s = await load();
+  const row: Note = { ...input, id: randomUUID() };
+  s.notes.unshift(row);
+  memory = s;
+  await writeStore(s);
+  return row;
 }

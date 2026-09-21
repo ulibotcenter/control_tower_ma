@@ -8,10 +8,21 @@
  */
 import { randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ChecklistItem, Decision, DocumentStatus, DocumentType, DriveDocument, InboxFile } from "../types";
+import type {
+  ActionItem,
+  ChecklistItem,
+  Decision,
+  DocumentStatus,
+  DocumentType,
+  DriveDocument,
+  InboxFile,
+  Note,
+  OpenPoint,
+} from "../types";
 import { sanitizeDriveUrl } from "../http";
-import { decisions as seedDecisions } from "./seed";
-import { mapChecklistRow, mapDecisionRow, mapDocumentRow, mapInboxRow } from "./store-map";
+import { isUuid } from "./room-input";
+import { deals, decisions as seedDecisions } from "./seed";
+import { mapActionRow, mapChecklistRow, mapDecisionRow, mapDocumentRow, mapInboxRow, mapNoteRow, mapOpenPointRow } from "./store-map";
 
 function fail(context: string, error: { message: string } | null): never {
   throw new Error(`[supabase] ${context}: ${error?.message ?? "erro desconhecido"}`);
@@ -176,6 +187,191 @@ export async function addDecisionRemote(
   }
   console.info("[data] insert decision ok", data.id);
   return mapDecisionRow(data as Record<string, unknown>);
+}
+
+/**
+ * O app conhece o deal pelo id do seed (`deal-loopert`) ou pelo slug.
+ * No Postgres o FK é uuid: se a tabela `deals` já tem a linha, usa esse id.
+ * Não cria deal. Sem linha, devolve o id do seed — o mesmo que decisões já gravam.
+ */
+export async function resolveWriteDealId(sb: SupabaseClient, seedId: string, slug: string): Promise<string> {
+  if (isUuid(seedId)) return seedId;
+  const { data, error } = await sb.from("deals").select("id").eq("slug", slug).maybeSingle();
+  if (!error && data?.id && isUuid(String(data.id))) return String(data.id);
+  return seedId;
+}
+
+async function dealCanon(sb: SupabaseClient): Promise<(raw: string | null | undefined) => string> {
+  const map = new Map<string, string>();
+  for (const deal of deals) {
+    map.set(deal.id, deal.id);
+    map.set(deal.slug, deal.id);
+  }
+  const { data, error } = await sb.from("deals").select("id, slug");
+  if (error) {
+    console.error("[supabase] deals lookup", error.message);
+  } else {
+    for (const row of data ?? []) {
+      const id = row.id ? String(row.id) : "";
+      const slug = row.slug ? String(row.slug) : "";
+      const seed = deals.find((deal) => deal.slug === slug || deal.id === id);
+      if (!seed) continue;
+      if (id) map.set(id, seed.id);
+      if (slug) map.set(slug, seed.id);
+    }
+  }
+  return (raw) => {
+    if (!raw) return "";
+    return map.get(raw) ?? raw;
+  };
+}
+
+function dealRejected(error: { message: string } | null) {
+  return Boolean(error && /uuid|foreign key|invalid input syntax/i.test(error.message));
+}
+
+export async function listOpenPointsRemote(sb: SupabaseClient): Promise<OpenPoint[]> {
+  const canon = await dealCanon(sb);
+  const { data, error } = await sb.from("open_points").select("*").order("created_at", { ascending: false });
+  if (error) fail("list open points", error);
+  return (data ?? []).map((row) => mapOpenPointRow(row as Record<string, unknown>, canon(String((row as { deal_id?: string }).deal_id ?? ""))));
+}
+
+export async function addOpenPointRemote(
+  sb: SupabaseClient,
+  input: Omit<OpenPoint, "id" | "createdAt" | "updatedAt"> & { slug: string },
+): Promise<OpenPoint> {
+  const now = new Date().toISOString();
+  const dealId = await resolveWriteDealId(sb, input.dealId, input.slug);
+  const payload = {
+    id: randomUUID(),
+    deal_id: dealId,
+    title: input.title,
+    owner: input.owner || null,
+    due: input.due || null,
+    pillar_slug: input.pillarSlug,
+    status: input.status,
+    visibility: input.visibility,
+    created_at: now,
+    updated_at: now,
+  };
+  const { data, error } = await sb.from("open_points").insert(payload).select("*").single();
+  if (error || !data) {
+    if (dealRejected(error)) {
+      fail(
+        "insert open point: deals.slug não devolveu uuid — não inventei o deal",
+        error,
+      );
+    }
+    fail("insert open point", error);
+  }
+  return mapOpenPointRow(data as Record<string, unknown>, input.dealId);
+}
+
+export async function updateOpenPointRemote(
+  sb: SupabaseClient,
+  id: string,
+  patch: Partial<Pick<OpenPoint, "title" | "owner" | "due" | "pillarSlug" | "status" | "visibility">>,
+): Promise<OpenPoint | null> {
+  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (patch.title != null) payload.title = patch.title;
+  if (patch.owner != null) payload.owner = patch.owner || null;
+  if (patch.due != null) payload.due = patch.due || null;
+  if (patch.pillarSlug !== undefined) payload.pillar_slug = patch.pillarSlug;
+  if (patch.status) payload.status = patch.status;
+  if (patch.visibility) payload.visibility = patch.visibility;
+  const { data, error } = await sb.from("open_points").update(payload).eq("id", id).select("*").maybeSingle();
+  if (error) fail("update open point", error);
+  if (!data) return null;
+  const canon = await dealCanon(sb);
+  return mapOpenPointRow(data as Record<string, unknown>, canon(String((data as { deal_id?: string }).deal_id ?? "")));
+}
+
+export async function listExtraActionsRemote(sb: SupabaseClient): Promise<ActionItem[]> {
+  const canon = await dealCanon(sb);
+  const { data, error } = await sb.from("actions").select("*");
+  if (error) fail("list actions", error);
+  return (data ?? []).map((row) =>
+    mapActionRow(row as Record<string, unknown>, canon(String((row as { deal_id?: string }).deal_id ?? ""))),
+  );
+}
+
+export async function addActionRemote(
+  sb: SupabaseClient,
+  input: Omit<ActionItem, "id"> & { slug: string },
+): Promise<ActionItem> {
+  const dealId = await resolveWriteDealId(sb, input.dealId, input.slug);
+  const payload: Record<string, unknown> = {
+    id: randomUUID(),
+    deal_id: dealId,
+    workstream_slug: input.workstreamSlug,
+    pillar_slug: input.pillarSlug ?? null,
+    title: input.title,
+    owner: input.owner || null,
+    due: input.due || null,
+    status: input.status,
+    visibility: input.visibility,
+    sensitivities: input.sensitivities,
+  };
+  let { data, error } = await sb.from("actions").insert(payload).select("*").single();
+  if (error && /pillar_slug/i.test(error.message)) {
+    delete payload.pillar_slug;
+    ({ data, error } = await sb.from("actions").insert(payload).select("*").single());
+  }
+  if (error || !data) {
+    if (dealRejected(error)) {
+      fail("insert action: deals.slug não devolveu uuid — não inventei o deal", error);
+    }
+    fail("insert action", error);
+  }
+  const row = mapActionRow(data as Record<string, unknown>, input.dealId);
+  if (!row.pillarSlug && input.pillarSlug) row.pillarSlug = input.pillarSlug;
+  return row;
+}
+
+export async function updateActionRemote(
+  sb: SupabaseClient,
+  id: string,
+  status: ActionItem["status"],
+): Promise<ActionItem | null> {
+  const { data, error } = await sb.from("actions").update({ status }).eq("id", id).select("*").maybeSingle();
+  if (error) fail("update action", error);
+  if (!data) return null;
+  const canon = await dealCanon(sb);
+  return mapActionRow(data as Record<string, unknown>, canon(String((data as { deal_id?: string }).deal_id ?? "")));
+}
+
+export async function listExtraNotesRemote(sb: SupabaseClient): Promise<Note[]> {
+  const canon = await dealCanon(sb);
+  const { data, error } = await sb.from("notes").select("*");
+  if (error) fail("list notes", error);
+  return (data ?? []).map((row) => {
+    const raw = (row as { deal_id?: string | null }).deal_id;
+    const dealId = raw ? canon(String(raw)) : null;
+    return mapNoteRow(row as Record<string, unknown>, dealId);
+  });
+}
+
+export async function addNoteRemote(
+  sb: SupabaseClient,
+  input: Omit<Note, "id"> & { slug: string },
+): Promise<Note> {
+  const dealId = input.dealId ? await resolveWriteDealId(sb, input.dealId, input.slug) : null;
+  const payload = {
+    id: randomUUID(),
+    deal_id: dealId,
+    body: input.body,
+    visibility: input.visibility,
+    sensitivities: input.sensitivities,
+  };
+  const { data, error } = await sb.from("notes").insert(payload).select("*").single();
+  if (error || !data) {
+    if (dealRejected(error)) {
+      fail("insert note: deals.slug não devolveu uuid — não inventei o deal", error);
+    }
+    fail("insert note", error);
+  }
+  return mapNoteRow(data as Record<string, unknown>, input.dealId);
 }
 
 export async function unclassifiedCountRemote(sb: SupabaseClient) {

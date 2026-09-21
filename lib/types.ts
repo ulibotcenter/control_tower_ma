@@ -147,6 +147,21 @@ export interface ActionItem {
   sensitivities: Sensitivity[];
 }
 
+export type OpenPointStatus = "aberto" | "em_curso" | "travado" | "resolvido";
+
+/** Ponto em aberto da reunião. Não é tarefa nem nota. */
+export interface OpenPoint extends Visible {
+  id: string;
+  dealId: string;
+  title: string;
+  owner: string;
+  due: string;
+  pillarSlug: string | null;
+  status: OpenPointStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ChecklistItem {
   id: string;
   dealId: string;
@@ -252,6 +267,7 @@ export interface DealBundle {
   documents: DriveDocument[];
   risks: Risk[];
   actions: ActionItem[];
+  openPoints: OpenPoint[];
   checklist: ChecklistItem[];
   metrics: Metric[];
   notes: Note[];

@@ -4,6 +4,8 @@ import { AppShell } from "@/components/shell/app-shell";
 import { ChecklistTable } from "@/components/deal/checklist-table";
 import { DocsList } from "@/components/deal/lists";
 import { ActionBoard } from "@/components/deal/action-board";
+import { OpenPointList } from "@/components/deal/open-point-list";
+import { RoomBar } from "@/components/deal/room-bar";
 import { RisksBoard } from "@/components/deal/risks-board";
 import { getDealBundle } from "@/lib/data/provider";
 import {
@@ -20,6 +22,7 @@ import { semaphoreLabelFor, TARGET_COPY } from "@/lib/mode-meta";
 import { WithTerms } from "@/components/ui/with-terms";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getMeeting } from "@/lib/mode";
+import { getPresent } from "@/lib/present";
 import {
   isDdSubgroup,
   isPillarSlug,
@@ -75,6 +78,9 @@ export default async function PillarPage({
   const proximo = firstOpenAction(actions);
   const pendencias = checklist.filter((c) => c.status !== "concluido");
   const target = mode === "target";
+  const present = await getPresent();
+  const canWrite = mode === "operate" && !present;
+  const openPoints = bundle.openPoints.filter((point) => point.pillarSlug === pillar);
   const bloqueado = travas.length > 0;
 
   return (
@@ -172,6 +178,17 @@ export default async function PillarPage({
         </p>
       )}
 
+      {canWrite && <RoomBar dealSlug={slug} pillarSlug={pillar} />}
+
+      <section id="opl" className="war-block">
+        <h2 className="war-label">Pontos em aberto</h2>
+        <OpenPointList
+          items={openPoints}
+          canEdit={canWrite}
+          empty="Nenhum ponto em aberto neste pilar."
+        />
+      </section>
+
       <div className="pillar-bands">
         <section className="pillar-band pillar-band-block">
           {risks.length === 0 && pendencias.length === 0 ? (
@@ -201,7 +218,7 @@ export default async function PillarPage({
 
         <section className="pillar-band pillar-band-action">
           <h2 className="pillar-band-title">Ações</h2>
-          <ActionBoard items={actions} />
+          <ActionBoard items={actions} canEdit={canWrite} />
         </section>
 
         <section id="documentos" className="pillar-band pillar-band-docs">
@@ -215,6 +232,8 @@ export default async function PillarPage({
           {view.unfiled} {view.unfiled === 1 ? "item ainda sem frente" : "itens ainda sem frente"}.
         </p>
       )}
+
+      {canWrite && <div className="room-bar-spacer" aria-hidden />}
 
       <nav className="pillar-others no-print" aria-label="Outros pilares">
         <ul>

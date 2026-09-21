@@ -1,0 +1,62 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "@/lib/toast";
+
+export function NoteComposer({ dealSlug }: { dealSlug: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    const form = new FormData(event.currentTarget);
+    try {
+      const res = await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dealSlug,
+          body: String(form.get("body") || ""),
+          visibility: String(form.get("visibility") || "operate"),
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { message?: string };
+      if (!res.ok) {
+        setError(data.message || "Não foi possível gravar a nota.");
+        return;
+      }
+      toast("Nota registrada.");
+      event.currentTarget.reset();
+      router.refresh();
+    } catch {
+      setError("Falha de rede.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="note-compose no-print">
+      <label htmlFor="nova-nota">Nova nota</label>
+      <textarea id="nova-nota" name="body" rows={3} required maxLength={4000} />
+      <div className="note-compose-row">
+        <label className="sr-only" htmlFor="nota-vis">
+          Quem vê
+        </label>
+        <select id="nota-vis" name="visibility" defaultValue="operate" aria-label="Quem vê a nota">
+          <option value="operate">Operar</option>
+          <option value="advisors">Assessores</option>
+          <option value="target">Alvo</option>
+        </select>
+        <button type="submit" className="btn btn-primary" disabled={busy}>
+          {busy ? "Gravando…" : "Guardar nota"}
+        </button>
+      </div>
+      {error ? <p className="text-sm text-alert">{error}</p> : null}
+    </form>
+  );
+}

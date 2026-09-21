@@ -22,3 +22,9 @@ Rode `patch_batch1.sql` (deal_id passa a `text` para aceitar `deal-loopert`).
 ## Sem Supabase
 
 A torre usa seed + `.data/store.json`. Serve para `npm run dev`.
+
+## Bloco 5 — pontos em aberto, tarefas e notas
+
+Rode `patch_opl.sql` no SQL Editor. Não rode `schema.sql` de novo.
+
+O patch cria `open_points` (RLS `is_eleva()`) e a coluna aditiva `actions.pillar_slug`. Tarefa nova grava em `actions`. Nota nova grava em `notes`. O corte do seed continua como base. Sem o patch, o dev local segue em `.data/store.json`.

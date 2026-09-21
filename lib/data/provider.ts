@@ -4,8 +4,9 @@
  * HOJE
  *   - Programa, deals, riscos, ações, marcos, tese, preço, métricas, notas:
  *     `seed.ts` (corte estático 02/09/2026). Ver DATA_ORIGIN.
- *   - Inbox, decisões, docs/checklist classificados na bandeja:
+ *   - Inbox, decisões, docs/checklist, pontos em aberto e tarefas/notas novas:
  *     `store.ts` → Supabase se URL+service role; senão seed + .data/.
+ *     O corte de actions/notes continua no seed e recebe o que foi gravado por cima.
  *
  * AMANHÃ (sem mudar o shape de DealBundle / ProgramView)
  *   - Trocar os imports de seed pelas queries em store-supabase
@@ -35,7 +36,16 @@ import {
   thesis,
   workstreams,
 } from "./seed";
-import { extraChecklist, extraDocuments, listDecisions, listInbox, unclassifiedCount } from "./store";
+import {
+  extraChecklist,
+  extraDocuments,
+  listDecisions,
+  listExtraActions,
+  listExtraNotes,
+  listInbox,
+  listOpenPoints,
+  unclassifiedCount,
+} from "./store";
 import { DATA_ORIGIN } from "./sources";
 
 export { DATA_ORIGIN };
@@ -103,9 +113,21 @@ export function getDealBySlug(slug: string) {
   return deals.find((d) => d.slug === slug) ?? null;
 }
 
+function mergeById<T extends { id: string }>(fresh: T[], base: T[]): T[] {
+  const seen = new Set(fresh.map((item) => item.id));
+  return [...fresh, ...base.filter((item) => !seen.has(item.id))];
+}
+
 export async function getDealBundle(slug: string, mode: MeetingMode): Promise<DealBundle | null> {
   const deal = getDealBySlug(slug);
   if (!deal) return null;
+  const [storedDocs, storedChecks, storedActions, storedNotes, storedPoints] = await Promise.all([
+    extraDocuments(),
+    extraChecklist(),
+    listExtraActions(),
+    listExtraNotes(),
+    listOpenPoints(),
+  ]);
 
   return {
     deal,
@@ -113,7 +135,7 @@ export async function getDealBundle(slug: string, mode: MeetingMode): Promise<De
     milestones: milestones.filter((m) => m.dealId === deal.id),
     documents: filterVisible(mode, [
       ...documents.filter((d) => d.dealId === deal.id),
-      ...(await extraDocuments()).filter((d) => d.dealId === deal.id),
+      ...storedDocs.filter((d) => d.dealId === deal.id),
     ]),
     risks: filterVisible(
       mode,
@@ -121,10 +143,14 @@ export async function getDealBundle(slug: string, mode: MeetingMode): Promise<De
     ),
     actions: filterVisible(
       mode,
-      actions.filter((a) => a.dealId === deal.id),
+      mergeById(storedActions, actions).filter((a) => a.dealId === deal.id),
+    ),
+    openPoints: filterVisible(
+      mode,
+      storedPoints.filter((p) => p.dealId === deal.id),
     ),
     checklist: filterVisible(mode, [
-      ...(await extraChecklist()).filter((c) => c.dealId === deal.id),
+      ...storedChecks.filter((c) => c.dealId === deal.id),
       ...checklist.filter((c) => c.dealId === deal.id),
     ]),
     metrics: filterVisible(
@@ -133,7 +159,7 @@ export async function getDealBundle(slug: string, mode: MeetingMode): Promise<De
     ),
     notes: filterVisible(
       mode,
-      notes.filter((n) => n.dealId === deal.id || n.dealId === null),
+      mergeById(storedNotes, notes).filter((n) => n.dealId === deal.id || n.dealId === null),
     ),
     thesis: filterVisible(
       mode,

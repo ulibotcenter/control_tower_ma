@@ -1,10 +1,14 @@
 import type {
+  ActionItem,
   ChecklistItem,
   Decision,
   DocumentStatus,
   DocumentType,
   DriveDocument,
   InboxFile,
+  Note,
+  OpenPoint,
+  OpenPointStatus,
   Sensitivity,
   Visibility,
 } from "../types";
@@ -133,6 +137,62 @@ export function mapChecklistRow(row: {
     note: row.note ?? undefined,
     visibility: (row.visibility as Visibility) || "advisors",
     sensitivities: (row.sensitivities ?? []) as Sensitivity[],
+  };
+}
+
+function asVisibility(value: unknown, fallback: Visibility): Visibility {
+  return value === "operate" || value === "advisors" || value === "target" ? value : fallback;
+}
+
+function asSensitivities(value: unknown): Sensitivity[] {
+  return Array.isArray(value) ? (value.filter((item) => typeof item === "string") as Sensitivity[]) : [];
+}
+
+export function mapOpenPointRow(row: Record<string, unknown>, dealId: string): OpenPoint {
+  const statusRaw = String(row.status ?? "aberto");
+  const status: OpenPointStatus =
+    statusRaw === "em_curso" || statusRaw === "travado" || statusRaw === "resolvido" ? statusRaw : "aberto";
+  const createdAt = String(row.created_at ?? new Date().toISOString());
+  return {
+    id: String(row.id ?? ""),
+    dealId,
+    title: String(row.title ?? ""),
+    owner: row.owner == null ? "" : String(row.owner),
+    due: row.due == null ? "" : String(row.due),
+    pillarSlug: row.pillar_slug ? String(row.pillar_slug) : null,
+    status,
+    visibility: asVisibility(row.visibility, "advisors"),
+    sensitivities: [],
+    createdAt,
+    updatedAt: String(row.updated_at ?? createdAt),
+  };
+}
+
+export function mapActionRow(row: Record<string, unknown>, dealId: string): ActionItem {
+  const statusRaw = String(row.status ?? "open");
+  const status: ActionItem["status"] =
+    statusRaw === "late" || statusRaw === "done" ? statusRaw : "open";
+  return {
+    id: String(row.id ?? ""),
+    dealId,
+    workstreamSlug: row.workstream_slug ? String(row.workstream_slug) : null,
+    pillarSlug: row.pillar_slug ? String(row.pillar_slug) : null,
+    title: String(row.title ?? ""),
+    owner: row.owner == null ? "" : String(row.owner),
+    due: row.due == null ? "" : String(row.due),
+    status,
+    visibility: asVisibility(row.visibility, "advisors"),
+    sensitivities: asSensitivities(row.sensitivities),
+  };
+}
+
+export function mapNoteRow(row: Record<string, unknown>, dealId: string | null): Note {
+  return {
+    id: String(row.id ?? ""),
+    dealId,
+    body: String(row.body ?? ""),
+    visibility: asVisibility(row.visibility, "operate"),
+    sensitivities: asSensitivities(row.sensitivities),
   };
 }
 

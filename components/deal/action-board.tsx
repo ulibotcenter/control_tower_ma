@@ -1,9 +1,17 @@
 import { formatDate, dueSortKey } from "@/lib/format";
 import { workstreamLabel } from "@/lib/constants";
+import { isUuid } from "@/lib/data/room-input";
 import type { ActionItem } from "@/lib/types";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, actionTone } from "@/components/ui/status-badge";
 import { WithTerms } from "@/components/ui/with-terms";
+import { MutableStatus } from "./mutable-status";
+
+const ACTION_OPTIONS: { value: ActionItem["status"]; label: string }[] = [
+  { value: "open", label: "Aberta" },
+  { value: "late", label: "Atrasada" },
+  { value: "done", label: "Concluída" },
+];
 
 function rank(a: ActionItem) {
   if (a.status === "late") return 0;
@@ -15,10 +23,14 @@ export function ActionBoard({
   items,
   query = "",
   compact = false,
+  canEdit = false,
+  emptyTitle = "Nenhuma ação neste pilar",
 }: {
   items: ActionItem[];
   query?: string;
   compact?: boolean;
+  canEdit?: boolean;
+  emptyTitle?: string;
 }) {
   const q = query.trim().toLowerCase();
   const rows = items
@@ -31,7 +43,7 @@ export function ActionBoard({
     .sort((a, b) => rank(a) - rank(b) || dueSortKey(a.due) - dueSortKey(b.due));
 
   if (!items.length || rows.length === 0) {
-    return <EmptyState compact title="Nenhuma ação neste pilar" />;
+    return <EmptyState compact title={emptyTitle} />;
   }
 
   const late = rows.filter((a) => a.status === "late").length;
@@ -73,7 +85,17 @@ export function ActionBoard({
                 <td className="ops-owner">{a.owner}</td>
                 <td className={a.status === "late" ? "ops-due is-late" : "ops-due"}>{formatDate(a.due)}</td>
                 <td>
-                  <ActionStatus status={a.status} />
+                  {canEdit && isUuid(a.id) ? (
+                    <MutableStatus
+                      id={a.id}
+                      kind="actions"
+                      status={a.status}
+                      options={ACTION_OPTIONS}
+                      label={`Status de ${a.title}`}
+                    />
+                  ) : (
+                    <ActionStatus status={a.status} />
+                  )}
                 </td>
               </tr>
             ))}

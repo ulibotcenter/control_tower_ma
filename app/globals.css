@@ -2379,6 +2379,88 @@ html:has(.shell[data-work="1"]) {
   margin-top: 0.2rem;
 }
 
+.room-bar {
+  position: fixed;
+  right: max(0.75rem, env(safe-area-inset-right));
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  max-width: calc(100vw - 1.5rem);
+  padding: 0.4rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.room-bar .btn {
+  min-height: 2rem;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.room-bar-spacer {
+  height: 3.25rem;
+}
+
+.room-dialog {
+  width: min(28rem, calc(100vw - 2rem));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1rem 0.9rem;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.room-dialog::backdrop {
+  background: color-mix(in srgb, var(--ink) 40%, transparent);
+}
+
+.room-dialog .room-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.room-status {
+  width: auto;
+  max-width: 9.5rem;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.75rem;
+}
+
+.opl-resolved {
+  margin-top: 0.55rem;
+}
+
+.opl-resolved > summary {
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: var(--muted);
+}
+
+.note-compose {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+}
+
+.note-compose-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.note-compose-row select {
+  width: auto;
+  min-width: 9rem;
+}
+
 #visao,
 #indicadores,
 #pilares,

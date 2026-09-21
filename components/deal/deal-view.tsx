@@ -13,9 +13,11 @@ import { DriveLink } from "@/components/ui/drive-link";
 import { Timeline } from "./timeline";
 import { ThesisPrice } from "./thesis-price";
 import { CapTable, MetricsGrid, NotesList } from "./lists";
+import { ActionBoard } from "./action-board";
+import { NoteComposer } from "./note-composer";
+import { OpenPointList } from "./open-point-list";
+import { RoomBar } from "./room-bar";
 import { Freshness } from "@/components/ui/freshness";
-
-const OPL_CAP = 6;
 
 export function DealView({
   bundle,
@@ -42,13 +44,13 @@ export function DealView({
   const showThesis = !hideThesis && (bundle.thesis.length > 0 || bundle.prices.length > 0);
   const showCap = chrome.showCap && bundle.capTable.length > 0;
   const showPeople = chrome.showPeople && bundle.people.length > 0;
-  const showNotes = chrome.showNotes && bundle.notes.length > 0;
+  const canWrite = mode === "operate" && !present;
+  const showNotes = chrome.showNotes && (bundle.notes.length > 0 || canWrite);
   const showElevaRoom = !target && (showThesis || showCap || showPeople || showNotes);
   const showDrive = !present && !target;
   const travas = blockersFrom(bundle.risks, bundle.checklist, 3, bundle.actions);
   const hereSlug = pillarOfDealPhase(deal.phase);
   const abrir = pillars.find((p) => p.slug === hereSlug) ?? pillars[0] ?? null;
-  const opl = pontosEmAberto(bundle);
 
   return (
     <article className={present ? "present-deck" : undefined}>
@@ -209,24 +211,24 @@ export function DealView({
 
       {target && showNotes && <NotesList items={bundle.notes} />}
 
+      <section id="opl" className="war-block war-opl">
+        <h2 className="war-label">Pontos em aberto</h2>
+        <OpenPointList
+          items={bundle.openPoints}
+          canEdit={canWrite}
+          empty="Nenhum ponto em aberto neste deal."
+        />
+      </section>
+
       {!present && (
-        <section id="opl" className="war-block war-opl">
-          <h2 className="war-label">Pontos em aberto</h2>
-          <p className="war-note">A lista editável entra no bloco 5.</p>
-          {opl.length > 0 && (
-            <ul className="war-opl-list">
-              {opl.slice(0, OPL_CAP).map((item) => (
-                <li key={item.id}>
-                  <WithTerms text={item.text} interactive={false} />
-                </li>
-              ))}
-            </ul>
-          )}
-          {opl.length > OPL_CAP && (
-            <p className="war-note">+{opl.length - OPL_CAP} já registrados no deal.</p>
-          )}
+        <section id="tarefas" className="war-block">
+          <h2 className="war-label">Tarefas</h2>
+          <ActionBoard items={bundle.actions} canEdit={canWrite} emptyTitle="Nenhuma tarefa neste deal." />
         </section>
       )}
+
+      {canWrite && <RoomBar dealSlug={deal.slug} />}
+      {canWrite && <div className="room-bar-spacer" aria-hidden />}
 
       {showElevaRoom && (
         <section id="tese" className="eleva-room mb-4">
@@ -280,23 +282,14 @@ export function DealView({
             </div>
           )}
 
-          {showNotes && <NotesList items={bundle.notes} />}
+          {showNotes && (
+            <NotesList
+              items={bundle.notes}
+              compose={canWrite ? <NoteComposer dealSlug={deal.slug} /> : null}
+            />
+          )}
         </section>
       )}
     </article>
   );
-}
-
-/** Só o que o bundle deste modo já deixou visível. Sem item novo. */
-function pontosEmAberto(bundle: DealBundle) {
-  const actions = bundle.actions
-    .filter((a) => a.status === "open" || a.status === "late")
-    .map((a) => ({ id: a.id, text: a.title }));
-  const checks = bundle.checklist
-    .filter((c) => c.status === "aberto" || c.status === "em_andamento" || c.status === "bloqueado")
-    .map((c) => ({ id: c.id, text: c.title }));
-  const reds = bundle.risks
-    .filter((r) => r.severity === "red")
-    .map((r) => ({ id: r.id, text: r.title }));
-  return [...actions, ...checks, ...reds];
 }

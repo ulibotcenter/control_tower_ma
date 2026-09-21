@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { CapRow, DriveDocument, MeetingMode, Metric, Note } from "@/lib/types";
 import { TARGET_COPY } from "@/lib/mode-meta";
 import { DOC_STATUS_LABEL, DOC_TYPE_LABEL } from "@/lib/constants";
@@ -85,18 +86,21 @@ export function DocsList({ items }: { items: DriveDocument[] }) {
   );
 }
 
-export function NotesList({ items }: { items: Note[] }) {
-  if (!items.length) return null;
+export function NotesList({ items, compose = null }: { items: Note[]; compose?: ReactNode }) {
+  if (!items.length && !compose) return null;
   return (
-    <section className="mt-10">
+    <section id="notas" className="mt-10">
       <h3 className="serif mb-3 text-xl text-navy">Notas</h3>
-      <ul className="space-y-2">
-        {items.map((n) => (
-          <li key={n.id} className="border-l-2 border-brand pl-3 text-sm leading-relaxed">
-            <WithTerms text={n.body} />
-          </li>
-        ))}
-      </ul>
+      {items.length > 0 ? (
+        <ul className="space-y-2">
+          {items.map((n) => (
+            <li key={n.id} className="border-l-2 border-brand pl-3 text-sm leading-relaxed">
+              <WithTerms text={n.body} />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {compose}
     </section>
   );
 }

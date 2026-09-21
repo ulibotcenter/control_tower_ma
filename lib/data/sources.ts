@@ -76,9 +76,9 @@ export const DATA_ORIGIN = {
   actions: {
     key: "actions",
     origin: "seed",
-    today: "lib/data/seed.ts → actions",
+    today: "lib/data/seed.ts → actions + store.listExtraActions",
     futureTable: "actions",
-    note: "Próximos passos. Alimenta o bloco Atenção (status = late).",
+    note: "O corte fica no seed. Tarefa nova grava em actions e soma por cima. Status: open | late | done.",
   },
   checklist: {
     key: "checklist",
@@ -97,9 +97,16 @@ export const DATA_ORIGIN = {
   notes: {
     key: "notes",
     origin: "seed",
-    today: "lib/data/seed.ts → notes",
+    today: "lib/data/seed.ts → notes + store.listExtraNotes",
     futureTable: "notes",
-    note: "Notas com visibility/sensitivities. Não vazar no modo Alvo.",
+    note: "O corte fica no seed. Nota nova é um texto + visibility e soma por cima. Não vira ponto em aberto.",
+  },
+  openPoints: {
+    key: "openPoints",
+    origin: "store",
+    today: "lib/data/store.ts → listOpenPoints",
+    futureTable: "open_points",
+    note: "Lista da reunião. Status aberto | em_curso | travado | resolvido. Não entra no semáforo.",
   },
   thesis: {
     key: "thesis",
