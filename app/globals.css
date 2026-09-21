@@ -117,6 +117,15 @@ a.btn:visited {
   opacity: 0.45;
   cursor: not-allowed;
 }
+.btn.btn-quiet {
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+}
+.btn.btn-quiet:hover:not(:disabled) {
+  background: var(--canvas);
+  color: var(--ink);
+}
 .btn-primary {
   /* Laranja mais fundo: branco em cima do #E05A24 não segura leitura. */
   background: #c2410c;
@@ -1172,6 +1181,33 @@ html:has(.shell[data-work="1"]) {
 
 .data-table.ops-table tbody tr.is-hot td {
   background: color-mix(in srgb, var(--alert) 10%, var(--paper));
+}
+
+.data-table.ops-table tbody tr.is-aberto td {
+  background: color-mix(in srgb, var(--wait) 12%, var(--paper));
+}
+
+.data-table.ops-table tbody tr.is-course td {
+  background: color-mix(in srgb, #94a3b8 18%, var(--paper));
+}
+
+.data-table.ops-table tbody tr.is-travado td {
+  background: color-mix(in srgb, var(--alert) 12%, var(--paper));
+}
+
+.data-table.ops-table tbody tr.is-feita td {
+  background: color-mix(in srgb, var(--go) 12%, var(--paper));
+}
+
+.data-table.ops-table tbody tr.is-wash td,
+.data-table.ops-table tbody tr.is-wash .ops-strong,
+.data-table.ops-table tbody tr.is-wash .ops-done,
+.data-table.ops-table tbody tr.is-wash .ops-owner,
+.data-table.ops-table tbody tr.is-wash .ops-due,
+.data-table.ops-table tbody tr.is-wash .ops-meta,
+.data-table.ops-table tbody tr.is-wash .ops-meta-cell {
+  color: var(--ink);
+  text-decoration: none;
 }
 
 @media (min-width: 720px) {
@@ -2423,6 +2459,23 @@ html:has(.shell[data-work="1"]) {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+}
+
+.meet-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.35rem 0 0.75rem;
+}
+
+.meet-tablist .chip {
+  width: auto;
+  cursor: pointer;
+  font: inherit;
+}
+
+.meet-follow {
+  margin-top: 1.15rem;
 }
 
 .room-status {

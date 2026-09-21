@@ -25,30 +25,37 @@ export function ActionBoard({
   compact = false,
   canEdit = false,
   emptyTitle = "Nenhuma ação neste pilar",
+  pinFresh = false,
+  toneRows = false,
 }: {
   items: ActionItem[];
   query?: string;
   compact?: boolean;
   canEdit?: boolean;
   emptyTitle?: string;
+  /** Itens novos ficam no topo. O corte do seed não se mistura no meio. */
+  pinFresh?: boolean;
+  toneRows?: boolean;
 }) {
   const q = query.trim().toLowerCase();
-  const rows = items
-    .filter((a) => {
-      if (compact && a.status === "done") return false;
-      if (!q) return true;
-      const hay = `${a.title} ${a.owner} ${a.workstreamSlug ?? ""}`.toLowerCase();
-      return hay.includes(q);
-    })
-    .sort((a, b) => rank(a) - rank(b) || dueSortKey(a.due) - dueSortKey(b.due));
+  const filtered = items.filter((a) => {
+    if (compact && a.status === "done") return false;
+    if (!q) return true;
+    const hay = `${a.title} ${a.owner} ${a.workstreamSlug ?? ""}`.toLowerCase();
+    return hay.includes(q);
+  });
+  const byDue = (a: ActionItem, b: ActionItem) => rank(a) - rank(b) || dueSortKey(a.due) - dueSortKey(b.due);
+  const ordered = pinFresh
+    ? [...filtered.filter((a) => isUuid(a.id)), ...filtered.filter((a) => !isUuid(a.id)).sort(byDue)]
+    : [...filtered].sort(byDue);
 
-  if (!items.length || rows.length === 0) {
+  if (!items.length || ordered.length === 0) {
     return <EmptyState compact title={emptyTitle} />;
   }
 
-  const late = rows.filter((a) => a.status === "late").length;
-  const open = rows.filter((a) => a.status === "open").length;
-  const done = rows.filter((a) => a.status === "done").length;
+  const late = ordered.filter((a) => a.status === "late").length;
+  const open = ordered.filter((a) => a.status === "open").length;
+  const done = ordered.filter((a) => a.status === "done").length;
 
   return (
     <div>
@@ -72,8 +79,8 @@ export function ActionBoard({
             </tr>
           </thead>
           <tbody>
-            {rows.map((a) => (
-              <tr key={a.id} className={a.status === "late" ? "is-hot" : a.status === "done" ? "is-done" : undefined}>
+            {ordered.map((a) => (
+              <tr key={a.id} className={toneRows ? actionToneClass(a.status) : a.status === "late" ? "is-hot" : a.status === "done" ? "is-done" : undefined}>
                 <td>
                   <span className={a.status === "done" ? "ops-done" : "ops-strong"}>
                     <WithTerms text={a.title} />
@@ -104,6 +111,12 @@ export function ActionBoard({
       </div>
     </div>
   );
+}
+
+function actionToneClass(status: ActionItem["status"]) {
+  if (status === "late") return "is-hot";
+  if (status === "open") return "is-wash is-aberto";
+  return "is-wash is-feita";
 }
 
 function ActionStatus({ status }: { status: ActionItem["status"] }) {

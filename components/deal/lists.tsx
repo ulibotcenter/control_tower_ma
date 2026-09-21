@@ -86,11 +86,19 @@ export function DocsList({ items }: { items: DriveDocument[] }) {
   );
 }
 
-export function NotesList({ items, compose = null }: { items: Note[]; compose?: ReactNode }) {
+export function NotesList({
+  items,
+  compose = null,
+  compact = false,
+}: {
+  items: Note[];
+  compose?: ReactNode;
+  compact?: boolean;
+}) {
   if (!items.length && !compose) return null;
   return (
-    <section id="notas" className="mt-10">
-      <h3 className="serif mb-3 text-xl text-navy">Notas</h3>
+    <section id="notas" className={compact ? undefined : "mt-10"}>
+      {compact ? null : <h3 className="serif mb-3 text-xl text-navy">Notas</h3>}
       {items.length > 0 ? (
         <ul className="space-y-2">
           {items.map((n) => (

@@ -14,6 +14,7 @@ import { Timeline } from "./timeline";
 import { ThesisPrice } from "./thesis-price";
 import { CapTable, MetricsGrid, NotesList } from "./lists";
 import { ActionBoard } from "./action-board";
+import { MeetingTabs } from "./meeting-tabs";
 import { NoteComposer } from "./note-composer";
 import { OpenPointList } from "./open-point-list";
 import { RoomBar } from "./room-bar";
@@ -45,8 +46,7 @@ export function DealView({
   const showCap = chrome.showCap && bundle.capTable.length > 0;
   const showPeople = chrome.showPeople && bundle.people.length > 0;
   const canWrite = mode === "operate" && !present;
-  const showNotes = chrome.showNotes && (bundle.notes.length > 0 || canWrite);
-  const showElevaRoom = !target && (showThesis || showCap || showPeople || showNotes);
+  const showElevaRoom = !target && (showThesis || showCap || showPeople);
   const showDrive = !present && !target;
   const travas = blockersFrom(bundle.risks, bundle.checklist, 3, bundle.actions);
   const hereSlug = pillarOfDealPhase(deal.phase);
@@ -209,23 +209,41 @@ export function DealView({
         </section>
       )}
 
-      {target && showNotes && <NotesList items={bundle.notes} />}
-
       <section id="opl" className="war-block war-opl">
-        <h2 className="war-label">Pontos em aberto</h2>
-        <OpenPointList
-          items={bundle.openPoints}
-          canEdit={canWrite}
-          empty="Nenhum ponto em aberto neste deal."
+        <MeetingTabs
+          pendencias={
+            <>
+              <h2 className="war-label">Pontos em aberto</h2>
+              <OpenPointList
+                items={bundle.openPoints}
+                canEdit={canWrite}
+                empty="Nenhum ponto em aberto neste deal."
+              />
+              <h2 id="tarefas" className="war-label meet-follow">
+                Tarefas
+              </h2>
+              <ActionBoard
+                items={bundle.actions}
+                canEdit={canWrite}
+                emptyTitle="Nenhuma tarefa neste deal."
+                pinFresh
+                toneRows
+              />
+            </>
+          }
+          anotacoes={
+            bundle.notes.length > 0 || canWrite ? (
+              <NotesList
+                items={bundle.notes}
+                compact
+                compose={canWrite ? <NoteComposer dealSlug={deal.slug} /> : null}
+              />
+            ) : (
+              <p className="ops-empty">Nenhuma anotação neste deal.</p>
+            )
+          }
         />
       </section>
-
-      {!present && (
-        <section id="tarefas" className="war-block">
-          <h2 className="war-label">Tarefas</h2>
-          <ActionBoard items={bundle.actions} canEdit={canWrite} emptyTitle="Nenhuma tarefa neste deal." />
-        </section>
-      )}
 
       {canWrite && <RoomBar dealSlug={deal.slug} />}
       {canWrite && <div className="room-bar-spacer" aria-hidden />}
@@ -235,8 +253,8 @@ export function DealView({
           <p className="eleva-room-label">Sala Eleva</p>
           <h2 className="serif mt-1 text-[22px] leading-tight text-navy">Leitura interna</h2>
           <p className="mt-1 max-w-2xl text-[13px] text-muted">
-            Tese, preço, quadro societário, pessoas e notas. Não é fato formal da operação e não
-            vai para a tela de reunião.
+            Tese, preço, quadro societário e pessoas. Não é fato formal da operação e não vai para
+            a tela de reunião.
           </p>
 
           {showThesis && (
@@ -282,12 +300,6 @@ export function DealView({
             </div>
           )}
 
-          {showNotes && (
-            <NotesList
-              items={bundle.notes}
-              compose={canWrite ? <NoteComposer dealSlug={deal.slug} /> : null}
-            />
-          )}
         </section>
       )}
     </article>

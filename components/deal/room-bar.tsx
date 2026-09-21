@@ -77,7 +77,7 @@ export function RoomBar({
     <>
       <div className="room-bar no-print">
         <button type="button" className="btn btn-primary" onClick={() => open("opl")}>
-          + Open point
+          + Ponto
         </button>
         <button type="button" className="btn" onClick={() => open("task")}>
           + Tarefa
@@ -86,20 +86,20 @@ export function RoomBar({
       <dialog ref={dialogRef} className="room-dialog" aria-labelledby="room-dialog-title">
         <form key={formKey} onSubmit={onSubmit} className="grid gap-3">
           <h2 id="room-dialog-title" className="war-label">
-            {kind === "opl" ? "Novo open point" : "Nova tarefa"}
+            {kind === "opl" ? "Novo ponto" : "Nova tarefa"}
           </h2>
           <div>
-            <label htmlFor="room-title">Título</label>
+            <label htmlFor="room-title">Descrição</label>
             <input id="room-title" name="title" required maxLength={280} />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label htmlFor="room-owner">Dono</label>
+              <label htmlFor="room-owner">Responsável</label>
               <input id="room-owner" name="owner" maxLength={120} />
             </div>
             <div>
               <label htmlFor="room-due">Prazo</label>
-              <input id="room-due" name="due" maxLength={80} placeholder="2026-09-30" />
+              <input id="room-due" name="due" type="date" />
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -130,7 +130,7 @@ export function RoomBar({
             <button type="submit" className="btn btn-primary" disabled={busy}>
               {busy ? "Gravando…" : "Guardar"}
             </button>
-            <button type="button" className="btn" onClick={() => dialogRef.current?.close()}>
+            <button type="button" className="btn btn-quiet" onClick={() => dialogRef.current?.close()}>
               Cancelar
             </button>
           </div>

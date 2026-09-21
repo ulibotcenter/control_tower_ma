@@ -5,13 +5,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { WithTerms } from "@/components/ui/with-terms";
 import { MutableStatus } from "./mutable-status";
 
-const RANK: Record<OpenPointStatus, number> = {
-  travado: 0,
-  em_curso: 1,
-  aberto: 2,
-  resolvido: 3,
-};
-
 const STATUS_OPTIONS: { value: OpenPointStatus; label: string }[] = [
   { value: "aberto", label: "Aberto" },
   { value: "em_curso", label: "Em curso" },
@@ -24,8 +17,16 @@ function pillarLabel(slug: string | null) {
   return isPillarSlug(slug) ? PILLAR_BY_SLUG[slug].short : slug;
 }
 
-function byRank(a: OpenPoint, b: OpenPoint) {
-  return RANK[a.status] - RANK[b.status] || a.title.localeCompare(b.title, "pt");
+function byFresh(a: OpenPoint, b: OpenPoint) {
+  if (a.createdAt === b.createdAt) return a.title.localeCompare(b.title, "pt");
+  return a.createdAt < b.createdAt ? 1 : -1;
+}
+
+function rowTone(status: OpenPointStatus) {
+  if (status === "aberto") return "is-wash is-aberto";
+  if (status === "em_curso") return "is-wash is-course";
+  if (status === "travado") return "is-wash is-travado";
+  return "is-wash is-feita";
 }
 
 export function OpenPointList({
@@ -37,8 +38,8 @@ export function OpenPointList({
   canEdit: boolean;
   empty: string;
 }) {
-  const open = items.filter((item) => item.status !== "resolvido").sort(byRank);
-  const done = items.filter((item) => item.status === "resolvido").sort(byRank);
+  const open = items.filter((item) => item.status !== "resolvido").sort(byFresh);
+  const done = items.filter((item) => item.status === "resolvido").sort(byFresh);
 
   if (!items.length) return <EmptyState compact title={empty} />;
 
@@ -68,7 +69,7 @@ function PointTable({ rows, canEdit }: { rows: OpenPoint[]; canEdit: boolean }) 
         <thead>
           <tr>
             <th scope="col">Ponto</th>
-            <th scope="col">Dono</th>
+            <th scope="col">Responsável</th>
             <th scope="col">Prazo</th>
             <th scope="col">Pilar</th>
             <th scope="col">Status</th>
@@ -76,9 +77,9 @@ function PointTable({ rows, canEdit }: { rows: OpenPoint[]; canEdit: boolean }) 
         </thead>
         <tbody>
           {rows.map((item) => (
-            <tr key={item.id} className={item.status === "resolvido" ? "is-done" : undefined}>
+            <tr key={item.id} className={rowTone(item.status)}>
               <td>
-                <span className={item.status === "resolvido" ? "ops-done" : "ops-strong"}>
+                <span className="ops-strong">
                   <WithTerms text={item.title} interactive={false} />
                 </span>
               </td>
