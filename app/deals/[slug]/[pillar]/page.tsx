@@ -14,6 +14,7 @@ import {
   firstOpenAction,
   getPillarViews,
 } from "@/lib/data/pillar-view";
+import { formatDate } from "@/lib/format";
 import { isDealAllowed } from "@/lib/meeting";
 import { semaphoreLabelFor, TARGET_COPY } from "@/lib/mode-meta";
 import { WithTerms } from "@/components/ui/with-terms";
@@ -23,11 +24,10 @@ import {
   isDdSubgroup,
   isPillarSlug,
   pillarForLegacyWorkstream,
-  pillarOf,
   pillarOfDealPhase,
   PILLAR_BY_SLUG,
 } from "@/lib/pillars";
-import type { MeetingMode, Semaphore, Workstream } from "@/lib/types";
+import type { Semaphore } from "@/lib/types";
 
 /**
  * Um pilar do processo. A rota é a mesma que servia as frentes de trabalho:
@@ -71,11 +71,11 @@ export default async function PillarPage({
   const risks = filterBySubgroup(view.risks, sub);
   const actions = filterBySubgroup(view.actions, sub);
   const documents = filterBySubgroup(view.documents, sub);
-  const vazio = checklist.length + risks.length + actions.length + documents.length === 0;
   const travas = blockersFrom(risks, checklist, 3, actions);
   const proximo = firstOpenAction(actions);
   const pendencias = checklist.filter((c) => c.status !== "concluido");
   const target = mode === "target";
+  const bloqueado = travas.length > 0;
 
   return (
     <AppShell
@@ -91,40 +91,31 @@ export default async function PillarPage({
         })),
       }}
     >
-      <p className="no-print text-[13px]">
-        <Link href={`/deals/${slug}`} className="text-muted hover:text-brand">
-          ← {bundle.deal.name}
-        </Link>
+      <p className="pillar-back no-print">
+        <Link href={`/deals/${slug}`}>← {bundle.deal.name}</Link>
       </p>
 
-      <header className="mt-3">
-        <p className="kicker">Pilar {meta.order} de 6</p>
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h1 className="serif text-[28px] leading-tight text-navy sm:text-[32px]">{meta.name}</h1>
-          <span className="flex shrink-0 items-center gap-2 text-[13px] text-navy">
-            <span className={`dot dot-${view.health as Semaphore}`} aria-hidden />
-            {semaphoreLabelFor(mode, view.health)}
-          </span>
+      <header className="pillar-head">
+        <div className="min-w-0">
+          <p className="kicker">Pilar {meta.order} de 6</p>
+          <h1 className="pillar-name">{meta.name}</h1>
         </div>
-        <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-muted">
-          {resumoDoPilar(bundle.workstreams, pillar, mode)}
-        </p>
+        <span className={`health-chip is-${view.health as Semaphore} pillar-signal`}>
+          <span className={`dot dot-${view.health as Semaphore}`} aria-hidden />
+          {semaphoreLabelFor(mode, view.health)}
+        </span>
       </header>
 
-      <dl
-        className={`paper mt-5 grid grid-cols-1 divide-y divide-line sm:grid-cols-2 sm:divide-x sm:divide-y-0${travas.length > 0 ? " trava-band" : ""}`}
-      >
-        <div className="px-4 py-3">
-          <dt className="text-[12px] font-semibold tracking-tight text-muted">
-            O que trava este pilar
-          </dt>
-          <dd className="mt-1">
+      <dl className={`pillar-now paper${bloqueado ? " trava-band" : ""}`}>
+        <div>
+          <dt className={bloqueado ? "trava-kicker" : "pillar-dt"}>O que trava este pilar</dt>
+          <dd>
             {travas.length === 0 ? (
-              <p className="text-[15px] leading-snug text-navy">Nada trava este pilar hoje.</p>
+              <p className="pillar-calm">Nada trava este pilar hoje.</p>
             ) : (
-              <ul className="space-y-0.5">
+              <ul className="pillar-blockers">
                 {travas.map((t) => (
-                  <li key={t.id} className="text-[15px] font-medium leading-snug text-alert">
+                  <li key={t.id}>
                     <WithTerms text={t.line} interactive={false} />
                   </li>
                 ))}
@@ -132,27 +123,32 @@ export default async function PillarPage({
             )}
           </dd>
         </div>
-        <div className="px-4 py-3">
-          <dt className="text-[12px] font-semibold tracking-tight text-muted">Próximo passo</dt>
-          <dd className="mt-1 text-[15px] leading-snug text-navy">
+        <div>
+          <dt className="pillar-dt">Próximo passo</dt>
+          <dd>
             {proximo ? (
               <>
-                <span className="font-medium">
+                <p className="pillar-next">
                   <WithTerms text={proximo.title} interactive={false} />
-                </span>
-                {proximo.owner ? (
-                  <span className="mt-0.5 block text-[13px] text-muted">{proximo.owner}</span>
-                ) : null}
+                </p>
+                <p className="pillar-next-meta">
+                  {proximo.owner ? <span className="pillar-owner">{proximo.owner}</span> : null}
+                  {proximo.owner ? <span aria-hidden> · </span> : null}
+                  <span className={proximo.status === "late" ? "is-late" : undefined}>
+                    {formatDate(proximo.due)}
+                  </span>
+                </p>
               </>
             ) : (
-              "Nenhum próximo passo neste pilar."
+              <p className="pillar-calm">Nenhum próximo passo neste pilar.</p>
             )}
           </dd>
         </div>
       </dl>
 
       {chips.length > 0 && (
-        <nav className="chip-row mt-5 no-print" aria-label="Subgrupos da due diligence">
+        <nav className="pillar-filter no-print" aria-label="Filtrar por frente">
+          <span className="pillar-filter-label">Frente</span>
           <Link href={`/deals/${slug}/dd`} className={`chip${sub ? "" : " is-on"}`}>
             Tudo
             <span className="chip-count">{view.total}</span>
@@ -171,83 +167,57 @@ export default async function PillarPage({
       )}
 
       {chips.length > 0 && fora > 0 && !sub && (
-        <p className="mt-2 text-[12px] text-muted no-print">
-          {fora} {fora === 1 ? "item fica" : "itens ficam"} fora dos quatro subgrupos
-          (comercial, operacional ou ainda sem frente) e só {fora === 1 ? "aparece" : "aparecem"} em
-          Tudo.
+        <p className="pillar-aside no-print">
+          {fora} fora dos subgrupos — só em Tudo.
         </p>
       )}
 
-      {vazio ? (
-        <p id="documentos" className="mt-8 text-[15px] text-muted">
-          Ainda não iniciado. Quando um documento ou uma pendência entrar neste pilar, ele aparece
-          aqui.
-        </p>
-      ) : (
-        <>
-          <div className="mt-8 grid gap-8 xl:grid-cols-3">
-            <div className="pillar-col-trava min-w-0 space-y-8">
+      <div className="pillar-bands">
+        <section className="pillar-band pillar-band-block">
+          {risks.length === 0 && pendencias.length === 0 ? (
+            <>
+              <h2 className="pillar-band-title">{target ? "Pontos em aberto" : "Riscos"}</h2>
+              <EmptyState compact title="Nada em aberto neste pilar" />
+            </>
+          ) : (
+            <>
               {risks.length > 0 && (
-                <section>
-                  <h2 className="pillar-section-title">
-                    {target ? "Pontos em aberto" : "Riscos"}
-                  </h2>
+                <>
+                  <h2 className="pillar-band-title">{target ? "Pontos em aberto" : "Riscos"}</h2>
                   <RisksBoard items={risks} mode={mode} />
-                </section>
+                </>
               )}
-
               {pendencias.length > 0 && (
-                <section>
-                  <h2 className="pillar-section-title">
+                <>
+                  <h2 className={`pillar-band-title${risks.length > 0 ? " is-follow" : ""}`}>
                     {target ? TARGET_COPY.documentsTitle : "Pendências"}
                   </h2>
                   <ChecklistTable items={pendencias} />
-                </section>
+                </>
               )}
-
-              {risks.length === 0 && pendencias.length === 0 && (
-                <p className="text-[14px] text-muted">Nada trava este pilar hoje.</p>
-              )}
-            </div>
-
-            <div className="pillar-col-acao min-w-0">
-              <section>
-                <h2 className="pillar-section-title">Ações</h2>
-                {actions.length > 0 ? (
-                  <ActionBoard items={actions} />
-                ) : (
-                  <EmptyState
-                    title="Nenhuma ação nesta vista"
-                    hint="Quando o board ou a Eleva definir um próximo passo, ele entra aqui com dono e prazo."
-                  />
-                )}
-              </section>
-            </div>
-
-            <div id="documentos" className="pillar-col-doc min-w-0">
-              <section>
-                <h2 className="pillar-section-title">Documentos</h2>
-                {documents.length > 0 ? (
-                  <DocsList items={documents} />
-                ) : (
-                  <p className="text-[14px] text-muted">Nenhum documento neste pilar ainda.</p>
-                )}
-              </section>
-            </div>
-          </div>
-
-          {view.unfiled > 0 && !sub && (
-            <p className="mt-6 text-[13px] text-muted">
-              {view.unfiled} {view.unfiled === 1 ? "item ainda sem frente" : "itens ainda sem frente"}{" "}
-              nesta lista. Classificar a frente coloca cada um no seu subgrupo.
-            </p>
+            </>
           )}
-        </>
+        </section>
+
+        <section className="pillar-band pillar-band-action">
+          <h2 className="pillar-band-title">Ações</h2>
+          <ActionBoard items={actions} />
+        </section>
+
+        <section id="documentos" className="pillar-band pillar-band-docs">
+          <h2 className="pillar-band-title">Documentos</h2>
+          <DocsList items={documents} />
+        </section>
+      </div>
+
+      {view.unfiled > 0 && !sub && (
+        <p className="pillar-aside">
+          {view.unfiled} {view.unfiled === 1 ? "item ainda sem frente" : "itens ainda sem frente"}.
+        </p>
       )}
 
-      <nav className="mt-12 border-t border-line pt-5 no-print" aria-label="Outros pilares">
-        <p className="text-[13px] text-muted">Outros pilares</p>
-        <ul className="chip-row mt-2">
+      <nav className="pillar-others no-print" aria-label="Outros pilares">
+        <ul>
           {pillars
             .filter((p) => p.slug !== pillar)
             .map((p) => (
@@ -262,17 +232,4 @@ export default async function PillarPage({
       </nav>
     </AppShell>
   );
-}
-
-/**
- * Resumo do pilar: costura os resumos das frentes que caem nele. Texto do
- * seed, escolhido pelo modo — nada escrito aqui.
- */
-function resumoDoPilar(workstreams: Workstream[], pillar: string, mode: MeetingMode) {
-  const partes = workstreams
-    .filter((w) => pillarOf({ workstreamSlug: w.slug }) === pillar)
-    .map((w) => (mode === "target" ? w.summaryTarget : w.summary))
-    .filter(Boolean);
-  if (partes.length === 0) return "Ainda sem leitura registrada para este pilar.";
-  return partes[0];
 }

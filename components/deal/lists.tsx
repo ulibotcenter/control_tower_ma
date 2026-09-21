@@ -41,50 +41,47 @@ export function MetricsGrid({ items, mode }: { items: Metric[]; mode: MeetingMod
 
 export function DocsList({ items }: { items: DriveDocument[] }) {
   if (!items.length) {
-    return (
-      <EmptyState
-        title="Nenhum documento nesta frente"
-        hint="Quando um arquivo for classificado para esta frente, o link do Drive entra aqui."
-      />
-    );
+    return <EmptyState compact title="Nenhum documento" />;
   }
   return (
-    <ul className="divide-y divide-line paper">
-      {items.map((d) => (
-        <DocRow key={d.id} d={d} />
-      ))}
-    </ul>
-  );
-}
-
-function DocRow({ d }: { d: DriveDocument }) {
-  const folderLink = Boolean(d.driveUrl && d.driveUrl.includes("/folders/"));
-  return (
-    <li className="px-4 py-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        {d.driveUrl && !folderLink ? (
-          <DriveLink href={d.driveUrl}>
-            <WithTerms text={d.title} interactive={false} />
-          </DriveLink>
-        ) : (
-          <span className="inline-flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="font-medium">
-              <WithTerms text={d.title} />
-            </span>
-            {folderLink && d.driveUrl ? <DriveLink href={d.driveUrl} /> : null}
-          </span>
-        )}
-        <span className="inline-flex flex-wrap items-center gap-2 text-[12px] text-muted">
-          {DOC_TYPE_LABEL[d.type]}
-          <StatusBadge tone={documentTone(d.status)}>{DOC_STATUS_LABEL[d.status]}</StatusBadge>
-        </span>
-      </div>
-      {d.note && (
-        <p className="mt-1 text-[13px] text-muted">
-          <WithTerms text={d.note} />
-        </p>
-      )}
-    </li>
+    <div className="ops-scroll">
+      <table className="data-table ops-table">
+        <thead>
+          <tr>
+            <th scope="col">Documento</th>
+            <th scope="col">Drive</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((d) => (
+            <tr key={d.id}>
+              <td>
+                <span className="ops-strong">
+                  <WithTerms text={d.title} />
+                </span>
+                <span className="ops-meta">
+                  {DOC_TYPE_LABEL[d.type]}
+                  {" · "}
+                  <StatusBadge tone={documentTone(d.status)}>{DOC_STATUS_LABEL[d.status]}</StatusBadge>
+                </span>
+                {d.note ? (
+                  <span className="ops-meta">
+                    <WithTerms text={d.note} />
+                  </span>
+                ) : null}
+              </td>
+              <td className="ops-drive">
+                {d.driveUrl ? (
+                  <DriveLink href={d.driveUrl}>Abrir</DriveLink>
+                ) : (
+                  <span className="ops-missing">sem link</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
