@@ -18,6 +18,7 @@ import { NoteComposer } from "./note-composer";
 import { PendingTable } from "./pending-table";
 import { RoomProvider, RoomStrip } from "./room-bar";
 import { Freshness } from "@/components/ui/freshness";
+import { PresentDeck } from "./present-deck";
 
 export function DealView({
   bundle,
@@ -32,9 +33,13 @@ export function DealView({
   present?: boolean;
   tema?: TemaSlug | null;
 }) {
+  if (present) {
+    return <PresentDeck bundle={bundle} pillars={pillars} mode={mode} />;
+  }
+
   const { deal } = bundle;
-  const chrome = viewChrome(mode, present);
-  const hideThesis = !canSeePriceAndThesis(mode) || present;
+  const chrome = viewChrome(mode, false);
+  const hideThesis = !canSeePriceAndThesis(mode);
   const frozen = deal.status === "standby";
   const review = deal.slug !== "loopert";
   const target = mode === "target";
@@ -44,33 +49,31 @@ export function DealView({
   const showThesis = !hideThesis && (bundle.thesis.length > 0 || bundle.prices.length > 0);
   const showCap = chrome.showCap && bundle.capTable.length > 0;
   const showPeople = chrome.showPeople && bundle.people.length > 0;
-  const canWrite = mode === "operate" && !present;
+  const canWrite = mode === "operate";
   const showElevaRoom = !target && (showThesis || showCap || showPeople);
-  const showDrive = !present && !target;
+  const showDrive = !target;
   const travas = blockersFrom(bundle.risks, bundle.checklist, 3, bundle.actions);
   const hereSlug = pillarOfDealPhase(deal.phase);
   const abrir = pillars.find((p) => p.slug === hereSlug) ?? pillars[0] ?? null;
 
   return (
-    <article className={present ? "present-deck" : undefined}>
+    <article>
       <div className="war-top">
         <header id="visao">
           {!target && <p className="kicker">Deal {deal.priority}</p>}
           <h1 className="deal-name">{deal.name}</h1>
           <p className="deal-city">
             {deal.city}
-            {!present && deal.since ? ` · desde ${deal.since}` : ""}
+            {deal.since ? ` · desde ${deal.since}` : ""}
           </p>
           {frozen && (
             <p className="stamp mt-2 text-wait">
               {mode === "target" ? "Em análise" : "Em análise · em paralelo"}
             </p>
           )}
-          {!present && (
-            <p className="deal-legal">
-              {deal.legalName} · {deal.cnpj}
-            </p>
-          )}
+          <p className="deal-legal">
+            {deal.legalName} · {deal.cnpj}
+          </p>
           {chrome.showProductLine && deal.product && (
             <p className="deal-product">{deal.product}</p>
           )}
@@ -119,31 +122,25 @@ export function DealView({
         </div>
       </div>
 
-      {!present && (
-        <p className="war-headline">
-          <WithTerms text={target ? deal.headlineTarget : deal.headline} />
-        </p>
-      )}
+      <p className="war-headline">
+        <WithTerms text={target ? deal.headlineTarget : deal.headline} />
+      </p>
 
-      {(present ? bundle.metrics.length > 0 : true) && (
-        <section id="indicadores" className="war-block">
-          <h2 className="war-label">Indicadores</h2>
-          {!present && <Freshness trust={review ? "review" : "firm"} mode={mode} />}
-          {!present && (
-            <p className="war-note">
-              {target ? (
-                "Só números já formalizados. Dado ausente = a confirmar."
-              ) : (
-                <>
-                  Só o que está na história oficial. Dado ausente = a confirmar. Não há{" "}
-                  <Term id="loi">LOI</Term> nem <Term id="spa">SPA</Term>.
-                </>
-              )}
-            </p>
+      <section id="indicadores" className="war-block">
+        <h2 className="war-label">Indicadores</h2>
+        <Freshness trust={review ? "review" : "firm"} mode={mode} />
+        <p className="war-note">
+          {target ? (
+            "Só números já formalizados. Dado ausente = a confirmar."
+          ) : (
+            <>
+              Só o que está na história oficial. Dado ausente = a confirmar. Não há{" "}
+              <Term id="loi">LOI</Term> nem <Term id="spa">SPA</Term>.
+            </>
           )}
-          <MetricsGrid items={bundle.metrics} mode={mode} />
-        </section>
-      )}
+        </p>
+        <MetricsGrid items={bundle.metrics} mode={mode} />
+      </section>
 
       <section className="war-block">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4">
@@ -153,7 +150,7 @@ export function DealView({
             {bundle.milestones.length} marcos concluídos
           </p>
         </div>
-        {!present && <Freshness trust={review ? "review" : "firm"} mode={mode} />}
+        <Freshness trust={review ? "review" : "firm"} mode={mode} />
         <div className="mt-2">
           <Timeline items={bundle.milestones} mode={mode} compact />
         </div>
@@ -194,8 +191,8 @@ export function DealView({
         </ol>
       </section>
 
-      {!present && <ThemeRail bundle={bundle} tema={tema} />}
-      {!present && tema ? <ThemePanel bundle={bundle} tema={tema} target={target} /> : null}
+      <ThemeRail bundle={bundle} tema={tema} />
+      {tema ? <ThemePanel bundle={bundle} tema={tema} target={target} /> : null}
 
       {showDrive && (
         <section id="documentos" className="war-block">

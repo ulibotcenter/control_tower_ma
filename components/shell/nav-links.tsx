@@ -17,6 +17,22 @@ function isActive(path: string, href: string) {
  * clique. `onlyDeal` vem do modo Alvo — a operação que não está na sala nem
  * aparece como link.
  */
+/** Nome da operação na barra da apresentação. Sem o seletor largo. */
+export function PresentDealName({
+  deals,
+  onlyDeal = null,
+}: {
+  deals: { slug: string; name: string }[];
+  onlyDeal?: string | null;
+}) {
+  const path = usePathname();
+  const visible = onlyDeal ? deals.filter((d) => d.slug === onlyDeal) : deals;
+  const fromPath = visible.find((d) => path.startsWith(`/deals/${d.slug}`));
+  const name = fromPath?.name ?? (visible.length === 1 ? visible[0].name : null);
+  if (!name) return null;
+  return <p className="hdr-present-deal">{name}</p>;
+}
+
 export function DealPick({
   deals,
   onlyDeal = null,

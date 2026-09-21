@@ -13,10 +13,13 @@ export function Shortcuts({
   present,
   mode,
   allowTour = true,
+  listenOnly = false,
 }: {
   present: boolean;
   mode: MeetingMode;
   allowTour?: boolean;
+  /** Mantém P (e 1/2) sem o botão no meio do palco. */
+  listenOnly?: boolean;
 }) {
   const router = useRouter();
   const path = usePathname();
@@ -110,6 +113,8 @@ export function Shortcuts({
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
+
+  if (listenOnly) return null;
 
   return (
     <div className="relative no-print" ref={wrapRef}>

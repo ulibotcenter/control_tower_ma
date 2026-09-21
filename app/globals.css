@@ -872,18 +872,24 @@ html:has(.shell[data-work="1"]) {
   color: var(--brand);
 }
 
-.present-deck {
-  font-size: 1.0625rem;
+.is-present-shell {
+  background: var(--paper);
 }
 
-.present-deck .serif {
-  letter-spacing: -0.025em;
+.hdr-present-deal {
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  line-height: 1.2;
+  color: var(--canvas);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.present-deck .paper dd,
-.present-deck .trava-band li,
-.present-deck .paper p {
-  font-size: 1.05em;
+.hdr-bar.is-present .mode-chip {
+  display: inline-flex;
 }
 
 .pillar-section-title,
@@ -2629,30 +2635,206 @@ td.ops-meta-cell {
   scroll-margin-top: calc(var(--header-h) + 0.75rem);
 }
 
-.present-deck .deal-name {
-  font-size: 3.15rem;
+.present-deck {
+  font-size: 1.125rem;
+  line-height: 1.45;
+  color: var(--ink);
 }
 
-.present-deck .war-situation dd {
-  font-size: 1.35rem;
+.deck-slide {
+  display: flex;
+  min-height: 70vh;
+  flex-direction: column;
+  justify-content: center;
+  padding: 3.5rem 0;
+  scroll-margin-top: calc(var(--header-h) + 1rem);
 }
 
-.present-deck .war-situation .health-chip {
+.deck-title {
+  margin: 0;
+  max-width: 18ch;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", ui-sans-serif, sans-serif;
+  font-size: clamp(2.5rem, 4.5vw, 3rem);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: var(--ink);
+}
+
+.deck-city {
+  margin: 0.6rem 0 0;
   font-size: 1.25rem;
+  color: var(--muted);
 }
 
-.present-deck .war-situation .health-chip .dot {
-  width: 1.45rem;
-  height: 1.45rem;
+.deck-stamp {
+  margin-top: 1rem;
+  font-size: 0.8125rem;
 }
 
-.present-deck .war-trava li,
-.present-deck .trava-band li {
+.deck-heading {
+  margin: 0 0 1.25rem;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", ui-sans-serif, sans-serif;
+  font-size: clamp(1.75rem, 3vw, 2rem);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+.deck-facts {
+  display: grid;
+  gap: 1.75rem;
+  margin: 2.25rem 0 0;
+}
+
+.deck-facts dt {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.deck-facts dd {
+  margin: 0.4rem 0 0;
   font-size: 1.35rem;
+  font-weight: 650;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.deck-signal {
+  padding: 0.85rem 1.5rem 0.85rem 1rem;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1.05;
+}
+
+.deck-signal .dot {
+  width: 2.5rem;
+  height: 2.5rem;
+  box-shadow: 0 0 0 10px color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.deck-empty,
+.deck-close,
+.deck-perguntas {
+  margin: 0;
+  max-width: 36rem;
+  font-size: 1.5rem;
+  line-height: 1.35;
+}
+
+.deck-blockers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deck-blockers li {
+  max-width: 40rem;
+  font-size: 1.5rem;
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--alert);
+}
+
+.deck-blockers li + li {
+  margin-top: 1rem;
+}
+
+.deck-pillars {
+  gap: 0.65rem;
+}
+
+.present-deck .deck-pillars .pillar-pip {
+  gap: 0.35rem;
+  padding: 0.85rem 0.75rem;
+  background: var(--paper);
+}
+
+.present-deck .deck-pillars .pillar-pip-name {
+  overflow: visible;
+  font-size: 1.125rem;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.present-deck .deck-pillars .pillar-pip .dot {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.deck-pillar-health {
+  font-size: 1.125rem;
+  font-weight: 650;
+  line-height: 1.2;
+  color: var(--muted);
+}
+
+.present-deck .timeline-name,
+.present-deck .timeline-note,
+.present-deck .timeline-badge,
+.present-deck .timeline-window {
+  font-size: 1.125rem;
+}
+
+.present-deck .timeline-note {
+  -webkit-line-clamp: 3;
+}
+
+.present-deck .metric-row {
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  overflow: visible;
+}
+
+.present-deck .metric-cell {
+  flex: 1 1 14rem;
+  padding: 1.1rem 1.15rem;
 }
 
 .present-deck .metric-value {
-  font-size: 1.55rem;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+}
+
+.present-deck .metric-context,
+.present-deck .kicker {
+  font-size: 1.125rem;
+}
+
+.present-deck .ops-table,
+.present-deck .data-table,
+.present-deck .doc-folder-name,
+.present-deck .ops-meta,
+.present-deck .data-table thead th,
+.present-deck .data-table tbody tr.doc-front th {
+  font-size: 1.125rem;
+}
+
+.deck-perguntas {
+  margin-top: 2.5rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 720px) {
+  .deck-facts {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    align-items: end;
+  }
+
+  .deck-facts-signal {
+    grid-column: 1 / -1;
+  }
+}
+
+@media print {
+  .deck-slide {
+    min-height: 0;
+    justify-content: flex-start;
+    padding: 1.25rem 0;
+  }
 }
 
 @media (min-width: 640px) {

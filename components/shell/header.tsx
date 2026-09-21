@@ -1,10 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { lockedDeal, type MeetingState } from "@/lib/meeting";
+import { MODE_META } from "@/lib/mode-meta";
 import type { SessionUser } from "@/lib/types";
 import { ExportPdfButton } from "@/components/export/export-pdf-button";
 import { ModeSwitch, type DealOption } from "./mode-switch";
-import { DealPick } from "./nav-links";
+import { DealPick, PresentDealName } from "./nav-links";
 import { PresentSwitch } from "./present-switch";
 import { SidebarToggle } from "./sidebar";
 import { Shortcuts } from "./shortcuts";
@@ -36,6 +37,42 @@ export function Header({
   const onlyDeal = lockedDeal(meeting);
   const locked = onlyDeal ? (deals.find((d) => d.slug === onlyDeal) ?? null) : null;
   const projecting = mode === "target" && present;
+
+  if (present) {
+    return (
+      <header
+        className="no-print bg-navy text-cream"
+        style={{ paddingLeft: "env(safe-area-inset-left)", paddingRight: "env(safe-area-inset-right)" }}
+      >
+        <div className="brand-bar" aria-hidden />
+        <div className="hdr-bar is-present">
+          <Link href="/" className="hdr-logo flex shrink-0 items-center" aria-label="Eleva Projects">
+            <Image
+              src="/eleva-logo.png"
+              alt="Eleva Projects"
+              width={200}
+              height={48}
+              priority
+              className="h-6 w-auto"
+            />
+          </Link>
+          <div className="hdr-deal">
+            <PresentDealName deals={deals} onlyDeal={onlyDeal} />
+          </div>
+          <div className="hdr-tools">
+            <span className="mode-chip">
+              <span className="mode-chip-dot" aria-hidden />
+              {MODE_META[mode].label}
+            </span>
+            <PresentSwitch on quiet={mode === "target"} />
+            {mode !== "target" ? (
+              <Shortcuts present mode={mode} allowTour={false} listenOnly />
+            ) : null}
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header

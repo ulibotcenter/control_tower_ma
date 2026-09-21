@@ -8,7 +8,6 @@ import { getPillarViews } from "@/lib/data/pillar-view";
 import { pillarOfDealPhase } from "@/lib/pillars";
 import { canSeeInbox } from "@/lib/visibility";
 import type { MeetingMode } from "@/lib/types";
-import { MODE_META } from "@/lib/mode-meta";
 import { isOnboardedCookie, ONBOARD_COOKIE } from "@/lib/onboarding";
 import { redirect } from "next/navigation";
 import { Header } from "./header";
@@ -86,7 +85,7 @@ export async function AppShell({
   return (
     <SidebarProvider>
       <div
-        className="shell min-h-screen bg-cream text-ink"
+        className={`shell min-h-screen text-ink ${present ? "is-present-shell" : "bg-cream"}`}
         data-mode={mode}
         data-present={present ? "1" : "0"}
         data-work={showWork ? "1" : "0"}
@@ -111,12 +110,6 @@ export async function AppShell({
           {showWork && <WorkNav mode={mode} inboxCount={inboxCount} />}
         </div>
         {mode !== "target" && <Onboarding openOnMount={showTour} />}
-        {present && mode !== "target" && (
-          <div className="no-print bg-navy-2 px-4 py-2 text-center text-[13px] text-cream">
-            <strong className="text-brand-2">Modo apresentação · {MODE_META[mode].label}.</strong>{" "}
-            Operação e edição estão ocultas. {MODE_META[mode].shareLine}
-          </div>
-        )}
         {/*
          * Uma faixa só abaixo do cabeçalho, e só quando ela informa algo que o
          * cromo já não diz. Em Operar o próprio seletor mostra o modo, então o
