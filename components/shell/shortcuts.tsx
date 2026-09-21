@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { isTypingTarget, keyboardNavEnabled, shortcutsFor } from "@/lib/shortcuts";
@@ -20,6 +20,7 @@ export function Shortcuts({
   const router = useRouter();
   const path = usePathname();
   const [open, setOpen] = useState(false);
+  const [box, setBox] = useState<{ top: number; right: number } | null>(null);
   const panelId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
   const navKeys = keyboardNavEnabled(mode);
@@ -79,6 +80,23 @@ export function Shortcuts({
     return () => document.removeEventListener("keydown", onKey);
   }, [path, present, router, navKeys]);
 
+  useLayoutEffect(() => {
+    if (!open) return;
+    function place() {
+      const el = wrapRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setBox({ top: r.bottom + 6, right: Math.max(8, window.innerWidth - r.right) });
+    }
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
@@ -101,12 +119,13 @@ export function Shortcuts({
       >
         ?
       </button>
-      {open && (
+      {open && box && (
         <div
           id={panelId}
           role="region"
           aria-label="Atalhos"
-          className="absolute right-0 top-[calc(100%+0.4rem)] z-40 w-72 paper p-3 text-ink shadow-lg"
+          className="w-72 paper p-3 text-ink shadow-lg"
+          style={{ position: "fixed", top: box.top, right: box.right, zIndex: 80 }}
         >
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#c2410c]">
             Atalhos

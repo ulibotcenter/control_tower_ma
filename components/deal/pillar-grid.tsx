@@ -21,7 +21,7 @@ export function PillarGrid({
   hereSlug?: PillarSlug | null;
 }) {
   return (
-    <ol className="grid auto-rows-fr gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <ol className="grid auto-rows-fr gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {pillars.map((p) => (
         <li key={p.slug} className="min-w-0">
           <Link

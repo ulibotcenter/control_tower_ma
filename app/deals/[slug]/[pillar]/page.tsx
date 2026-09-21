@@ -12,7 +12,6 @@ import {
   ddSubgroupCounts,
   filterBySubgroup,
   firstOpenAction,
-  getPillarView,
   getPillarViews,
 } from "@/lib/data/pillar-view";
 import { isDealAllowed } from "@/lib/meeting";
@@ -25,6 +24,7 @@ import {
   isPillarSlug,
   pillarForLegacyWorkstream,
   pillarOf,
+  pillarOfDealPhase,
   PILLAR_BY_SLUG,
 } from "@/lib/pillars";
 import type { MeetingMode, Semaphore, Workstream } from "@/lib/types";
@@ -60,7 +60,8 @@ export default async function PillarPage({
   const bundle = await getDealBundle(slug, mode);
   if (!bundle) notFound();
 
-  const view = getPillarView(bundle, pillar);
+  const pillars = getPillarViews(bundle);
+  const view = pillars.find((p) => p.slug === pillar)!;
   const meta = PILLAR_BY_SLUG[pillar];
   const sub = isDdSubgroup(frente) ? frente : null;
   const chips = pillar === "dd" ? ddSubgroupCounts(view) : [];
@@ -77,7 +78,19 @@ export default async function PillarPage({
   const target = mode === "target";
 
   return (
-    <AppShell>
+    <AppShell
+      nav={{
+        slug: bundle.deal.slug,
+        name: bundle.deal.name,
+        phasePillar: pillarOfDealPhase(bundle.deal.phase),
+        pillars: pillars.map((p) => ({
+          slug: p.slug,
+          order: p.order,
+          short: p.short,
+          health: p.health,
+        })),
+      }}
+    >
       <p className="no-print text-[13px]">
         <Link href={`/deals/${slug}`} className="text-muted hover:text-brand">
           ← {bundle.deal.name}
@@ -166,13 +179,13 @@ export default async function PillarPage({
       )}
 
       {vazio ? (
-        <p className="mt-8 text-[15px] text-muted">
+        <p id="documentos" className="mt-8 text-[15px] text-muted">
           Ainda não iniciado. Quando um documento ou uma pendência entrar neste pilar, ele aparece
           aqui.
         </p>
       ) : (
         <>
-          <div className="mt-8 grid gap-8 lg:grid-cols-3">
+          <div className="mt-8 grid gap-8 xl:grid-cols-3">
             <div className="pillar-col-trava min-w-0 space-y-8">
               {risks.length > 0 && (
                 <section>
@@ -211,7 +224,7 @@ export default async function PillarPage({
               </section>
             </div>
 
-            <div className="pillar-col-doc min-w-0">
+            <div id="documentos" className="pillar-col-doc min-w-0">
               <section>
                 <h2 className="pillar-section-title">Documentos</h2>
                 {documents.length > 0 ? (
@@ -235,7 +248,7 @@ export default async function PillarPage({
       <nav className="mt-12 border-t border-line pt-5 no-print" aria-label="Outros pilares">
         <p className="text-[13px] text-muted">Outros pilares</p>
         <ul className="chip-row mt-2">
-          {getPillarViews(bundle)
+          {pillars
             .filter((p) => p.slug !== pillar)
             .map((p) => (
               <li key={p.slug}>

@@ -10,12 +10,21 @@ import { isOnboardedCookie, ONBOARD_COOKIE } from "@/lib/onboarding";
 import { redirect } from "next/navigation";
 import { Header } from "./header";
 import { ModeBanner } from "./mode-banner";
+import { WorkNav } from "./nav-links";
 import { PrintMasthead } from "./print-masthead";
 import { Onboarding } from "./onboarding";
 import { SessionGuard } from "./session-guard";
 import { DriveReviewHost } from "./drive-review";
+import { SidebarProvider, SideNav } from "./sidebar";
+import type { ShellDealNav } from "./shell-nav";
 
-export async function AppShell({ children }: { children: React.ReactNode }) {
+export async function AppShell({
+  children,
+  nav = null,
+}: {
+  children: React.ReactNode;
+  nav?: ShellDealNav | null;
+}) {
   const session = await getSessionPayload();
   if (!session) redirect("/login");
   const { user, meeting } = session;
@@ -43,56 +52,78 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     hour: "2-digit",
     minute: "2-digit",
   });
+  const showWork = canSeeInbox(mode) && !present;
+  // No Alvo a sidebar só existe para o deal travado. Fora dele, navegação de produto.
+  const dealNav = nav && (!onlyDeal || nav.slug === onlyDeal) ? nav : null;
 
   return (
-    <div
-      className="min-h-screen bg-cream text-ink"
-      data-mode={mode}
-      data-present={present ? "1" : "0"}
-    >
-      <a
-        href="#conteudo"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:bg-brand focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+    <SidebarProvider>
+      <div
+        className="shell min-h-screen bg-cream text-ink"
+        data-mode={mode}
+        data-present={present ? "1" : "0"}
+        data-work={showWork ? "1" : "0"}
       >
-        Ir para o conteúdo
-      </a>
-      <SessionGuard />
-      {mode === "operate" && !present && <DriveReviewHost />}
-      <Header
-        user={user}
-        meeting={meeting}
-        deals={dealOptions}
-        inboxCount={inboxCount}
-        present={present}
-      />
-      {mode !== "target" && <Onboarding openOnMount={showTour} />}
-      {present && mode !== "target" && (
-        <div className="no-print bg-navy-2 px-4 py-2 text-center text-[13px] text-cream">
-          <strong className="text-brand-2">Modo apresentação · {MODE_META[mode].label}.</strong>{" "}
-          Operação e edição estão ocultas. {MODE_META[mode].shareLine}
+        <a
+          href="#conteudo"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:bg-navy focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-cream"
+        >
+          Ir para o conteúdo
+        </a>
+        <SessionGuard />
+        {mode === "operate" && !present && <DriveReviewHost />}
+        <div className="shell-top">
+          <Header
+            user={user}
+            meeting={meeting}
+            deals={dealOptions}
+            present={present}
+            showToggle={!present}
+            toggleLabel={dealNav ? "Abrir pilares" : "Abrir navegação"}
+          />
+          {showWork && <WorkNav mode={mode} inboxCount={inboxCount} />}
         </div>
-      )}
-      {/*
-       * Uma faixa só abaixo do cabeçalho, e só quando ela informa algo que o
-       * cromo já não diz. Em Operar o próprio seletor mostra o modo, então o
-       * aviso fica para Assessores, onde importa quem está na sala. No Alvo é
-       * o chip discreto do cabeçalho. A legenda do semáforo desceu para o
-       * rodapé do trilho da home, ao lado dos pontos que ela explica.
-       */}
-      {!present && mode === "advisors" && <ModeBanner meeting={meeting} />}
-      <main
-        id="conteudo"
-        className="mx-auto max-w-6xl px-4 py-6"
-        style={{ paddingBottom: "max(1.75rem, env(safe-area-inset-bottom))" }}
-      >
-        <PrintMasthead
-          mode={mode}
-          present={present}
-          generatedAt={generatedAt}
-          dealName={dealOptions.find((d) => d.slug === onlyDeal)?.name ?? null}
-        />
-        {children}
-      </main>
-    </div>
+        {mode !== "target" && <Onboarding openOnMount={showTour} />}
+        {present && mode !== "target" && (
+          <div className="no-print bg-navy-2 px-4 py-2 text-center text-[13px] text-cream">
+            <strong className="text-brand-2">Modo apresentação · {MODE_META[mode].label}.</strong>{" "}
+            Operação e edição estão ocultas. {MODE_META[mode].shareLine}
+          </div>
+        )}
+        {/*
+         * Uma faixa só abaixo do cabeçalho, e só quando ela informa algo que o
+         * cromo já não diz. Em Operar o próprio seletor mostra o modo, então o
+         * aviso fica para Assessores, onde importa quem está na sala. No Alvo é
+         * o chip discreto do cabeçalho. A legenda do semáforo desceu para o
+         * rodapé do trilho da home, ao lado dos pontos que ela explica.
+         */}
+        {!present && mode === "advisors" && <ModeBanner meeting={meeting} />}
+        <div className="shell-body">
+          {!present && (
+            <SideNav
+              deal={dealNav}
+              mode={mode}
+              deals={dealOptions}
+              inboxCount={inboxCount}
+            />
+          )}
+          <main
+            id="conteudo"
+            className="shell-main px-4 py-6"
+            style={{ paddingBottom: "max(1.75rem, env(safe-area-inset-bottom))" }}
+          >
+            <div className="mx-auto w-full max-w-6xl">
+              <PrintMasthead
+                mode={mode}
+                present={present}
+                generatedAt={generatedAt}
+                dealName={dealOptions.find((d) => d.slug === onlyDeal)?.name ?? null}
+              />
+              {children}
+            </div>
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 }

@@ -6,6 +6,7 @@ import { getPillarViews } from "@/lib/data/pillar-view";
 import { isDealAllowed } from "@/lib/meeting";
 import { getMeeting } from "@/lib/mode";
 import { getPresent } from "@/lib/present";
+import { pillarOfDealPhase } from "@/lib/pillars";
 import { isTemaSlug } from "@/lib/data/temas";
 
 export default async function DealPage({
@@ -23,12 +24,25 @@ export default async function DealPage({
   const present = await getPresent();
   const bundle = await getDealBundle(slug, meeting.mode);
   if (!bundle) notFound();
+  const pillars = getPillarViews(bundle);
 
   return (
-    <AppShell>
+    <AppShell
+      nav={{
+        slug: bundle.deal.slug,
+        name: bundle.deal.name,
+        phasePillar: pillarOfDealPhase(bundle.deal.phase),
+        pillars: pillars.map((p) => ({
+          slug: p.slug,
+          order: p.order,
+          short: p.short,
+          health: p.health,
+        })),
+      }}
+    >
       <DealView
         bundle={bundle}
-        pillars={getPillarViews(bundle)}
+        pillars={pillars}
         mode={meeting.mode}
         present={present}
         tema={isTemaSlug(raw) ? raw : null}

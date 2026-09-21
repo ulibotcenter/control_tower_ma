@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { MeetingMode, Semaphore } from "@/lib/types";
 import { DriveSyncButton } from "./drive-sync-button";
+import { canSeeInbox } from "@/lib/visibility";
 
 function isActive(path: string, href: string) {
   return href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`);
@@ -50,41 +51,31 @@ export function DealPick({
   );
 }
 
-export function NavLinks({
+/**
+ * Faixa de trabalho, fora do cabeçalho. Só em Operar, e nunca na apresentação.
+ * Glossário não compete aqui — fica na sidebar de produto e no painel de atalhos.
+ */
+export function WorkNav({
   mode,
   inboxCount,
-  present = false,
 }: {
   mode: MeetingMode;
   inboxCount: number;
-  present?: boolean;
 }) {
   const path = usePathname();
-  // `quiet`: fica de apoio. Em Operar quem manda é o seletor de operação —
-  // Programa e Glossário são saídas de contexto, não o caminho principal.
-  const extras = [
-    { href: "/", label: "Programa", show: true, quiet: true },
-    { href: "/inbox", label: "Novos arquivos", show: !present && mode === "operate", badge: inboxCount },
-    { href: "/decisions", label: "Decisões", show: mode !== "target" },
-    { href: "/glossary", label: "Glossário", show: !present, quiet: true },
-    { href: "/export/pack", label: "Pack", show: !present && mode === "operate" },
+  if (!canSeeInbox(mode)) return null;
+
+  const items = [
+    { href: "/inbox", label: "Bandeja", badge: inboxCount },
+    { href: "/decisions", label: "Decisões" },
+    { href: "/export/pack", label: "Pack" },
   ];
 
   return (
-    <nav className="nav-sec flex flex-wrap items-center gap-0.5 overflow-x-auto" aria-label="Secundária">
-      {extras
-        .filter((i) => i.show)
-        .map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={[
-              isActive(path, item.href) ? "is-on" : "",
-              item.quiet && !isActive(path, item.href) ? "opacity-60" : "",
-            ]
-              .filter(Boolean)
-              .join(" ") || undefined}
-          >
+    <div className="work-nav no-print">
+      <nav className="px-3 sm:px-4" aria-label="Trabalho">
+        {items.map((item) => (
+          <Link key={item.href} href={item.href} className={isActive(path, item.href) ? "is-on" : undefined}>
             {item.label}
             {item.badge ? (
               <span className="ml-1.5 bg-alert px-1.5 py-0.5 text-[11px] font-semibold text-cream">
@@ -93,7 +84,8 @@ export function NavLinks({
             ) : null}
           </Link>
         ))}
-      {mode === "operate" && !present && <DriveSyncButton />}
-    </nav>
+        <DriveSyncButton variant="work" />
+      </nav>
+    </div>
   );
 }

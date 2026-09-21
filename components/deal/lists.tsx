@@ -21,7 +21,7 @@ export function MetricsGrid({ items, mode }: { items: Metric[]; mode: MeetingMod
     );
   }
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {items.map((m) => (
         <div key={m.id} className="paper p-4">
           <p className="kicker">

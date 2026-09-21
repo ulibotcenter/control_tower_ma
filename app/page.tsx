@@ -60,7 +60,7 @@ export default async function HomePage() {
 
       <div
         className={`mt-8 grid gap-8 ${
-          showRail ? "lg:grid-cols-[minmax(0,1fr)_20rem]" : "grid-cols-1"
+          showRail ? "xl:grid-cols-[minmax(0,1fr)_20rem]" : "grid-cols-1"
         }`}
       >
         <div className="min-w-0">

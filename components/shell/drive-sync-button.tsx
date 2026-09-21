@@ -13,7 +13,7 @@ export type DriveReviewItem = {
 
 export const DRIVE_REVIEW_EVENT = "ct-drive-review";
 
-export function DriveSyncButton({ variant = "nav" }: { variant?: "nav" | "page" }) {
+export function DriveSyncButton({ variant = "nav" }: { variant?: "nav" | "page" | "work" }) {
   const [busy, setBusy] = useState(false);
 
   async function run() {
@@ -49,10 +49,12 @@ export function DriveSyncButton({ variant = "nav" }: { variant?: "nav" | "page" 
     }
   }
 
+  const label = busy ? "Lendo o Drive…" : variant === "work" ? "Sincronizar Drive" : "Atualizar Drive";
+
   if (variant === "page") {
     return (
       <button type="button" className="btn" onClick={run} disabled={busy}>
-        {busy ? "Lendo o Drive…" : "Atualizar Drive"}
+        {label}
       </button>
     );
   }
@@ -60,12 +62,12 @@ export function DriveSyncButton({ variant = "nav" }: { variant?: "nav" | "page" 
   return (
     <button
       type="button"
-      className="hdr-btn"
+      className={variant === "work" ? "work-btn" : "hdr-btn"}
       onClick={run}
       disabled={busy}
       title="Ler a pasta do Drive. Arquivo novo cai na bandeja, a classificar."
     >
-      {busy ? "Drive…" : "Atualizar Drive"}
+      {busy ? "Drive…" : variant === "work" ? "Sincronizar Drive" : "Atualizar Drive"}
     </button>
   );
 }
