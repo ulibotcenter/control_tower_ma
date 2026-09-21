@@ -1,77 +1,187 @@
 import Link from "next/link";
+import { DriveLink } from "@/components/ui/drive-link";
 import { WithTerms } from "@/components/ui/with-terms";
-import { semaphoreLabelFor } from "@/lib/mode-meta";
+import { hrefWithDeal } from "@/components/shell/focus-deal";
+import { folderUrl } from "@/lib/constants";
+import type { PillarView } from "@/lib/data/pillar-view";
+import { semaphoreLabelFor, semaphoreShortFor, TARGET_COPY } from "@/lib/mode-meta";
+import type { PillarSlug } from "@/lib/pillars";
 import type { Deal, MeetingMode, Semaphore } from "@/lib/types";
 
+export type CoverWeight = "lead" | "second" | "only";
+
 /**
- * A operação como instrumento: nome, situação, fase, próximo marco e uma
- * linha de leitura. A peça inteira é o alvo do clique — não há botão.
- * Os termos ficam não interativos porque tudo aqui está dentro de um link.
+ * Uma operação na capa. O miolo leva ao deal; cada pilar da faixa leva à
+ * página daquele pilar. Atalhos que saem de `/deals/` carregam `?deal=`.
  */
 export function DealCard({
   deal,
   mode,
+  weight,
+  pillars,
+  trava,
+  redCount,
+  emAberto,
+  openActions,
+  openChecks,
+  hereSlug,
+  showDrive,
+  showDecisions,
 }: {
-  deal: Deal & { redCount: number; amberCount: number; topReds: string[] };
+  deal: Deal;
   mode: MeetingMode;
+  weight: CoverWeight;
+  pillars: PillarView[];
+  trava: { id: string; line: string }[];
+  redCount: number;
+  emAberto: number | null;
+  openActions: number | null;
+  openChecks: number | null;
+  hereSlug: PillarSlug | null;
+  showDrive: boolean;
+  showDecisions: boolean;
 }) {
   const target = mode === "target";
-  const priority = deal.priority === 1;
+  const rotulo = target
+    ? "Operação em avaliação"
+    : deal.priority === 1
+      ? "Prioridade"
+      : "Segunda operação";
+  const vazio = target ? TARGET_COPY.criticalEmpty : "Nada trava";
+  const proximo = target ? deal.nextMilestoneTarget : deal.nextMilestone;
+  const shortcuts = showDrive || showDecisions;
 
   return (
-    <Link href={`/deals/${deal.slug}`} className="deal-card paper group flex h-full flex-col p-5">
-      <span
-        className={`deal-card-bar ${priority ? "bg-brand" : "bg-line-2"}`}
-        aria-hidden
-      />
-
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="kicker">
-            {target ? "Operação em avaliação" : priority ? "Prioridade" : "Segunda operação"}
-          </p>
-          <h2 className="serif mt-0.5 text-[25px] leading-tight tracking-tight text-navy group-hover:text-brand">
-            {deal.name}
-          </h2>
-          <p className="mt-1 truncate text-[13px] text-muted">{deal.legalName}</p>
+    <article className={`cover-card paper is-${weight}`}>
+      <Link href={`/deals/${deal.slug}`} className="cover-body">
+        <div className="cover-head">
+          <div className="min-w-0">
+            <p className="kicker cover-kicker">{rotulo}</p>
+            <h2 className="cover-name">{deal.name}</h2>
+            <p className="cover-city">{deal.city}</p>
+            {deal.status === "standby" && (
+              <p className="stamp mt-3 text-wait">
+                {target ? "Em análise" : "Em análise · em paralelo"}
+              </p>
+            )}
+          </div>
+          <span className={`health-chip is-${deal.health as Semaphore}`}>
+            <span className={`dot dot-${deal.health as Semaphore}`} aria-hidden />
+            {semaphoreLabelFor(mode, deal.health)}
+          </span>
         </div>
-        <span className="flex shrink-0 items-center gap-2 text-[13px] text-navy">
-          <span className={`dot dot-${deal.health as Semaphore}`} aria-hidden />
-          {semaphoreLabelFor(mode, deal.health)}
-        </span>
-      </div>
 
-      {deal.status === "standby" && (
-        <p className="stamp mt-3 text-wait">
-          {target ? "Em análise" : "Em análise · em paralelo"}
-        </p>
-      )}
+        <dl className="cover-facts">
+          <dt>{TARGET_COPY.phaseLabel}</dt>
+          <dd>
+            <WithTerms text={deal.phaseLabel} interactive={false} />
+          </dd>
+          <dt>O que trava</dt>
+          <dd>
+            {trava.length === 0 ? (
+              vazio
+            ) : (
+              <ul className="cover-trava">
+                {trava.map((item) => (
+                  <li key={item.id}>
+                    <WithTerms text={item.line} interactive={false} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </dd>
+          <dt>{TARGET_COPY.nextMilestoneLabel}</dt>
+          <dd>
+            <WithTerms text={proximo} interactive={false} />
+          </dd>
+        </dl>
 
-      <dl className="mt-4 grid gap-x-4 gap-y-1.5 border-y border-line py-3 text-[13px] sm:grid-cols-[7rem_minmax(0,1fr)]">
-        <dt className="text-muted">Fase</dt>
-        <dd className="text-navy">
-          <WithTerms text={deal.phaseLabel} interactive={false} />
-        </dd>
-        <dt className="text-muted">O que trava</dt>
-        <dd className={deal.topReds[0] ? "font-medium text-alert" : "text-navy"}>
-          {deal.topReds[0] ? (
-            <WithTerms text={deal.topReds[0]} interactive={false} />
-          ) : (
-            "Nada trava"
+        <p className="cover-counts">
+          <span>{vermelhoLabel(mode, redCount)}</span>
+          {emAberto !== null && (
+            <>
+              <span aria-hidden>·</span>
+              <span>
+                {abertoLabel(emAberto)}
+                {mode !== "target" && openActions !== null && openChecks !== null && (
+                  <span className="sr-only">
+                    {` (${conta(openActions, "ação não concluída", "ações não concluídas")}, ${conta(openChecks, "pendência aberta", "pendências abertas")}, ${conta(redCount, "risco vermelho", "riscos vermelhos")})`}
+                  </span>
+                )}
+              </span>
+            </>
           )}
-        </dd>
-        <dt className="text-muted">Próximo</dt>
-        <dd className="text-navy">
-          <WithTerms
-            text={target ? deal.nextMilestoneTarget : deal.nextMilestone}
-            interactive={false}
-          />
-        </dd>
-      </dl>
+        </p>
+      </Link>
 
-      <p className="mt-3 text-[14px] leading-relaxed text-muted">
-        <WithTerms text={target ? deal.headlineTarget : deal.headline} interactive={false} />
-      </p>
-    </Link>
+      {(pillars.length > 0 || shortcuts) && (
+        <div className="cover-lower">
+          {pillars.length > 0 && (
+            <ol className="pillar-strip" aria-label={`Pilares · ${deal.name}`}>
+            {pillars.map((pilar) => {
+              const here = hereSlug === pilar.slug;
+              const saude = semaphoreShortFor(mode, pilar.health);
+              return (
+                <li key={pilar.slug}>
+                  <Link
+                    href={`/deals/${deal.slug}/${pilar.slug}`}
+                    className={`pillar-pip is-${pilar.health}${here ? " is-here" : ""}`}
+                    aria-current={here ? "true" : undefined}
+                    title={`${pilar.order}. ${pilar.name} · ${saude}`}
+                  >
+                    <span className="pillar-pip-top">
+                      <span className={`dot dot-${pilar.health}`} aria-hidden />
+                      <span className="pillar-pip-ord">{pilar.order}</span>
+                    </span>
+                    <span className="pillar-pip-name">{pilar.short}</span>
+                    <span className="sr-only">
+                      {here ? `${saude}. Estamos aqui.` : saude}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+            </ol>
+          )}
+
+          {shortcuts && (
+            <div className="cover-shortcuts">
+              {showDrive && (
+                <span className="cover-drive">
+                  <span>{deal.driveFolderLabel}</span>
+                  <DriveLink href={folderUrl(deal.driveFolderId)} kind="folder" />
+                </span>
+              )}
+              {showDecisions && (
+                <Link href={hrefWithDeal("/decisions", deal.slug)} className="cover-jump">
+                  Decisões
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </article>
   );
+}
+
+function vermelhoLabel(mode: MeetingMode, n: number) {
+  if (mode === "target") {
+    if (n === 0) return "Nenhuma pendência formal";
+    if (n === 1) return "1 pendência formal";
+    return `${n} pendências formais`;
+  }
+  if (n === 0) return "Nenhum vermelho";
+  if (n === 1) return "1 vermelho";
+  return `${n} vermelhos`;
+}
+
+function abertoLabel(n: number) {
+  if (n === 0) return "Nada em aberto";
+  if (n === 1) return "1 em aberto";
+  return `${n} em aberto`;
+}
+
+function conta(n: number, um: string, varios: string) {
+  return `${n} ${n === 1 ? um : varios}`;
 }

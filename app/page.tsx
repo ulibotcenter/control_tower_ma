@@ -1,140 +1,164 @@
 import { AppShell } from "@/components/shell/app-shell";
 import { AttentionPanel } from "@/components/home/attention-panel";
-import { BoardCard } from "@/components/home/board-card";
 import { DealCard } from "@/components/home/deal-card";
-import { Term } from "@/components/ui/term";
+import { ActivityFeed } from "@/components/home/activity-feed";
 import { WithTerms } from "@/components/ui/with-terms";
-import { folderUrl, DRIVE_FOLDERS } from "@/lib/constants";
-import { alertEmail } from "@/lib/config";
-import { getActivity, getAttentionItems, getProgram } from "@/lib/data/provider";
+import { focusSlugFromQuery } from "@/components/shell/focus-deal";
+import { blockersFrom, getPillarViews } from "@/lib/data/pillar-view";
+import { getActivity, getAttentionItems, getDealBundle, getProgram } from "@/lib/data/provider";
 import { MODE_META, TARGET_COPY, viewChrome } from "@/lib/mode-meta";
 import { getLockedDeal, getMode } from "@/lib/mode";
+import { pillarOfDealPhase } from "@/lib/pillars";
 import { getPresent } from "@/lib/present";
-import { DriveLink } from "@/components/ui/drive-link";
+import type { DealBundle } from "@/lib/types";
+import { canSeeDecisions } from "@/lib/visibility";
 import { Freshness } from "@/components/ui/freshness";
-import { ActivityFeed } from "@/components/home/activity-feed";
-import { SemaphoreLegend } from "@/components/ui/legend";
-import { focusSlugFromQuery } from "@/components/shell/focus-deal";
 
 export default async function HomePage({
   searchParams,
 }: {
   searchParams: Promise<{ deal?: string }>;
 }) {
-  const { deal } = await searchParams;
+  const { deal: dealQuery } = await searchParams;
   const mode = await getMode();
   const onlyDeal = await getLockedDeal();
   const present = await getPresent();
-  const [program, activity] = await Promise.all([
-    getProgram(mode, { onlyDeal }),
-    getActivity(mode, 8, { onlyDeal }),
-  ]);
+  const program = await getProgram(mode, { onlyDeal });
   const chrome = viewChrome(mode, present);
-  const meta = MODE_META[mode];
   const target = mode === "target";
+  // Trilho só em Operar. No Alvo e na apresentação a capa é leitura.
+  const showRail = mode === "operate" && !present;
+  const showDrive = mode !== "target" && !present;
+  const showDecisions = canSeeDecisions(mode) !== "hidden" && !present;
 
-  // Trilho de trabalho: só existe quando a Eleva está operando a torre.
-  // Some no Alvo e some na apresentação — ali a tela é leitura, não posto.
-  const showRail = !target && !present;
+  // A faixa sai de getPillarViews (ordem e nomes do corte, não uma lista na capa).
+  // Em aberto = ações não concluídas + checagens abertas + riscos vermelhos.
+  const cards = await Promise.all(
+    program.deals.map(async (deal) => {
+      const bundle = await getDealBundle(deal.slug, mode);
+      const pillars = bundle ? getPillarViews(bundle) : [];
+      const blockers = bundle ? blockersFrom(bundle.risks, bundle.checklist, 3, bundle.actions) : [];
+      const counts = bundle ? contarEmAberto(bundle) : null;
+      const trava =
+        blockers.length > 0
+          ? blockers.map((item) => ({ id: item.id, line: item.line }))
+          : deal.topReds.map((line, index) => ({ id: `${deal.id}-red-${index}`, line }));
+      return {
+        deal,
+        pillars,
+        trava,
+        redCount: counts?.redRisks ?? deal.redCount,
+        emAberto: counts ? counts.emAberto : null,
+        openActions: counts ? counts.openActions : null,
+        openChecks: counts ? counts.openChecks : null,
+        hereSlug: pillarOfDealPhase(deal.phase),
+      };
+    }),
+  );
+
+  const slugOf = new Map(program.deals.map((deal) => [deal.id, deal.slug]));
   const attention = showRail ? getAttentionItems(mode, { onlyDeal }) : [];
+  const activity = showRail ? await getActivity(mode, 8, { onlyDeal }) : [];
+  const feed = activity.map((item) => ({
+    ...item,
+    href: hrefOnCover(item.href, item.dealId ? (slugOf.get(item.dealId) ?? null) : null),
+  }));
+
+  const several = cards.length > 1;
+  const gridClass = `cover-grid${several ? " has-lead" : ""}${present ? " is-deck" : ""}`;
 
   return (
-    <AppShell focusSlug={focusSlugFromQuery(deal)}>
-      <header className="max-w-3xl">
-        <p className="kicker">
-          {target ? (
-            TARGET_COPY.homeKicker
-          ) : (
-            <>
-              Programa de <Term id="ma">M&amp;A</Term>
-            </>
-          )}
-        </p>
-        <h1 className="serif mt-1 text-[22px] leading-tight text-navy sm:text-[24px]">
-          {target ? TARGET_COPY.homeTitle : "Programa"}
-        </h1>
+    <AppShell focusSlug={focusSlugFromQuery(dealQuery)}>
+      <header className="cover-intro max-w-2xl">
+        <p className="kicker">{target ? TARGET_COPY.homeKicker : "Portfólio"}</p>
+        <h1 className="cover-title">{target ? TARGET_COPY.homeTitle : "Operações"}</h1>
         <Freshness mode={mode} />
-        <p className="mt-3 text-[15px] leading-relaxed">
-          <WithTerms text={meta.homeLead} />
-        </p>
-        {meta.homeSub && !present && (
-          <p className="mt-2 text-[13px] leading-relaxed text-muted">
-            <WithTerms text={meta.homeSub} />
+        {target && (
+          <p className="mt-3 text-[15px] leading-relaxed">
+            <WithTerms text={MODE_META.target.homeLead} />
           </p>
         )}
       </header>
 
-      <div
-        className={`mt-8 grid gap-8 ${
-          showRail ? "xl:grid-cols-[minmax(0,1fr)_20rem]" : "grid-cols-1"
-        }`}
-      >
+      <div className={`mt-8 grid gap-8 ${showRail ? "xl:grid-cols-[minmax(0,1fr)_20rem]" : ""}`}>
         <div className="min-w-0">
-          {/* O peso da home são as operações. Uma peça cada, lado a lado; com a
-              reunião travada num alvo sobra uma, e ela ocupa a largura inteira. */}
-          <div
-            className={`grid items-stretch gap-4 ${
-              program.deals.length > 1 ? "xl:grid-cols-2" : "grid-cols-1"
-            }`}
-          >
-            {program.deals.map((deal) => (
-              <DealCard key={deal.id} deal={deal} mode={mode} />
-            ))}
+          <div className={gridClass}>
+            {several && cards[0] ? (
+              <>
+                <DealCard
+                  key={cards[0].deal.id}
+                  {...cards[0]}
+                  mode={mode}
+                  weight="lead"
+                  showDrive={showDrive}
+                  showDecisions={showDecisions}
+                />
+                <div className="cover-rest">
+                  {cards.slice(1).map((card) => (
+                    <DealCard
+                      key={card.deal.id}
+                      {...card}
+                      mode={mode}
+                      weight="second"
+                      showDrive={showDrive}
+                      showDecisions={showDecisions}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : (
+              cards.map((card) => (
+                <DealCard
+                  key={card.deal.id}
+                  {...card}
+                  mode={mode}
+                  weight="only"
+                  showDrive={showDrive}
+                  showDecisions={showDecisions}
+                />
+              ))
+            )}
           </div>
-
-          <div className="mt-8">
-            <BoardCard card={program.board} mode={mode} />
-          </div>
-
-          {!showRail && (
-            <div className="mt-10">
-              <ActivityFeed items={activity} mode={mode} />
-            </div>
-          )}
 
           {chrome.showOperateAside && (
-            <aside className="no-print mt-10 paper p-4 text-[13px] leading-relaxed">
-              <h2 className="text-[13px] font-semibold text-navy">Operação da torre</h2>
-              <ul className="mt-2 space-y-1.5 text-muted">
-                <li>
-                  Drive:{" "}
-                  {program.driveConfigured
-                    ? "credencial presente — sync ainda é placeholder, não finja leitura."
-                    : "API não configurada. Bandeja é manual."}{" "}
-                  <DriveLink href={folderUrl(DRIVE_FOLDERS.root.id)} kind="folder">
-                    Pasta raiz
-                  </DriveLink>
-                </li>
-                <li>
-                  Dados:{" "}
-                  {program.dataBackend === "supabase"
-                    ? "Supabase write (bandeja, classificação, decisões no Postgres)."
-                    : "seed only — decisões novas não sobrevivem a deploy."}
-                </li>
-                <li>
-                  Alertas:{" "}
-                  {program.resendConfigured ? "Resend configurado" : "sem chave — o payload é logado"}{" "}
-                  → {alertEmail()}
-                </li>
-                <li>
-                  Arquivos não classificados na bandeja: {program.inboxUnclassified}. Arquivo novo ≠
-                  item concluído.
-                </li>
-              </ul>
-            </aside>
+            <p className="cover-ops no-print">Bandeja · {inboxPhrase(program.inboxUnclassified)}</p>
           )}
         </div>
 
         {showRail && (
           <aside className="no-print min-w-0 space-y-4">
             <AttentionPanel items={attention} />
-            <ActivityFeed items={activity} mode={mode} variant="rail" />
-            <div className="paper p-4">
-              <SemaphoreLegend compact />
-            </div>
+            <ActivityFeed items={feed} mode={mode} variant="rail" />
           </aside>
         )}
       </div>
     </AppShell>
   );
+}
+
+function contarEmAberto(bundle: DealBundle) {
+  const openActions = bundle.actions.filter((item) => item.status === "open" || item.status === "late").length;
+  const openChecks = bundle.checklist.filter(
+    (item) => item.status === "aberto" || item.status === "em_andamento",
+  ).length;
+  const redRisks = bundle.risks.filter((item) => item.severity === "red").length;
+  return { openActions, openChecks, redRisks, emAberto: openActions + openChecks + redRisks };
+}
+
+function inboxPhrase(n: number) {
+  if (n === 0) return "nada por classificar";
+  if (n === 1) return "1 sem classificar";
+  return `${n} sem classificar`;
+}
+
+/** Fora de `/deals/`, a capa leva o deal na query. Sem slug, o href fica como está. */
+function hrefOnCover(href: string, slug: string | null) {
+  if (!slug || href.startsWith("/deals/") || href.startsWith("http")) return href;
+  const hashAt = href.indexOf("#");
+  const base = hashAt === -1 ? href : href.slice(0, hashAt);
+  const hash = hashAt === -1 ? "" : href.slice(hashAt);
+  const [path, query = ""] = base.split("?");
+  const params = new URLSearchParams(query);
+  params.set("deal", slug);
+  return `${path}?${params.toString()}${hash}`;
 }

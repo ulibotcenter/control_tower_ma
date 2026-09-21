@@ -1573,6 +1573,302 @@ html:has(.shell[data-work="1"]) {
   }
 }
 
+/* Capa: a pessoa escolhe a operação. O sinal é o chip, não um filete. */
+.cover-intro .kicker {
+  color: var(--muted);
+}
+
+.cover-title {
+  margin-top: 0.25rem;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", ui-sans-serif, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+.cover-grid.has-lead {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+.cover-rest {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+@media (min-width: 900px) {
+  .cover-grid.has-lead {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  }
+
+  .cover-grid.has-lead.is-deck {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+.cover-card {
+  min-width: 0;
+}
+
+.cover-card:has(.cover-body:hover),
+.cover-card:has(.cover-body:focus-visible) {
+  border-color: var(--line-strong);
+}
+
+.cover-body {
+  display: block;
+  padding: 1.25rem 1.25rem 0.85rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.cover-card.is-lead .cover-body,
+.cover-card.is-only .cover-body,
+.cover-grid.is-deck .cover-body {
+  padding: 1.4rem 1.4rem 1rem;
+}
+
+.cover-card.is-lead .cover-kicker {
+  color: var(--brand);
+}
+
+.cover-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cover-name {
+  margin-top: 0.15rem;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", ui-sans-serif, sans-serif;
+  font-size: 1.65rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.cover-card.is-lead .cover-name,
+.cover-card.is-only .cover-name {
+  font-size: 2.125rem;
+}
+
+.cover-grid.is-deck .cover-name {
+  font-size: 2.25rem;
+}
+
+.cover-body:hover .cover-name {
+  color: var(--brand);
+}
+
+.cover-city {
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.health-chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.7rem 0.35rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.2;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.health-chip .dot {
+  width: 1rem;
+  height: 1rem;
+  box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.health-chip.is-red {
+  background: color-mix(in srgb, var(--alert) 14%, white);
+  color: var(--alert);
+}
+
+.health-chip.is-amber {
+  background: color-mix(in srgb, var(--wait) 16%, white);
+  color: var(--wait);
+}
+
+.health-chip.is-green {
+  background: color-mix(in srgb, var(--go) 14%, white);
+  color: var(--go);
+}
+
+.health-chip.is-gray {
+  border: 1px solid var(--line);
+  background: var(--canvas);
+  color: var(--muted);
+}
+
+.cover-facts {
+  display: grid;
+  grid-template-columns: 6.75rem minmax(0, 1fr);
+  gap: 0.4rem 0.75rem;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.8125rem;
+}
+
+.cover-facts dt {
+  color: var(--muted);
+}
+
+.cover-facts dd {
+  margin: 0;
+  color: var(--ink);
+}
+
+.cover-trava {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--alert);
+  font-weight: 650;
+}
+
+.cover-trava li + li {
+  margin-top: 0.2rem;
+}
+
+.cover-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  margin-top: 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.cover-lower {
+  padding: 0 1.25rem 1.2rem;
+}
+
+.cover-card.is-lead .cover-lower,
+.cover-card.is-only .cover-lower,
+.cover-grid.is-deck .cover-lower {
+  padding: 0 1.4rem 1.35rem;
+}
+
+.pillar-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pillar-strip > li {
+  flex: 1 1 4.6rem;
+  min-width: 0;
+}
+
+.pillar-pip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  height: 100%;
+  padding: 0.35rem 0.4rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--canvas);
+  color: inherit;
+  text-decoration: none;
+}
+
+.pillar-pip:hover {
+  border-color: var(--ink);
+}
+
+.pillar-pip.is-here {
+  border-color: var(--brand);
+}
+
+.pillar-pip-top {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pillar-pip-ord {
+  font-family: var(--font-ibm), ui-monospace, monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+}
+
+.pillar-pip-name {
+  overflow: hidden;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  line-height: 1.2;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pillar-pip .dot {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.cover-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 0.75rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.8125rem;
+}
+
+.cover-drive {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  color: var(--muted);
+}
+
+.cover-jump {
+  font-weight: 650;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+
+.cover-jump:hover {
+  color: var(--brand);
+  text-decoration-color: var(--brand);
+}
+
+.cover-ops {
+  margin-top: 1.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 .print-masthead {
   display: none;
 }
