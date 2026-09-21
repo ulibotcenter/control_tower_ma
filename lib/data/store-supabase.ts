@@ -381,21 +381,17 @@ export async function addNoteRemote(
   sb: SupabaseClient,
   input: Omit<Note, "id"> & { slug: string },
 ): Promise<Note> {
-  const dealId = input.dealId ? await resolveWriteDealId(sb, input.dealId, input.slug) : null;
+  // O id do deal no app é texto (`deal-loopert`), como em actions e open_points.
+  // Não troca por um uuid inventado.
   const payload = {
     id: randomUUID(),
-    deal_id: dealId,
+    deal_id: input.dealId || null,
     body: input.body,
     visibility: input.visibility,
     sensitivities: input.sensitivities,
   };
   const { data, error } = await sb.from("notes").insert(payload).select("*").single();
-  if (error || !data) {
-    if (dealRejected(error)) {
-      fail("insert note: deals.slug não devolveu uuid — não inventei o deal", error);
-    }
-    fail("insert note", error);
-  }
+  if (error || !data) fail("insert note", error);
   return mapNoteRow(data as Record<string, unknown>, input.dealId);
 }
 

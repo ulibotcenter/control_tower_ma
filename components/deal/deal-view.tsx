@@ -13,10 +13,9 @@ import { DriveLink } from "@/components/ui/drive-link";
 import { Timeline } from "./timeline";
 import { ThesisPrice } from "./thesis-price";
 import { CapTable, MetricsGrid, NotesList } from "./lists";
-import { ActionBoard } from "./action-board";
 import { MeetingTabs } from "./meeting-tabs";
 import { NoteComposer } from "./note-composer";
-import { OpenPointList } from "./open-point-list";
+import { PendingTable } from "./pending-table";
 import { RoomProvider, RoomStrip } from "./room-bar";
 import { Freshness } from "@/components/ui/freshness";
 
@@ -216,21 +215,7 @@ export function DealView({
           pendencias={
             <>
               <h2 className="war-label">Pontos em aberto</h2>
-              <OpenPointList
-                items={bundle.openPoints}
-                canEdit={canWrite}
-                empty="Nenhum ponto em aberto neste deal."
-              />
-              <h2 id="tarefas" className="war-label meet-follow">
-                Tarefas
-              </h2>
-              <ActionBoard
-                items={bundle.actions}
-                canEdit={canWrite}
-                emptyTitle="Nenhuma tarefa neste deal."
-                pinFresh
-                toneRows
-              />
+              <PendingTable points={bundle.openPoints} tasks={bundle.actions} canEdit={canWrite} />
             </>
           }
           anotacoes={

@@ -183,6 +183,7 @@ export function mapActionRow(row: Record<string, unknown>, dealId: string): Acti
     status,
     visibility: asVisibility(row.visibility, "advisors"),
     sensitivities: asSensitivities(row.sensitivities),
+    createdAt: row.created_at ? String(row.created_at) : undefined,
   };
 }
 

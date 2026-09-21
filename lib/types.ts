@@ -145,6 +145,8 @@ export interface ActionItem {
   status: "open" | "late" | "done";
   visibility: Visibility;
   sensitivities: Sensitivity[];
+  /** Só nas tarefas gravadas na reunião. O corte não tem. */
+  createdAt?: string;
 }
 
 export type OpenPointStatus = "aberto" | "em_curso" | "travado" | "resolvido";

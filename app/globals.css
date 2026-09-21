@@ -2512,6 +2512,21 @@ td.ops-meta-cell {
   margin: 0.15rem 0 0.75rem;
 }
 
+.ops-tipo {
+  font-weight: 650;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.ops-row-actions {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.ops-row-actions .row-menu {
+  margin-top: 0;
+}
+
 .row-menu {
   display: flex;
   flex-wrap: wrap;

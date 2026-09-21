@@ -219,7 +219,7 @@ export async function listExtraActionsLocal(): Promise<ActionItem[]> {
 
 export async function addActionLocal(input: Omit<ActionItem, "id">): Promise<ActionItem> {
   const s = await load();
-  const row: ActionItem = { ...input, id: randomUUID() };
+  const row: ActionItem = { ...input, id: randomUUID(), createdAt: new Date().toISOString() };
   s.actions.unshift(row);
   memory = s;
   await writeStore(s);
