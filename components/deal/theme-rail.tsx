@@ -21,10 +21,9 @@ export function ThemeRail({
   const slug = bundle.deal.slug;
 
   return (
-    <section id="temas" className="mb-6">
-      <h2 className="serif mb-2 text-[17px] font-semibold leading-tight text-navy">Temas</h2>
-      <p className="mb-3 text-[13px] text-muted">Eixo especialista. Recorte do que já está no deal.</p>
-      <nav className="chip-row" aria-label="Temas do deal">
+    <section id="temas" className="theme-filter war-block">
+      <p className="theme-filter-label">Filtrar por tema</p>
+      <nav className="chip-row" aria-label="Filtrar por tema">
         {TEMAS.map((t) => {
           const n = temaCount(bundle, t.slug);
           const on = tema === t.slug;

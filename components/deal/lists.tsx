@@ -21,15 +21,15 @@ export function MetricsGrid({ items, mode }: { items: Metric[]; mode: MeetingMod
     );
   }
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="metric-row">
       {items.map((m) => (
-        <div key={m.id} className="paper p-4">
+        <div key={m.id} className="paper metric-cell">
           <p className="kicker">
             <WithTerms text={m.label} />
           </p>
-          <p className="serif mt-2 text-2xl text-navy">{m.value}</p>
+          <p className="serif metric-value">{m.value}</p>
           {m.context && (
-            <p className="mt-1 text-[12px] text-muted">
+            <p className="metric-context">
               <WithTerms text={m.context} />
             </p>
           )}

@@ -1,20 +1,21 @@
+import Link from "next/link";
 import { folderUrl } from "@/lib/constants";
 import { canSeePriceAndThesis } from "@/lib/visibility";
-import { TARGET_COPY, semaphoreLabelFor, viewChrome } from "@/lib/mode-meta";
+import { semaphoreLabelFor, semaphoreShortFor, TARGET_COPY, viewChrome } from "@/lib/mode-meta";
 import { blockersFrom, type PillarView } from "@/lib/data/pillar-view";
 import { pillarOfDealPhase } from "@/lib/pillars";
 import type { TemaSlug } from "@/lib/data/temas";
-import type { DealBundle, MeetingMode } from "@/lib/types";
+import type { DealBundle, MeetingMode, Semaphore } from "@/lib/types";
 import { ThemePanel, ThemeRail } from "./theme-rail";
 import { Term } from "@/components/ui/term";
 import { WithTerms } from "@/components/ui/with-terms";
 import { DriveLink } from "@/components/ui/drive-link";
-import { SemaphoreBadge } from "@/components/ui/semaphore";
 import { Timeline } from "./timeline";
-import { PillarGrid } from "./pillar-grid";
 import { ThesisPrice } from "./thesis-price";
 import { CapTable, MetricsGrid, NotesList } from "./lists";
 import { Freshness } from "@/components/ui/freshness";
+
+const OPL_CAP = 6;
 
 export function DealView({
   bundle,
@@ -43,53 +44,56 @@ export function DealView({
   const showPeople = chrome.showPeople && bundle.people.length > 0;
   const showNotes = chrome.showNotes && bundle.notes.length > 0;
   const showElevaRoom = !target && (showThesis || showCap || showPeople || showNotes);
+  const showDrive = !present && !target;
   const travas = blockersFrom(bundle.risks, bundle.checklist, 3, bundle.actions);
   const hereSlug = pillarOfDealPhase(deal.phase);
+  const abrir = pillars.find((p) => p.slug === hereSlug) ?? pillars[0] ?? null;
+  const opl = pontosEmAberto(bundle);
 
   return (
     <article className={present ? "present-deck" : undefined}>
-      {frozen && (
-        <p className="mb-4 stamp text-wait">
-          {mode === "target" ? "Em análise" : "Em análise · em paralelo"}
-        </p>
-      )}
-
-      <header id="visao" className="mb-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-sm text-muted">
-              {target ? "Operação" : `Deal ${deal.priority}`} · {deal.city}
-              {deal.since ? ` · desde ${deal.since}` : ""}
+      <div className="war-top">
+        <header id="visao">
+          {!target && <p className="kicker">Deal {deal.priority}</p>}
+          <h1 className="deal-name">{deal.name}</h1>
+          <p className="deal-city">
+            {deal.city}
+            {!present && deal.since ? ` · desde ${deal.since}` : ""}
+          </p>
+          {frozen && (
+            <p className="stamp mt-2 text-wait">
+              {mode === "target" ? "Em análise" : "Em análise · em paralelo"}
             </p>
-            {/* Silêncio tipográfico: um H1 de memo, não manchete de site. */}
-            <h1 className="serif mt-1 text-[28px] leading-tight text-navy">
-              {deal.name}
-            </h1>
-            {!present && (
-              <p className="mt-1 text-[13px] text-muted">
-                {deal.legalName} · {deal.cnpj}
-              </p>
-            )}
-          </div>
-        </div>
+          )}
+          {!present && (
+            <p className="deal-legal">
+              {deal.legalName} · {deal.cnpj}
+            </p>
+          )}
+          {chrome.showProductLine && deal.product && (
+            <p className="deal-product">{deal.product}</p>
+          )}
+        </header>
 
-        {/* Situação em 5 segundos: fase, semáforo e próximo marco, sem rolar. */}
-        <dl className="paper mt-5 grid grid-cols-1 divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-          <div className="px-4 py-3">
-            <dt className="text-[12px] text-muted">{TARGET_COPY.phaseLabel}</dt>
-            <dd className="mt-1 text-[15px] font-semibold leading-snug text-navy">
+        <dl className="war-situation paper">
+          <div>
+            <dt>{TARGET_COPY.phaseLabel}</dt>
+            <dd>
               <WithTerms text={deal.phaseLabel} interactive={false} />
             </dd>
           </div>
-          <div className="px-4 py-3">
-            <dt className="text-[12px] text-muted">{TARGET_COPY.healthLabel}</dt>
-            <dd className="mt-1 text-[15px] font-semibold leading-snug text-navy">
-              <SemaphoreBadge tone={deal.health} label={semaphoreLabelFor(mode, deal.health)} />
+          <div>
+            <dt>{TARGET_COPY.healthLabel}</dt>
+            <dd>
+              <span className={`health-chip is-${deal.health as Semaphore}`}>
+                <span className={`dot dot-${deal.health as Semaphore}`} aria-hidden />
+                {semaphoreLabelFor(mode, deal.health)}
+              </span>
             </dd>
           </div>
-          <div className="px-4 py-3">
-            <dt className="text-[12px] text-muted">{TARGET_COPY.nextMilestoneLabel}</dt>
-            <dd className="mt-1 text-[15px] leading-snug text-navy">
+          <div>
+            <dt>{TARGET_COPY.nextMilestoneLabel}</dt>
+            <dd>
               <WithTerms
                 text={target ? deal.nextMilestoneTarget : deal.nextMilestone}
                 interactive={false}
@@ -98,86 +102,136 @@ export function DealView({
           </div>
         </dl>
 
-        <div className={`paper mt-3 px-4 py-3${travas.length > 0 ? " trava-band" : ""}`}>
-          <p className="text-[12px] font-semibold tracking-tight text-muted">O que trava</p>
+        <div className={`war-trava paper${travas.length > 0 ? " trava-band" : ""}`}>
+          <p className={travas.length > 0 ? "trava-kicker" : "war-trava-calm"}>O que trava</p>
           {travas.length === 0 ? (
-            <p className="mt-1 text-[15px] leading-snug text-navy">Nada trava o deal hoje.</p>
+            <p className="war-trava-empty">Nada trava o deal hoje.</p>
           ) : (
-            <ul className="mt-1 space-y-0.5">
+            <ul>
               {travas.map((t) => (
-                <li key={t.id} className="text-[15px] font-medium leading-snug text-alert">
+                <li key={t.id}>
                   <WithTerms text={t.line} interactive={false} />
                 </li>
               ))}
             </ul>
           )}
         </div>
-
-        {!present && (
-          <p className="mt-4 max-w-3xl text-[15px] leading-relaxed">
-            <WithTerms text={target ? deal.headlineTarget : deal.headline} />
-          </p>
-        )}
-        {chrome.showProductLine && deal.product && (
-          <p className="mt-2 text-sm text-muted">{deal.product}</p>
-        )}
-        {!present && !target && (
-          <p className="mt-3 text-sm">
-            Pasta no Drive ·{" "}
-            <DriveLink href={folderUrl(deal.driveFolderId)} kind="folder">
-              {deal.driveFolderLabel}
-            </DriveLink>
-          </p>
-        )}
-      </header>
+      </div>
 
       {!present && (
-      <section className="mb-6">
+        <p className="war-headline">
+          <WithTerms text={target ? deal.headlineTarget : deal.headline} />
+        </p>
+      )}
+
+      {(present ? bundle.metrics.length > 0 : true) && (
+        <section id="indicadores" className="war-block">
+          <h2 className="war-label">Indicadores</h2>
+          {!present && <Freshness trust={review ? "review" : "firm"} mode={mode} />}
+          {!present && (
+            <p className="war-note">
+              {target ? (
+                "Só números já formalizados. Dado ausente = a confirmar."
+              ) : (
+                <>
+                  Só o que está na história oficial. Dado ausente = a confirmar. Não há{" "}
+                  <Term id="loi">LOI</Term> nem <Term id="spa">SPA</Term>.
+                </>
+              )}
+            </p>
+          )}
+          <MetricsGrid items={bundle.metrics} mode={mode} />
+        </section>
+      )}
+
+      <section className="war-block">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-          <h2 className="serif text-[17px] font-semibold leading-tight text-navy">Onde estamos</h2>
+          <h2 className="war-label">Onde estamos</h2>
           <p className="text-[12px] text-muted">
             {bundle.milestones.filter((m) => m.status === "done").length} de{" "}
             {bundle.milestones.length} marcos concluídos
           </p>
         </div>
-        <Freshness trust={review ? "review" : "firm"} mode={mode} />
-        <div className="mt-3">
-          <Timeline items={bundle.milestones} mode={mode} />
+        {!present && <Freshness trust={review ? "review" : "firm"} mode={mode} />}
+        <div className="mt-2">
+          <Timeline items={bundle.milestones} mode={mode} compact />
         </div>
       </section>
-      )}
 
-      {/* O eixo da página é o processo, não a ferramenta: seis pilares. */}
-      <section id="pilares" className="mb-6">
-        <h2 className="serif mb-3 text-[17px] font-semibold leading-tight text-navy">Pilares do processo</h2>
-        <PillarGrid dealSlug={deal.slug} pillars={pillars} mode={mode} hereSlug={hereSlug} />
+      <section id="pilares" className="war-block war-pillars">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="war-label">Pilares</h2>
+          {abrir && (
+            <Link href={`/deals/${deal.slug}/${abrir.slug}`} className="war-open-pillar">
+              abrir pilar
+              <span className="sr-only"> {abrir.name}</span>
+            </Link>
+          )}
+        </div>
+        <ol className="pillar-strip" aria-label="Pilares do processo">
+          {pillars.map((pilar) => {
+            const here = hereSlug === pilar.slug;
+            const saude = semaphoreShortFor(mode, pilar.health);
+            return (
+              <li key={pilar.slug}>
+                <Link
+                  href={`/deals/${deal.slug}/${pilar.slug}`}
+                  className={`pillar-pip is-${pilar.health}${here ? " is-here" : ""}`}
+                  aria-current={here ? "true" : undefined}
+                  title={`${pilar.order}. ${pilar.name} · ${saude}`}
+                >
+                  <span className="pillar-pip-top">
+                    <span className={`dot dot-${pilar.health}`} aria-hidden />
+                    <span className="pillar-pip-ord">{pilar.order}</span>
+                  </span>
+                  <span className="pillar-pip-name">{pilar.short}</span>
+                  <span className="sr-only">{here ? `${saude}. Estamos aqui.` : saude}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ol>
       </section>
 
       {!present && <ThemeRail bundle={bundle} tema={tema} />}
       {!present && tema ? <ThemePanel bundle={bundle} tema={tema} target={target} /> : null}
 
-      {!present && (
-        <section id="indicadores" className="mb-6">
-          <h2 className="serif mb-1 text-[22px] leading-tight text-navy">Indicadores</h2>
-          <Freshness trust={review ? "review" : "firm"} mode={mode} />
-          <p className="mb-4 mt-2 text-sm text-muted">
-            {target
-              ? "Só números já formalizados. Dado ausente = a confirmar."
-              : <>
-                  Só o que está na história oficial. Dado ausente = a confirmar. Não há{" "}
-                  <Term id="loi">LOI</Term> nem <Term id="spa">SPA</Term>.
-                </>}
+      {showDrive && (
+        <section id="documentos" className="war-block">
+          <h2 className="war-label">Data room</h2>
+          <p className="mt-1 text-sm">
+            <DriveLink href={folderUrl(deal.driveFolderId)} kind="folder">
+              {deal.driveFolderLabel}
+            </DriveLink>
           </p>
-          <MetricsGrid items={bundle.metrics} mode={mode} />
+        </section>
+      )}
+
+      {target && showNotes && <NotesList items={bundle.notes} />}
+
+      {!present && (
+        <section id="opl" className="war-block war-opl">
+          <h2 className="war-label">Pontos em aberto</h2>
+          <p className="war-note">A lista editável entra no bloco 5.</p>
+          {opl.length > 0 && (
+            <ul className="war-opl-list">
+              {opl.slice(0, OPL_CAP).map((item) => (
+                <li key={item.id}>
+                  <WithTerms text={item.text} interactive={false} />
+                </li>
+              ))}
+            </ul>
+          )}
+          {opl.length > OPL_CAP && (
+            <p className="war-note">+{opl.length - OPL_CAP} já registrados no deal.</p>
+          )}
         </section>
       )}
 
       {showElevaRoom && (
         <section id="tese" className="eleva-room mb-4">
           <p className="eleva-room-label">Sala Eleva</p>
-          <h2 className="serif mt-1 text-[22px] leading-tight text-navy">
-            Leitura interna
-          </h2>
+          <h2 className="serif mt-1 text-[22px] leading-tight text-navy">Leitura interna</h2>
           <p className="mt-1 max-w-2xl text-[13px] text-muted">
             Tese, preço, quadro societário, pessoas e notas. Não é fato formal da operação e não
             vai para a tela de reunião.
@@ -229,10 +283,20 @@ export function DealView({
           {showNotes && <NotesList items={bundle.notes} />}
         </section>
       )}
-
-      {/* Fora da sala da Eleva: no modo Alvo só sobram notas marcadas como
-          visíveis para o alvo. O filtro de visibilidade não muda aqui. */}
-      {target && chrome.showNotes && <NotesList items={bundle.notes} />}
     </article>
   );
+}
+
+/** Só o que o bundle deste modo já deixou visível. Sem item novo. */
+function pontosEmAberto(bundle: DealBundle) {
+  const actions = bundle.actions
+    .filter((a) => a.status === "open" || a.status === "late")
+    .map((a) => ({ id: a.id, text: a.title }));
+  const checks = bundle.checklist
+    .filter((c) => c.status === "aberto" || c.status === "em_andamento" || c.status === "bloqueado")
+    .map((c) => ({ id: c.id, text: c.title }));
+  const reds = bundle.risks
+    .filter((r) => r.severity === "red")
+    .map((r) => ({ id: r.id, text: r.title }));
+  return [...actions, ...checks, ...reds];
 }

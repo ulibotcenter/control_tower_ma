@@ -20,9 +20,11 @@ const LANE = {
 export const Timeline = memo(function Timeline({
   items,
   mode,
+  compact = false,
 }: {
   items: Milestone[];
   mode: MeetingMode;
+  compact?: boolean;
 }) {
   if (!items.length) {
     return (
@@ -38,7 +40,7 @@ export const Timeline = memo(function Timeline({
        * Peça única: uma faixa com divisórias internas, não cinco cartões
        * soltos. A etapa em curso é a única cheia — as outras ficam calmas.
        */}
-      <ol className="timeline">
+      <ol className={compact ? "timeline is-compact" : "timeline"}>
         {items.map((m, i) => {
           const k = lane(m, i, items);
           const current = k === "now";
