@@ -2,9 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/app-shell";
 import { ChecklistTable } from "@/components/deal/checklist-table";
-import { DocsList } from "@/components/deal/lists";
+import { PillarDocList, pillarDocuments } from "@/components/deal/lists";
 import { ActionBoard } from "@/components/deal/action-board";
-import { OpenPointList } from "@/components/deal/open-point-list";
+import { PendingTable } from "@/components/deal/pending-table";
 import { RoomProvider, RoomStrip } from "@/components/deal/room-bar";
 import { RisksBoard } from "@/components/deal/risks-board";
 import { getDealBundle } from "@/lib/data/provider";
@@ -26,6 +26,7 @@ import { getPresent } from "@/lib/present";
 import {
   isDdSubgroup,
   isPillarSlug,
+  isUnfiled,
   pillarForLegacyWorkstream,
   pillarOfDealPhase,
   PILLAR_BY_SLUG,
@@ -67,13 +68,15 @@ export default async function PillarPage({
   const view = pillars.find((p) => p.slug === pillar)!;
   const meta = PILLAR_BY_SLUG[pillar];
   const sub = isDdSubgroup(frente) ? frente : null;
-  const chips = pillar === "dd" ? ddSubgroupCounts(view) : [];
-  const fora = pillar === "dd" ? ddOutsideSubgroups(view) : 0;
+  const classifiedDocs = pillarDocuments(view.documents, pillar);
+  const counted = { ...view, documents: classifiedDocs };
+  const chips = pillar === "dd" ? ddSubgroupCounts(counted) : [];
+  const fora = pillar === "dd" ? ddOutsideSubgroups(counted) : 0;
 
   const checklist = filterBySubgroup(view.checklist, sub);
   const risks = filterBySubgroup(view.risks, sub);
   const actions = filterBySubgroup(view.actions, sub);
-  const documents = filterBySubgroup(view.documents, sub);
+  const documents = filterBySubgroup(classifiedDocs, sub);
   const travas = blockersFrom(risks, checklist, 3, actions);
   const proximo = firstOpenAction(actions);
   const pendencias = checklist.filter((c) => c.status !== "concluido");
@@ -82,6 +85,7 @@ export default async function PillarPage({
   const canWrite = mode === "operate" && !present;
   const openPoints = bundle.openPoints.filter((point) => point.pillarSlug === pillar);
   const bloqueado = travas.length > 0;
+  const unfiledShown = [...view.checklist, ...view.risks, ...view.actions, ...classifiedDocs].filter(isUnfiled).length;
 
   return (
     <AppShell
@@ -187,8 +191,9 @@ export default async function PillarPage({
 
       <section id="opl" className="war-block">
         <h2 className="war-label">Pontos em aberto</h2>
-        <OpenPointList
-          items={openPoints}
+        <PendingTable
+          points={openPoints}
+          tasks={actions}
           canEdit={canWrite}
           empty="Nenhum ponto em aberto neste pilar."
         />
@@ -228,13 +233,13 @@ export default async function PillarPage({
 
         <section id="documentos" className="pillar-band pillar-band-docs">
           <h2 className="pillar-band-title">Documentos</h2>
-          <DocsList items={documents} />
+          <PillarDocList items={documents} />
         </section>
       </div>
 
-      {view.unfiled > 0 && !sub && (
+      {unfiledShown > 0 && !sub && (
         <p className="pillar-aside">
-          {view.unfiled} {view.unfiled === 1 ? "item ainda sem frente" : "itens ainda sem frente"}.
+          {unfiledShown} {unfiledShown === 1 ? "item ainda sem frente" : "itens ainda sem frente"}.
         </p>
       )}
 

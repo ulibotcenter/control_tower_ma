@@ -147,6 +147,10 @@ export interface ActionItem {
   sensitivities: Sensitivity[];
   /** Só nas tarefas gravadas na reunião. O corte não tem. */
   createdAt?: string;
+  /** Id do corte (`ac-…`) quando a linha substituiu o seed. */
+  originId?: string;
+  /** Some da lista e continua escondendo a cópia do seed. */
+  superseded?: boolean;
 }
 
 export type OpenPointStatus = "aberto" | "em_curso" | "travado" | "resolvido";
@@ -162,6 +166,10 @@ export interface OpenPoint extends Visible {
   status: OpenPointStatus;
   createdAt: string;
   updatedAt: string;
+  /** Id do corte quando o ponto nasceu de uma tarefa do seed. */
+  originId?: string;
+  /** Some da lista e continua escondendo a cópia do seed. */
+  superseded?: boolean;
 }
 
 export interface ChecklistItem {

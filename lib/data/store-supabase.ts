@@ -22,7 +22,7 @@ import type {
 import { sanitizeDriveUrl } from "../http";
 import { isUuid } from "./room-input";
 import { deals, decisions as seedDecisions } from "./seed";
-import { mapActionRow, mapChecklistRow, mapDecisionRow, mapDocumentRow, mapInboxRow, mapNoteRow, mapOpenPointRow } from "./store-map";
+import { mapActionRow, mapChecklistRow, mapDecisionRow, mapDocumentRow, mapInboxRow, mapNoteRow, mapOpenPointRow, packShadow } from "./store-map";
 
 function fail(context: string, error: { message: string } | null): never {
   throw new Error(`[supabase] ${context}: ${error?.message ?? "erro desconhecido"}`);
@@ -297,6 +297,10 @@ function dealRejected(error: { message: string } | null) {
   return Boolean(error && /uuid|foreign key|invalid input syntax/i.test(error.message));
 }
 
+function mentions(error: { message: string } | null, column: string) {
+  return Boolean(error && new RegExp(column, "i").test(error.message));
+}
+
 export async function listOpenPointsRemote(sb: SupabaseClient): Promise<OpenPoint[]> {
   const canon = await dealCanon(sb);
   const { data, error } = await sb.from("open_points").select("*").order("created_at", { ascending: false });
@@ -310,7 +314,7 @@ export async function addOpenPointRemote(
 ): Promise<OpenPoint> {
   const now = new Date().toISOString();
   const dealId = await resolveWriteDealId(sb, input.dealId, input.slug);
-  const payload = {
+  const payload: Record<string, unknown> = {
     id: randomUUID(),
     deal_id: dealId,
     title: input.title,
@@ -322,7 +326,53 @@ export async function addOpenPointRemote(
     created_at: now,
     updated_at: now,
   };
-  const { data, error } = await sb.from("open_points").insert(payload).select("*").single();
+  if (input.originId) payload.origin_id = input.originId;
+  if (input.superseded) payload.superseded = true;
+  let { data, error } = await sb.from("open_points").insert(payload).select("*").single();
+  const droppedShadow = Boolean(error && (mentions(error, "origin_id") || mentions(error, "superseded")));
+  if (droppedShadow) {
+    delete payload.origin_id;
+    delete payload.superseded;
+    if (input.superseded) {
+      data = null;
+      error = null;
+    } else {
+      ({ data, error } = await sb.from("open_points").insert(payload).select("*").single());
+    }
+  }
+  if (droppedShadow && input.originId) {
+    await addActionRemote(sb, {
+      dealId: input.dealId,
+      slug: input.slug,
+      workstreamSlug: null,
+      pillarSlug: input.pillarSlug,
+      title: input.title,
+      owner: input.owner,
+      due: input.due,
+      status: "done",
+      visibility: input.visibility,
+      sensitivities: input.sensitivities,
+      originId: input.originId,
+      superseded: true,
+    });
+  }
+  if (input.superseded && droppedShadow) {
+    return {
+      id: String(payload.id),
+      dealId: input.dealId,
+      title: input.title,
+      owner: input.owner,
+      due: input.due,
+      pillarSlug: input.pillarSlug,
+      status: input.status,
+      visibility: input.visibility,
+      sensitivities: [],
+      createdAt: now,
+      updatedAt: now,
+      originId: input.originId,
+      superseded: true,
+    };
+  }
   if (error || !data) {
     if (dealRejected(error)) {
       fail(
@@ -332,7 +382,10 @@ export async function addOpenPointRemote(
     }
     fail("insert open point", error);
   }
-  return mapOpenPointRow(data as Record<string, unknown>, input.dealId);
+  const point = mapOpenPointRow(data as Record<string, unknown>, input.dealId);
+  if (!point.originId && input.originId) point.originId = input.originId;
+  if (input.superseded) point.superseded = true;
+  return point;
 }
 
 export async function updateOpenPointRemote(
@@ -352,6 +405,13 @@ export async function updateOpenPointRemote(
   if (!data) return null;
   const canon = await dealCanon(sb);
   return mapOpenPointRow(data as Record<string, unknown>, canon(String((data as { deal_id?: string }).deal_id ?? "")));
+}
+
+export async function supersedeOpenPointRemote(sb: SupabaseClient, id: string): Promise<boolean> {
+  const { data, error } = await sb.from("open_points").update({ superseded: true, updated_at: new Date().toISOString() }).eq("id", id).select("id");
+  if (!error) return Boolean(data && data.length);
+  if (!mentions(error, "superseded")) fail("supersede open point", error);
+  return deleteOpenPointRemote(sb, id);
 }
 
 export async function deleteOpenPointRemote(sb: SupabaseClient, id: string): Promise<boolean> {
@@ -386,10 +446,28 @@ export async function addActionRemote(
     visibility: input.visibility,
     sensitivities: input.sensitivities,
   };
-  let { data, error } = await sb.from("actions").insert(payload).select("*").single();
-  if (error && /pillar_slug/i.test(error.message)) {
-    delete payload.pillar_slug;
-    ({ data, error } = await sb.from("actions").insert(payload).select("*").single());
+  if (input.originId) payload.origin_id = input.originId;
+  if (input.superseded) payload.superseded = true;
+  let data: Record<string, unknown> | null = null;
+  let error: { message: string } | null = null;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const inserted = await sb.from("actions").insert(payload).select("*").single();
+    data = inserted.data as Record<string, unknown> | null;
+    error = inserted.error;
+    if (!error) break;
+    let stripped = false;
+    if (mentions(error, "pillar_slug") && "pillar_slug" in payload) {
+      delete payload.pillar_slug;
+      stripped = true;
+    }
+    if ((mentions(error, "origin_id") || mentions(error, "superseded")) && ("origin_id" in payload || "superseded" in payload)) {
+      delete payload.origin_id;
+      delete payload.superseded;
+      const current = Array.isArray(payload.sensitivities) ? payload.sensitivities.map(String) : [];
+      payload.sensitivities = packShadow(current, input.originId, Boolean(input.superseded));
+      stripped = true;
+    }
+    if (!stripped) break;
   }
   if (error || !data) {
     if (dealRejected(error)) {
@@ -399,6 +477,8 @@ export async function addActionRemote(
   }
   const row = mapActionRow(data as Record<string, unknown>, input.dealId);
   if (!row.pillarSlug && input.pillarSlug) row.pillarSlug = input.pillarSlug;
+  if (!row.originId && input.originId) row.originId = input.originId;
+  if (input.superseded) row.superseded = true;
   return row;
 }
 
@@ -425,6 +505,20 @@ export async function updateActionRemote(
   const row = mapActionRow(data as Record<string, unknown>, canon(String((data as { deal_id?: string }).deal_id ?? "")));
   if (!row.pillarSlug && patch.pillarSlug) row.pillarSlug = patch.pillarSlug;
   return row;
+}
+
+export async function supersedeActionRemote(sb: SupabaseClient, id: string): Promise<boolean> {
+  const { data, error } = await sb.from("actions").update({ superseded: true }).eq("id", id).select("id");
+  if (!error) return Boolean(data && data.length);
+  if (!mentions(error, "superseded")) fail("supersede action", error);
+  const current = await sb.from("actions").select("sensitivities").eq("id", id).maybeSingle();
+  if (current.error) fail("supersede action", current.error);
+  if (!current.data) return false;
+  const raw = (current.data as { sensitivities?: unknown }).sensitivities;
+  const packed = packShadow(Array.isArray(raw) ? raw.map(String) : [], undefined, true);
+  const updated = await sb.from("actions").update({ sensitivities: packed }).eq("id", id).select("id");
+  if (updated.error) fail("supersede action", updated.error);
+  return Boolean(updated.data && updated.data.length);
 }
 
 export async function deleteActionRemote(sb: SupabaseClient, id: string): Promise<boolean> {

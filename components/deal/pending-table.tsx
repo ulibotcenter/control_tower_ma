@@ -82,13 +82,15 @@ export function PendingTable({
   points,
   tasks,
   canEdit,
+  empty = "Nenhum ponto em aberto neste deal.",
 }: {
   points: OpenPoint[];
   tasks: ActionItem[];
   canEdit: boolean;
+  empty?: string;
 }) {
   const rows = rowsOf(points, tasks);
-  if (!rows.length) return <EmptyState compact title="Nenhum ponto em aberto neste deal." />;
+  if (!rows.length) return <EmptyState compact title={empty} />;
 
   return (
     <div className="ops-scroll">
@@ -133,7 +135,7 @@ export function PendingTable({
                   )}
                 </td>
                 <td className="ops-row-actions">
-                  {canEdit && isUuid(line.point.id) ? <PointRowMenu point={line.point} /> : null}
+                  {canEdit ? <PointRowMenu point={line.point} /> : null}
                 </td>
               </tr>
             ) : (
@@ -148,7 +150,7 @@ export function PendingTable({
                 <td className={line.task.status === "late" ? "ops-due is-late" : "ops-due"}>{formatDate(line.task.due)}</td>
                 <td className="ops-meta-cell">{pillarLabel(pillarOf(line.task))}</td>
                 <td>
-                  {canEdit && isUuid(line.task.id) ? (
+                  {canEdit ? (
                     <MutableStatus
                       id={line.task.id}
                       kind="actions"
@@ -161,7 +163,7 @@ export function PendingTable({
                   )}
                 </td>
                 <td className="ops-row-actions">
-                  {canEdit && isUuid(line.task.id) ? <TaskRowMenu action={line.task} /> : null}
+                  {canEdit ? <TaskRowMenu action={line.task} /> : null}
                 </td>
               </tr>
             ),

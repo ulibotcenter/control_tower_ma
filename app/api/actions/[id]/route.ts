@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
-import { cleanText, isUuid, parseActionStatus, parsePillar, parseVisibility } from "@/lib/data/room-input";
-import { deleteAction, updateAction } from "@/lib/data/store";
+import { cleanText, parseActionStatus, parsePillar, parseVisibility } from "@/lib/data/room-input";
+import { removeTrackedItem, saveTrackedItem } from "@/lib/data/room-save";
 import { denyUnlessOperate } from "@/lib/room-write";
 import type { ActionItem } from "@/lib/types";
-
-function rejectSeed(id: string) {
-  if (isUuid(id)) return null;
-  return NextResponse.json({ error: "seed" }, { status: 400 });
-}
 
 export async function PATCH(
   req: Request,
@@ -17,10 +12,9 @@ export async function PATCH(
   if (denied) return denied;
 
   const { id } = await params;
-  const seeded = rejectSeed(id);
-  if (seeded) return seeded;
 
   const body = (await req.json().catch(() => null)) as {
+    kind?: string;
     title?: string;
     owner?: string;
     due?: string;
@@ -53,12 +47,19 @@ export async function PATCH(
     if (!visibility) return NextResponse.json({ error: "fields" }, { status: 400 });
     patch.visibility = visibility;
   }
-  if (!Object.keys(patch).length) return NextResponse.json({ error: "fields" }, { status: 400 });
+  if (!Object.keys(patch).length && body.kind !== "task" && body.kind !== "opl") {
+    return NextResponse.json({ error: "fields" }, { status: 400 });
+  }
 
   try {
-    const action = await updateAction(id, patch);
-    if (!action) return NextResponse.json({ error: "missing" }, { status: 404 });
-    return NextResponse.json({ action });
+    const saved = await saveTrackedItem({
+      id,
+      from: "task",
+      to: body.kind === "opl" ? "opl" : "task",
+      patch,
+    });
+    if (!saved) return NextResponse.json({ error: "missing" }, { status: 404 });
+    return NextResponse.json(saved.kind === "task" ? { action: saved.action } : { point: saved.point });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Falha ao atualizar a tarefa";
     console.error("[api/actions]", message);
@@ -74,11 +75,9 @@ export async function DELETE(
   if (denied) return denied;
 
   const { id } = await params;
-  const seeded = rejectSeed(id);
-  if (seeded) return seeded;
 
   try {
-    const ok = await deleteAction(id);
+    const ok = await removeTrackedItem(id, "task");
     if (!ok) return NextResponse.json({ error: "missing" }, { status: 404 });
     return NextResponse.json({ ok: true });
   } catch (err) {

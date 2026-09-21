@@ -1219,6 +1219,41 @@ td.ops-meta-cell {
   color: var(--navy);
 }
 
+.doc-finder-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+}
+
+.doc-finder-head .doc-folder-name {
+  margin: 0;
+  font-size: 0.875rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.doc-finder-files {
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doc-finder-files li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.28rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.875rem;
+}
+
+.doc-finder-files li:last-child {
+  border-bottom: 0;
+}
+
 .data-table tbody tr.doc-front th {
   padding: 0.55rem 0.75rem 0.2rem 0;
   font-size: 0.75rem;
@@ -2555,14 +2590,20 @@ td.ops-meta-cell {
 }
 
 .ops-row-actions .row-menu {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
   margin-top: 0;
+  white-space: nowrap;
 }
 
 .row-menu {
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: 0.65rem;
   margin-top: 0.2rem;
+  white-space: nowrap;
 }
 
 .row-menu button {

@@ -12,7 +12,7 @@ import { WithTerms } from "@/components/ui/with-terms";
 import { DriveLink } from "@/components/ui/drive-link";
 import { Timeline } from "./timeline";
 import { ThesisPrice } from "./thesis-price";
-import { CapTable, DocsList, MetricsGrid, NotesList } from "./lists";
+import { CapTable, DataRoomFinder, MetricsGrid, NotesList } from "./lists";
 import { MeetingTabs } from "./meeting-tabs";
 import { NoteComposer } from "./note-composer";
 import { PendingTable } from "./pending-table";
@@ -203,7 +203,7 @@ export function DealView({
             </DriveLink>
           </p>
           <div className="mt-4">
-            <DocsList items={bundle.documents} />
+            <DataRoomFinder items={bundle.documents} roomId={deal.driveFolderId} roomLabel={deal.driveFolderLabel} />
           </div>
         </section>
       )}

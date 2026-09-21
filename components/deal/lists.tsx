@@ -2,7 +2,9 @@ import type { ReactNode } from "react";
 import type { CapRow, DriveDocument, MeetingMode, Metric, Note } from "@/lib/types";
 import { TARGET_COPY } from "@/lib/mode-meta";
 import { DOC_STATUS_LABEL, DOC_TYPE_LABEL } from "@/lib/constants";
-import { groupDocuments } from "@/lib/data/doc-groups";
+import { dataRoomGroups, docClassifiedToPillar, groupDocuments, isProgramFolderCard } from "@/lib/data/doc-groups";
+import { driveResourceId } from "@/lib/http";
+import type { PillarSlug } from "@/lib/pillars";
 import { DriveLink } from "@/components/ui/drive-link";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, documentTone } from "@/components/ui/status-badge";
@@ -114,6 +116,105 @@ function FrontRows({
         </tr>
       ))}
     </>
+  );
+}
+
+export function DataRoomFinder({
+  items,
+  roomId,
+  roomLabel,
+}: {
+  items: DriveDocument[];
+  roomId: string | null;
+  roomLabel: string;
+}) {
+  const groups = dataRoomGroups(items, { id: roomId ?? "", label: roomLabel });
+  if (!groups.length) return <EmptyState compact title="Nenhum arquivo nesta pasta" />;
+  return (
+    <div className="doc-folders doc-finder">
+      {groups.map((group) => (
+        <section key={group.key} className="doc-folder">
+          <div className="doc-finder-head">
+            <h3 className="doc-folder-name">{group.label}</h3>
+            {group.folderHref ? <DriveLink href={group.folderHref} kind="folder" /> : null}
+          </div>
+          {group.folders.length > 0 || group.files.length > 0 ? (
+            <ul className="doc-finder-files">
+              {group.folders.map((folder) => (
+                <li key={folder.id}>
+                  <span>{folder.title}</span>
+                  <DriveLink href={folder.href} kind="folder" />
+                </li>
+              ))}
+              {group.files.map((file) => (
+                <li key={file.id}>
+                  <DriveLink href={file.href}>{file.title}</DriveLink>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
+      ))}
+    </div>
+  );
+}
+
+export function pillarDocuments(items: DriveDocument[], pillar: PillarSlug): DriveDocument[] {
+  return items.filter((doc) => docClassifiedToPillar(doc, pillar) && !isProgramFolderCard(doc));
+}
+
+export function PillarDocList({ items }: { items: DriveDocument[] }) {
+  if (!items.length) return <EmptyState compact title="Nenhum documento neste pilar" />;
+  return (
+    <div className="ops-scroll">
+      <table className="data-table ops-table">
+        <thead>
+          <tr>
+            <th scope="col">Documento</th>
+            <th scope="col">Status</th>
+            <th scope="col">Drive</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((doc) => {
+            const href = driveResourceId(doc.driveUrl) ? doc.driveUrl : "";
+            const folder = href.includes("/folders/");
+            return (
+              <tr key={doc.id}>
+                <td>
+                  <span className="ops-strong">
+                    <WithTerms text={doc.title} />
+                  </span>
+                  {doc.note ? (
+                    <span className="ops-meta">
+                      <WithTerms text={doc.note} />
+                    </span>
+                  ) : null}
+                </td>
+                <td>
+                  {DOC_STATUS_LABEL[doc.status] ? (
+                    <StatusBadge tone={documentTone(doc.status)}>{DOC_STATUS_LABEL[doc.status]}</StatusBadge>
+                  ) : (
+                    <span className="ops-missing">—</span>
+                  )}
+                </td>
+                <td className="ops-drive">
+                  {href ? (
+                    folder ? (
+                      <DriveLink href={href} kind="folder" />
+                    ) : (
+                      <DriveLink href={href}>Abrir</DriveLink>
+                    )
+                  ) : (
+                    <span className="ops-missing">—</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

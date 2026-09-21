@@ -15,6 +15,8 @@ create table if not exists open_points (
   visibility meeting_visibility not null default 'advisors',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
+  origin_id text,
+  superseded boolean not null default false,
   constraint open_points_status_check check (status in ('aberto', 'em_curso', 'travado', 'resolvido'))
 );
 
@@ -30,3 +32,9 @@ create policy eleva_all on open_points
 
 -- Tarefa nova pode nascer já num pilar. Coluna aditiva; o seed não muda.
 alter table actions add column if not exists pillar_slug text;
+
+-- Primeira gravação de um id do corte (não-uuid) vira linha e esconde o seed.
+alter table open_points add column if not exists origin_id text;
+alter table open_points add column if not exists superseded boolean not null default false;
+alter table actions add column if not exists origin_id text;
+alter table actions add column if not exists superseded boolean not null default false;

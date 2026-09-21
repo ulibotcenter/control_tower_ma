@@ -1,5 +1,4 @@
 import { formatDate } from "@/lib/format";
-import { isUuid } from "@/lib/data/room-input";
 import { isPillarSlug, PILLAR_BY_SLUG } from "@/lib/pillars";
 import type { OpenPoint, OpenPointStatus } from "@/lib/types";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -75,6 +74,9 @@ function PointTable({ rows, canEdit }: { rows: OpenPoint[]; canEdit: boolean }) 
             <th scope="col">Prazo</th>
             <th scope="col">Pilar</th>
             <th scope="col">Status</th>
+            <th scope="col">
+              <span className="sr-only">Ações</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -84,7 +86,6 @@ function PointTable({ rows, canEdit }: { rows: OpenPoint[]; canEdit: boolean }) 
                 <span className="ops-strong">
                   <WithTerms text={item.title} interactive={false} />
                 </span>
-                {canEdit && isUuid(item.id) ? <PointRowMenu point={item} /> : null}
               </td>
               <td className="ops-owner">{item.owner || "—"}</td>
               <td className="ops-due">{item.due ? formatDate(item.due) : "—"}</td>
@@ -104,6 +105,7 @@ function PointTable({ rows, canEdit }: { rows: OpenPoint[]; canEdit: boolean }) 
                   </span>
                 )}
               </td>
+              <td className="ops-row-actions">{canEdit ? <PointRowMenu point={item} /> : null}</td>
             </tr>
           ))}
         </tbody>

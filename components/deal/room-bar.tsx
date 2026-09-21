@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { PILLARS, type PillarSlug } from "@/lib/pillars";
+import { PILLARS, pillarOf, type PillarSlug } from "@/lib/pillars";
 import { isUuid } from "@/lib/data/room-input";
 import { toast } from "@/lib/toast";
 import { useMeetingTab } from "./meeting-tabs";
@@ -116,6 +116,8 @@ export function RoomProvider({
         const originalDue = current?.due ?? "";
         let due = String(form.get("due") || "");
         if (!due && originalDue && !dateValue(originalDue)) due = originalDue;
+        const chosen = String(form.get("kind") || "");
+        const targetKind = chosen === "task" || chosen === "opl" ? chosen : kind;
         const payload = {
           dealSlug,
           title: String(form.get("title") || ""),
@@ -123,6 +125,7 @@ export function RoomProvider({
           due,
           pillarSlug: String(form.get("pillar") || "") || null,
           visibility: String(form.get("visibility") || "advisors"),
+          ...(editing ? { kind: targetKind } : {}),
         };
         const path = current
           ? draft.kind === "opl"
@@ -204,7 +207,7 @@ export function RoomProvider({
             {kind === "note" ? null : (
               <div>
                 <label htmlFor="room-pillar">Pilar</label>
-                <select id="room-pillar" name="pillar" defaultValue={point?.pillarSlug ?? task?.pillarSlug ?? pillarSlug ?? ""}>
+                <select id="room-pillar" name="pillar" defaultValue={pillarDefault(point, task, pillarSlug ?? "")}>
                   <option value="">Sem pilar</option>
                   {PILLARS.map((pillar) => (
                     <option key={pillar.slug} value={pillar.slug}>
@@ -214,6 +217,15 @@ export function RoomProvider({
                 </select>
               </div>
             )}
+            {editing && kind !== "note" ? (
+              <div>
+                <label htmlFor="room-kind">Tipo</label>
+                <select id="room-kind" name="kind" defaultValue={kind === "task" ? "task" : "opl"}>
+                  <option value="opl">Ponto</option>
+                  <option value="task">Tarefa</option>
+                </select>
+              </div>
+            ) : null}
             <div>
               <label htmlFor="room-visibility">Quem vê</label>
               <select
@@ -286,9 +298,16 @@ function RowMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => voi
   );
 }
 
+function pillarDefault(point: OpenPoint | null, task: ActionItem | null, fallback: string) {
+  if (point?.pillarSlug) return point.pillarSlug;
+  if (task?.pillarSlug) return task.pillarSlug;
+  if (task?.workstreamSlug) return pillarOf(task);
+  return fallback;
+}
+
 export function PointRowMenu({ point }: { point: OpenPoint }) {
   const room = useRoom();
-  if (!room || !isUuid(point.id)) return null;
+  if (!room) return null;
   return (
     <RowMenu
       onEdit={() => room.editPoint(point)}
@@ -299,7 +318,7 @@ export function PointRowMenu({ point }: { point: OpenPoint }) {
 
 export function TaskRowMenu({ action }: { action: ActionItem }) {
   const room = useRoom();
-  if (!room || !isUuid(action.id)) return null;
+  if (!room) return null;
   return (
     <RowMenu
       onEdit={() => room.editTask(action)}

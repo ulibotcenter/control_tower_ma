@@ -149,8 +149,7 @@ function DealNav({
   const reading = deal.pillars.some((p) => p.slug === segment) ? (segment as PillarSlug) : null;
   // Fora da URL do deal, “aqui” não marca um pilar: quem está aceso é Decisões.
   const here = reading ?? (onDeal ? deal.phasePillar : null);
-  const docPillar = reading ?? deal.phasePillar ?? deal.pillars[0]?.slug ?? null;
-  const docsHref = docPillar ? `${prefix}/${docPillar}#documentos` : prefix;
+  const docsHref = `${prefix}#documentos`;
 
   return (
     <>

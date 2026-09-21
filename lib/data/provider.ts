@@ -17,7 +17,7 @@ import { CORTE } from "../constants";
 import { isDriveConfigured, isResendConfigured, isSupabaseConfigured } from "../config";
 import { collectActivity, visibleActivity } from "../activity";
 import { collectAttention } from "../attention";
-import type { ActivityEvent, AttentionItem, DealBundle, MeetingMode, ProgramView } from "../types";
+import type { ActionItem, ActivityEvent, AttentionItem, DealBundle, MeetingMode, OpenPoint, ProgramView } from "../types";
 import { canSeeDecisions, canSeeInbox, filterVisible } from "../visibility";
 import {
   actions,
@@ -118,6 +118,26 @@ function mergeById<T extends { id: string }>(fresh: T[], base: T[]): T[] {
   return [...fresh, ...base.filter((item) => !seen.has(item.id))];
 }
 
+function liveOf<T extends { superseded?: boolean }>(rows: T[]): T[] {
+  return rows.filter((row) => !row.superseded);
+}
+
+function originSet(actionsRows: ActionItem[], points: OpenPoint[]): Set<string> {
+  const origins = new Set<string>();
+  for (const row of [...actionsRows, ...points]) {
+    if (row.originId) origins.add(row.originId);
+  }
+  return origins;
+}
+
+/** Linha gravada (inclusive túmulo) esconde o id do corte. A lista mostra só o que está vivo. */
+function actionsForDeal(dealId: string, storedActions: ActionItem[], storedPoints: OpenPoint[]): ActionItem[] {
+  const origins = originSet(storedActions, storedPoints);
+  const live = liveOf(storedActions).filter((row) => row.dealId === dealId);
+  const seed = actions.filter((row) => row.dealId === dealId && !origins.has(row.id));
+  return mergeById(live, seed);
+}
+
 export async function getDealBundle(slug: string, mode: MeetingMode): Promise<DealBundle | null> {
   const deal = getDealBySlug(slug);
   if (!deal) return null;
@@ -141,14 +161,8 @@ export async function getDealBundle(slug: string, mode: MeetingMode): Promise<De
       mode,
       risks.filter((r) => r.dealId === deal.id),
     ),
-    actions: filterVisible(
-      mode,
-      mergeById(storedActions, actions).filter((a) => a.dealId === deal.id),
-    ),
-    openPoints: filterVisible(
-      mode,
-      storedPoints.filter((p) => p.dealId === deal.id),
-    ),
+    actions: filterVisible(mode, actionsForDeal(deal.id, storedActions, storedPoints)),
+    openPoints: filterVisible(mode, liveOf(storedPoints).filter((p) => p.dealId === deal.id)),
     checklist: filterVisible(mode, [
       ...storedChecks.filter((c) => c.dealId === deal.id),
       ...checklist.filter((c) => c.dealId === deal.id),

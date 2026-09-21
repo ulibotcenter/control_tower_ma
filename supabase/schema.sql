@@ -111,7 +111,9 @@ create table actions (
   due text,
   status text not null default 'open',
   visibility meeting_visibility not null default 'advisors',
-  sensitivities text[] not null default '{}'
+  sensitivities text[] not null default '{}',
+  origin_id text,
+  superseded boolean not null default false
 );
 
 create table checklist_items (

@@ -9,7 +9,8 @@
  *   inbox_files, decisions, documents extras, checklist extras,
  *   open_points, actions novas, notes novas.
  *
- * Actions e notes do corte continuam no seed. O que se grava aqui soma por cima.
+ * Actions do corte continuam no seed até a primeira gravação: aí viram linha
+ * (origin_id) e a cópia só-leitura sai da lista. Notes do corte seguem no seed.
  *
  * Coleções que AINDA NÃO passam por aqui (seed.ts):
  *   deals, risks, milestones, metrics, thesis, prices, …
@@ -41,6 +42,8 @@ import {
   deleteActionLocal,
   deleteNoteLocal,
   deleteOpenPointLocal,
+  supersedeActionLocal,
+  supersedeOpenPointLocal,
   updateActionLocal,
   updateNoteLocal,
   updateOpenPointLocal,
@@ -67,6 +70,8 @@ import {
   deleteActionRemote,
   deleteNoteRemote,
   deleteOpenPointRemote,
+  supersedeActionRemote,
+  supersedeOpenPointRemote,
   updateActionRemote,
   updateNoteRemote,
   updateOpenPointRemote,
@@ -251,6 +256,13 @@ export async function deleteOpenPoint(id: string): Promise<boolean> {
   return deleteOpenPointLocal(id);
 }
 
+export async function supersedeOpenPoint(id: string): Promise<boolean> {
+  const sb = remote();
+  if (sb) return supersedeOpenPointRemote(sb, id);
+  if (forbidLocalStore()) refuseLocalWrite("supersedeOpenPoint");
+  return supersedeOpenPointLocal(id);
+}
+
 export async function listExtraActions(): Promise<ActionItem[]> {
   const sb = remote();
   if (sb) return safeRead("listExtraActions", () => listExtraActionsRemote(sb), []);
@@ -280,6 +292,13 @@ export async function deleteAction(id: string): Promise<boolean> {
   if (sb) return deleteActionRemote(sb, id);
   if (forbidLocalStore()) refuseLocalWrite("deleteAction");
   return deleteActionLocal(id);
+}
+
+export async function supersedeAction(id: string): Promise<boolean> {
+  const sb = remote();
+  if (sb) return supersedeActionRemote(sb, id);
+  if (forbidLocalStore()) refuseLocalWrite("supersedeAction");
+  return supersedeActionLocal(id);
 }
 
 export async function listExtraNotes(): Promise<Note[]> {

@@ -150,6 +150,34 @@ function asSensitivities(value: unknown): Sensitivity[] {
   return Array.isArray(value) ? (value.filter((item) => typeof item === "string") as Sensitivity[]) : [];
 }
 
+const ORIGIN_PREFIX = "__origin:";
+const GONE_MARK = "__gone";
+
+/**
+ * Marca de sombra no array que já existe, para o banco sem as colunas novas.
+ * Sem originId novo, a marca anterior permanece.
+ */
+export function packShadow(sensitivities: readonly string[], originId?: string, superseded?: boolean): string[] {
+  const kept = sensitivities.find((item) => item.startsWith(ORIGIN_PREFIX));
+  const clean = sensitivities.filter((item) => item !== GONE_MARK && !item.startsWith(ORIGIN_PREFIX));
+  const origin = originId ? `${ORIGIN_PREFIX}${originId}` : kept;
+  if (origin) clean.push(origin);
+  if (superseded) clean.push(GONE_MARK);
+  return clean;
+}
+
+export function unpackShadow(sensitivities: readonly string[], columnOrigin?: string, columnGone?: boolean) {
+  const originMark = sensitivities.find((item) => item.startsWith(ORIGIN_PREFIX));
+  const originId = columnOrigin || (originMark ? originMark.slice(ORIGIN_PREFIX.length) : undefined);
+  const superseded = columnGone === true || sensitivities.includes(GONE_MARK);
+  const clean = sensitivities.filter((item) => item !== GONE_MARK && !item.startsWith(ORIGIN_PREFIX));
+  return {
+    originId: originId || undefined,
+    superseded,
+    sensitivities: clean as Sensitivity[],
+  };
+}
+
 export function mapOpenPointRow(row: Record<string, unknown>, dealId: string): OpenPoint {
   const statusRaw = String(row.status ?? "aberto");
   const status: OpenPointStatus =
@@ -167,6 +195,8 @@ export function mapOpenPointRow(row: Record<string, unknown>, dealId: string): O
     sensitivities: [],
     createdAt,
     updatedAt: String(row.updated_at ?? createdAt),
+    originId: row.origin_id ? String(row.origin_id) : undefined,
+    superseded: row.superseded === true,
   };
 }
 
@@ -184,7 +214,18 @@ export function mapActionRow(row: Record<string, unknown>, dealId: string): Acti
     due: row.due == null ? "" : String(row.due),
     status,
     visibility: asVisibility(row.visibility, "advisors"),
-    sensitivities: asSensitivities(row.sensitivities),
+    ...(() => {
+      const unpacked = unpackShadow(
+        asSensitivities(row.sensitivities),
+        row.origin_id ? String(row.origin_id) : undefined,
+        row.superseded === true,
+      );
+      return {
+        sensitivities: unpacked.sensitivities,
+        originId: unpacked.originId,
+        superseded: unpacked.superseded,
+      };
+    })(),
     createdAt: row.created_at ? String(row.created_at) : undefined,
   };
 }

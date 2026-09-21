@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
-import { cleanText, isUuid, parseOpenPointStatus, parsePillar, parseVisibility } from "@/lib/data/room-input";
-import { deleteOpenPoint, updateOpenPoint } from "@/lib/data/store";
+import { cleanText, parseOpenPointStatus, parsePillar, parseVisibility } from "@/lib/data/room-input";
+import { removeTrackedItem, saveTrackedItem } from "@/lib/data/room-save";
 import { denyUnlessOperate } from "@/lib/room-write";
 import type { OpenPoint } from "@/lib/types";
-
-function rejectSeed(id: string) {
-  if (isUuid(id)) return null;
-  return NextResponse.json({ error: "seed" }, { status: 400 });
-}
 
 export async function PATCH(
   req: Request,
@@ -17,9 +12,8 @@ export async function PATCH(
   if (denied) return denied;
 
   const { id } = await params;
-  const seeded = rejectSeed(id);
-  if (seeded) return seeded;
   const body = (await req.json().catch(() => null)) as {
+    kind?: string;
     title?: string;
     owner?: string;
     due?: string;
@@ -52,12 +46,19 @@ export async function PATCH(
     if (!visibility) return NextResponse.json({ error: "fields" }, { status: 400 });
     patch.visibility = visibility;
   }
-  if (!Object.keys(patch).length) return NextResponse.json({ error: "fields" }, { status: 400 });
+  if (!Object.keys(patch).length && body.kind !== "task" && body.kind !== "opl") {
+    return NextResponse.json({ error: "fields" }, { status: 400 });
+  }
 
   try {
-    const point = await updateOpenPoint(id, patch);
-    if (!point) return NextResponse.json({ error: "missing" }, { status: 404 });
-    return NextResponse.json({ point });
+    const saved = await saveTrackedItem({
+      id,
+      from: "opl",
+      to: body.kind === "task" ? "task" : "opl",
+      patch,
+    });
+    if (!saved) return NextResponse.json({ error: "missing" }, { status: 404 });
+    return NextResponse.json(saved.kind === "opl" ? { point: saved.point } : { action: saved.action });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Falha ao atualizar o ponto";
     console.error("[api/open-points]", message);
@@ -73,11 +74,9 @@ export async function DELETE(
   if (denied) return denied;
 
   const { id } = await params;
-  const seeded = rejectSeed(id);
-  if (seeded) return seeded;
 
   try {
-    const ok = await deleteOpenPoint(id);
+    const ok = await removeTrackedItem(id, "opl");
     if (!ok) return NextResponse.json({ error: "missing" }, { status: 404 });
     return NextResponse.json({ ok: true });
   } catch (err) {

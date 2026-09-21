@@ -230,7 +230,14 @@ export async function addOpenPointLocal(
 ): Promise<OpenPoint> {
   const s = await load();
   const now = new Date().toISOString();
-  const row: OpenPoint = { ...input, id: randomUUID(), createdAt: now, updatedAt: now };
+  const row: OpenPoint = {
+    ...input,
+    id: randomUUID(),
+    createdAt: now,
+    updatedAt: now,
+    originId: input.originId,
+    superseded: input.superseded ?? false,
+  };
   s.openPoints.unshift(row);
   memory = s;
   await writeStore(s);
@@ -256,6 +263,17 @@ export async function updateOpenPointLocal(
   return row;
 }
 
+export async function supersedeOpenPointLocal(id: string): Promise<boolean> {
+  const s = await load();
+  const row = s.openPoints.find((item) => item.id === id);
+  if (!row) return false;
+  row.superseded = true;
+  row.updatedAt = new Date().toISOString();
+  memory = s;
+  await writeStore(s);
+  return true;
+}
+
 export async function deleteOpenPointLocal(id: string): Promise<boolean> {
   const s = await load();
   const next = s.openPoints.filter((item) => item.id !== id);
@@ -273,7 +291,13 @@ export async function listExtraActionsLocal(): Promise<ActionItem[]> {
 
 export async function addActionLocal(input: Omit<ActionItem, "id">): Promise<ActionItem> {
   const s = await load();
-  const row: ActionItem = { ...input, id: randomUUID(), createdAt: new Date().toISOString() };
+  const row: ActionItem = {
+    ...input,
+    id: randomUUID(),
+    createdAt: new Date().toISOString(),
+    originId: input.originId,
+    superseded: input.superseded ?? false,
+  };
   s.actions.unshift(row);
   memory = s;
   await writeStore(s);
@@ -296,6 +320,16 @@ export async function updateActionLocal(
   memory = s;
   await writeStore(s);
   return row;
+}
+
+export async function supersedeActionLocal(id: string): Promise<boolean> {
+  const s = await load();
+  const row = s.actions.find((item) => item.id === id);
+  if (!row) return false;
+  row.superseded = true;
+  memory = s;
+  await writeStore(s);
+  return true;
 }
 
 export async function deleteActionLocal(id: string): Promise<boolean> {

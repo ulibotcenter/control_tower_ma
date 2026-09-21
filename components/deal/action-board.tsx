@@ -77,6 +77,9 @@ export function ActionBoard({
               <th scope="col">Responsável</th>
               <th scope="col">Prazo</th>
               <th scope="col">Status</th>
+              <th scope="col">
+                <span className="sr-only">Ações</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -89,12 +92,11 @@ export function ActionBoard({
                   {a.workstreamSlug ? (
                     <span className="ops-meta">{workstreamLabel(a.workstreamSlug)}</span>
                   ) : null}
-                  {canEdit && isUuid(a.id) ? <TaskRowMenu action={a} /> : null}
                 </td>
                 <td className="ops-owner">{a.owner}</td>
                 <td className={a.status === "late" ? "ops-due is-late" : "ops-due"}>{formatDate(a.due)}</td>
                 <td>
-                  {canEdit && isUuid(a.id) ? (
+                  {canEdit ? (
                     <MutableStatus
                       id={a.id}
                       kind="actions"
@@ -106,6 +108,7 @@ export function ActionBoard({
                     <ActionStatus status={a.status} />
                   )}
                 </td>
+                <td className="ops-row-actions">{canEdit ? <TaskRowMenu action={a} /> : null}</td>
               </tr>
             ))}
           </tbody>
