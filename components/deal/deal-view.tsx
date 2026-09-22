@@ -199,7 +199,7 @@ export function DealView({
         <section id="documentos" className="war-block">
           <h2 className="war-label">Data room</h2>
           <div className="mt-3">
-            <DocTree items={bundle.documents} roomId={deal.driveFolderId} />
+            <DocTree items={bundle.documents} roomId={deal.driveFolderId} mode={mode} />
           </div>
         </section>
       )}

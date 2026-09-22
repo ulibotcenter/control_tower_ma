@@ -143,7 +143,7 @@ export function PresentDeck({
       {showDocs && (
         <section id="documentos" className="deck-slide">
           <h2 className="deck-heading">Documentos</h2>
-          <DocTree items={bundle.documents} roomId={deal.driveFolderId} />
+          <DocTree items={bundle.documents} roomId={deal.driveFolderId} mode={mode} deck />
         </section>
       )}
 

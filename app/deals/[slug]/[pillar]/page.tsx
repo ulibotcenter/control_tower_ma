@@ -113,7 +113,7 @@ export default async function PillarPage({
       </header>
 
       <dl className={`pillar-now paper${bloqueado ? " trava-band" : ""}`}>
-        <div>
+        <div id="trava">
           <dt className={bloqueado ? "trava-kicker" : "pillar-dt"}>O que trava este pilar</dt>
           <dd>
             {travas.length === 0 ? (
@@ -195,7 +195,7 @@ export default async function PillarPage({
         />
       </section>
 
-      <section className="pillar-band pillar-band-block">
+      <section id="riscos" className="pillar-band pillar-band-block">
         <h2 className="pillar-band-title">{target ? "Pontos em aberto" : "Riscos"}</h2>
         {risks.length === 0 ? (
           <EmptyState compact title="Nada em aberto neste pilar" />

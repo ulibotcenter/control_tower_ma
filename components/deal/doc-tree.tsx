@@ -2,8 +2,18 @@
 
 import { useMemo, useState } from "react";
 import { ArrowUpRight, ChevronRight } from "lucide-react";
-import { buildDocTree, type DocTreeFile, type DocTreeFolder } from "@/lib/data/doc-groups";
-import type { DriveDocument } from "@/lib/types";
+import {
+  buildDocTree,
+  filterTreeByPin,
+  finderPinsFor,
+  folderIdsToOpen,
+  FINDER_PIN_LABEL,
+  withoutLooseFiles,
+  type DocTreeFile,
+  type DocTreeFolder,
+  type FinderPin,
+} from "@/lib/data/doc-groups";
+import type { DriveDocument, MeetingMode } from "@/lib/types";
 import { EmptyState } from "@/components/ui/empty-state";
 
 function FolderDriveIcon({ href }: { href: string }) {
@@ -84,9 +94,26 @@ function TreeFolder({
 }
 
 /** Finder do deal. Começa fechado. A pasta abre no lugar; o arquivo é o nome. */
-export function DocTree({ items, roomId }: { items: DriveDocument[]; roomId: string | null }) {
+export function DocTree({
+  items,
+  roomId,
+  mode,
+  deck = false,
+}: {
+  items: DriveDocument[];
+  roomId: string | null;
+  mode: MeetingMode;
+  deck?: boolean;
+}) {
   const roots = useMemo(() => buildDocTree(items, roomId), [items, roomId]);
+  const pins = useMemo(() => finderPinsFor(roots, mode), [roots, mode]);
   const [open, setOpen] = useState<Set<string>>(() => new Set());
+  const [pin, setPin] = useState<FinderPin | null>(null);
+
+  const visible = useMemo(() => {
+    const base = deck ? withoutLooseFiles(roots) : roots;
+    return pin ? filterTreeByPin(base, pin) : base;
+  }, [roots, deck, pin]);
 
   function toggle(id: string) {
     setOpen((current) => {
@@ -97,16 +124,48 @@ export function DocTree({ items, roomId }: { items: DriveDocument[]; roomId: str
     });
   }
 
+  function togglePin(next: FinderPin) {
+    setPin((current) => {
+      const on = current === next ? null : next;
+      if (on) {
+        const base = deck ? withoutLooseFiles(roots) : roots;
+        setOpen(new Set(folderIdsToOpen(filterTreeByPin(base, on))));
+      }
+      return on;
+    });
+  }
+
   if (!roots.length) return <EmptyState compact title="Nenhum documento" />;
 
   return (
-    <div className="doc-tree" role="tree" aria-label="Documentos">
-      {roots.map((node) =>
-        node.kind === "folder" ? (
-          <TreeFolder key={node.id} folder={node} depth={0} open={open} toggle={toggle} />
-        ) : (
-          <TreeFile key={node.id} file={node} depth={0} />
-        ),
+    <div className="doc-tree">
+      {pins.length > 0 && (
+        <div className="doc-tree-pins" role="toolbar" aria-label="Atalhos do finder">
+          {pins.map((id) => (
+            <button
+              key={id}
+              type="button"
+              className={`chip${pin === id ? " is-on" : ""}`}
+              aria-pressed={pin === id}
+              onClick={() => togglePin(id)}
+            >
+              {FINDER_PIN_LABEL[id]}
+            </button>
+          ))}
+        </div>
+      )}
+      {visible.length === 0 ? (
+        <EmptyState compact title="Nenhum documento" />
+      ) : (
+        <div role="tree" aria-label="Documentos">
+          {visible.map((node) =>
+            node.kind === "folder" ? (
+              <TreeFolder key={node.id} folder={node} depth={0} open={open} toggle={toggle} />
+            ) : (
+              <TreeFile key={node.id} file={node} depth={0} />
+            ),
+          )}
+        </div>
       )}
     </div>
   );

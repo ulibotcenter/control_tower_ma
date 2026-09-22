@@ -167,21 +167,30 @@ function DealNav({
       <nav className="side-pillars" aria-label="Pilares do processo">
         {deal.pillars.map((p) => {
           const current = here === p.slug;
+          const kids = reading === p.slug;
           return (
-            <Link
-              key={p.slug}
-              href={`${prefix}/${p.slug}`}
-              className={`side-pillar${current ? " is-here" : ""}`}
-              aria-current={reading === p.slug ? "page" : undefined}
-            >
-              <span className="side-num">{p.order}</span>
-              <span className="side-copy">
-                <span className="side-name">{p.short}</span>
-                {current && <span className="side-aqui">aqui</span>}
-              </span>
-              <span className={`dot dot-${p.health}`} aria-hidden />
-              <span className="sr-only">{semaphoreShortFor(mode, p.health)}</span>
-            </Link>
+            <div key={p.slug} className="side-pillar-block">
+              <Link
+                href={`${prefix}/${p.slug}`}
+                className={`side-pillar${current ? " is-here" : ""}`}
+                aria-current={reading === p.slug ? "page" : undefined}
+              >
+                <span className="side-num">{p.order}</span>
+                <span className="side-copy">
+                  <span className="side-name">{p.short}</span>
+                  {current && <span className="side-aqui">aqui</span>}
+                </span>
+                <span className={`dot dot-${p.health}`} aria-hidden />
+                <span className="sr-only">{semaphoreShortFor(mode, p.health)}</span>
+              </Link>
+              {kids ? (
+                <nav className="side-pillar-kids" aria-label={`Neste pilar, ${p.short}`}>
+                  <Link href={`${prefix}/${p.slug}#opl`}>OPL</Link>
+                  <Link href={`${prefix}/${p.slug}#riscos`}>Riscos</Link>
+                  <Link href={`${prefix}/${p.slug}#trava`}>O que trava</Link>
+                </nav>
+              ) : null}
+            </div>
           );
         })}
       </nav>

@@ -1,7 +1,7 @@
 import { DOC_STATUS_LABEL, DOC_TYPE_LABEL, DRIVE_FOLDERS, folderUrl, fileUrl } from "../constants";
 import { driveResourceId } from "../http";
 import { isPillarSlug, pillarOf, type PillarSlug } from "../pillars";
-import type { DriveDocument } from "../types";
+import type { DriveDocument, MeetingMode } from "../types";
 
 const FOLDER_ORDER: readonly string[] = Object.values(DRIVE_FOLDERS).map((folder) => folder.id);
 const PROGRAM_FOLDER_IDS = new Set<string>(Object.values(DRIVE_FOLDERS).map((folder) => folder.id));
@@ -243,4 +243,89 @@ export function docClassifiedToPillar(doc: DriveDocument, pillar: PillarSlug): b
   if (isPillarSlug(doc.pillarSlug)) return doc.pillarSlug === pillar;
   if (!doc.workstreamSlug) return false;
   return pillarOf(doc) === pillar;
+}
+
+export const FINDER_PIN_ATAS = "atas" as const;
+export const FINDER_PIN_PESSOAS = "pessoas" as const;
+export type FinderPin = typeof FINDER_PIN_ATAS | typeof FINDER_PIN_PESSOAS;
+
+export const FINDER_PIN_LABEL: Record<FinderPin, string> = {
+  atas: "Atas",
+  pessoas: "Pessoas",
+};
+
+const ATA_KEYS = ["transcricoes", "audio_in", "ata", "reuniao"] as const;
+const PEOPLE_KEYS = ["socio", "cap", "pessoas", "societario", "folha"] as const;
+
+function foldName(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function hasPinWord(hay: string, needle: string) {
+  let from = 0;
+  while (from <= hay.length) {
+    const i = hay.indexOf(needle, from);
+    if (i < 0) return false;
+    const before = i === 0 || /[^a-z0-9]/.test(hay[i - 1]!);
+    const after = i + needle.length >= hay.length || /[^a-z0-9]/.test(hay[i + needle.length]!);
+    if (before && after) return true;
+    from = i + needle.length;
+  }
+  return false;
+}
+
+/** Pasta ou nome: Atas = Transcricoes / Audio_in / ata / reunião; Pessoas = sócio / cap / pessoas / societário / folha. */
+export function nameMatchesPin(name: string, pin: FinderPin): boolean {
+  const text = foldName(name);
+  const keys = pin === FINDER_PIN_ATAS ? ATA_KEYS : PEOPLE_KEYS;
+  return keys.some((key) => (key === "ata" || key === "cap" ? hasPinWord(text, key) : text.includes(key)));
+}
+
+export function nodeMatchesPin(node: DocTreeNode, pin: FinderPin): boolean {
+  return nameMatchesPin(node.name, pin);
+}
+
+export function treeHasPin(nodes: DocTreeNode[], pin: FinderPin): boolean {
+  return nodes.some(
+    (node) => nodeMatchesPin(node, pin) || (node.kind === "folder" && treeHasPin(node.children, pin)),
+  );
+}
+
+/** Alvo não ganha Atas. O resto segue o que o bundle (já filtrado) ainda tem. */
+export function finderPinsFor(nodes: DocTreeNode[], mode: MeetingMode): FinderPin[] {
+  const pins: FinderPin[] = [];
+  if (mode !== "target" && treeHasPin(nodes, FINDER_PIN_ATAS)) pins.push(FINDER_PIN_ATAS);
+  if (treeHasPin(nodes, FINDER_PIN_PESSOAS)) pins.push(FINDER_PIN_PESSOAS);
+  return pins;
+}
+
+export function filterTreeByPin(nodes: DocTreeNode[], pin: FinderPin): DocTreeNode[] {
+  const out: DocTreeNode[] = [];
+  for (const node of nodes) {
+    if (node.kind === "file") {
+      if (nodeMatchesPin(node, pin)) out.push(node);
+      continue;
+    }
+    if (nodeMatchesPin(node, pin)) {
+      out.push(node);
+      continue;
+    }
+    const children = filterTreeByPin(node.children, pin);
+    if (children.length) out.push({ ...node, children });
+  }
+  return out;
+}
+
+export function folderIdsToOpen(nodes: DocTreeNode[]): string[] {
+  const ids: string[] = [];
+  for (const node of nodes) {
+    if (node.kind !== "folder") continue;
+    ids.push(node.id, ...folderIdsToOpen(node.children));
+  }
+  return ids;
+}
+
+/** Deck: pastas fechadas, sem PDF solto na raiz. */
+export function withoutLooseFiles(nodes: DocTreeNode[]): DocTreeNode[] {
+  return nodes.filter((node) => node.kind === "folder");
 }
