@@ -892,8 +892,16 @@ html:has(.shell[data-work="1"]) {
  * Trilho horizontal no topo da Timeline. Seis nós e setas.
  * A tinta é a mesma do eixo: sálvia, cinza-azul, terracota clara, gelo.
  */
+.timeline-method {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
 .pillar-rail {
   margin: var(--space-4) 0 0;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .pillar-rail ol {
@@ -903,25 +911,43 @@ html:has(.shell[data-work="1"]) {
   margin: 0;
   padding: 0 0 var(--space-1);
   list-style: none;
+  max-width: 100%;
   overflow-x: auto;
 }
 
 .pillar-rail li {
+  position: relative;
   display: flex;
   align-items: center;
   flex: 1 0 auto;
   min-width: 0;
 }
 
+.pillar-rail li::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--line-strong);
+  pointer-events: none;
+}
+
 .pillar-rail-arrow {
+  position: relative;
+  z-index: 1;
   flex: none;
-  width: 1.25rem;
+  width: 0.5rem;
   height: 0.5rem;
   margin: 0 var(--space-1);
   color: var(--line-strong);
 }
 
 .pillar-rail-node {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -930,6 +956,11 @@ html:has(.shell[data-work="1"]) {
   border-radius: var(--radius);
   color: var(--ink);
   text-decoration: none;
+}
+
+.pillar-rail-node.is-current .pillar-rail-mark {
+  transform: scale(1.14);
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var(--brand);
 }
 
 .pillar-rail-node:hover {

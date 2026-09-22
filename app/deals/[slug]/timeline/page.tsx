@@ -15,8 +15,14 @@ export default async function TimelinePage({
       <header>
         <p className="kicker">{frame.bundle.deal.name}</p>
         <h1 className="deal-name">Timeline</h1>
+        <p className="timeline-method">O método Eleva neste mandato</p>
       </header>
-      <PillarAxis dealSlug={frame.bundle.deal.slug} pillars={frame.pillars} mode={frame.mode} />
+      <PillarAxis
+        dealSlug={frame.bundle.deal.slug}
+        pillars={frame.pillars}
+        mode={frame.mode}
+        currentSlug={frame.nav.phasePillar}
+      />
     </AppShell>
   );
 }

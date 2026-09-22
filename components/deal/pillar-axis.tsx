@@ -3,14 +3,15 @@ import { WithTerms } from "@/components/ui/with-terms";
 import { PROGRAM_BIBLE } from "@/lib/data/program-bible";
 import type { PillarView } from "@/lib/data/pillar-view";
 import { semaphoreShortFor } from "@/lib/mode-meta";
+import type { PillarSlug } from "@/lib/pillars";
 import type { MeetingMode } from "@/lib/types";
 
-/** Seta geométrica entre nós. Sem ícone figurativo. */
+/** Ponta da seta. A linha contínua do trilho é o corpo. Sem ícone figurativo. */
 function RailArrow() {
   return (
-    <svg className="pillar-rail-arrow" viewBox="0 0 20 8" aria-hidden="true">
+    <svg className="pillar-rail-arrow" viewBox="0 0 8 8" aria-hidden="true">
       <path
-        d="M0 4H16M12 1l4 3-4 3"
+        d="M1 1l4 3-4 3"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.25"
@@ -30,25 +31,34 @@ export function PillarAxis({
   dealSlug,
   pillars,
   mode,
+  currentSlug,
 }: {
   dealSlug: string;
   pillars: PillarView[];
   mode: MeetingMode;
+  currentSlug: PillarSlug | null;
 }) {
   return (
     <>
       <nav className="pillar-rail" aria-label="Trilho dos pilares">
         <ol>
-          {pillars.map((pillar, index) => (
-            <li key={pillar.slug}>
-              {index > 0 ? <RailArrow /> : null}
-              <a href={`#pilar-${pillar.slug}`} className={`pillar-rail-node is-${pillar.health}`}>
-                <span className="pillar-rail-mark">{pillar.order}</span>
-                <span className="pillar-rail-name">{pillar.short}</span>
-                <span className="sr-only">{semaphoreShortFor(mode, pillar.health)}</span>
-              </a>
-            </li>
-          ))}
+          {pillars.map((pillar, index) => {
+            const here = pillar.slug === currentSlug;
+            return (
+              <li key={pillar.slug}>
+                {index > 0 ? <RailArrow /> : null}
+                <a
+                  href={`#pilar-${pillar.slug}`}
+                  className={`pillar-rail-node is-${pillar.health}${here ? " is-current" : ""}`}
+                  aria-current={here ? "step" : undefined}
+                >
+                  <span className="pillar-rail-mark">{pillar.order}</span>
+                  <span className="pillar-rail-name">{pillar.short}</span>
+                  <span className="sr-only">{semaphoreShortFor(mode, pillar.health)}</span>
+                </a>
+              </li>
+            );
+          })}
         </ol>
       </nav>
       <ol className="pillar-axis">
