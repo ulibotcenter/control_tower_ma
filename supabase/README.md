@@ -34,3 +34,9 @@ O patch cria `open_points` (RLS `is_eleva()`) e a coluna aditiva `actions.pillar
 Rode `patch_ai_proposals.sql` no SQL Editor. Não rode `schema.sql` de novo.
 
 O patch cria `ai_proposals` (`deal_slug` texto, sem drop de tabela). A IA grava proposta. Aceitar chama as APIs que já existem. Sem o patch, o dev local segue em `.data/store.json`.
+
+## Bloco 8.7 — delta de ata e transcrição
+
+Rode `patch_ai_reads.sql` no SQL Editor. Não rode `schema.sql` de novo.
+
+O patch adiciona `inbox_files.last_read_at` e a tabela `ai_file_reads` (drive_id, last_read_at, drive_modified_at). Ata oficial não entra na bandeja, então o carimbo do arquivo lido mora na tabela leve. Sem o patch, o dev local segue em `.data/store.json`. A app não aplica o SQL.

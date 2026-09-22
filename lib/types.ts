@@ -223,12 +223,21 @@ export interface InboxFile {
   classified: boolean;
   /** Já vi / dispensar: some da lista aberta. Não apaga a linha nem cria documento. */
   dismissed?: boolean;
+  /** Última vez que o Pedir leitura mandou este arquivo ao modelo. */
+  lastReadAt?: string | null;
   classification?: {
     dealId: string;
     type: DocumentType;
     workstreamSlug: string | null;
     status: DocumentStatus;
   };
+}
+
+/** Carimbo do delta. Arquivo da Ata não mora na bandeja. */
+export interface FileReadStamp {
+  driveId: string;
+  lastReadAt: string;
+  driveModifiedAt?: string | null;
 }
 
 export interface Note {

@@ -2,12 +2,13 @@ import { DRIVE_FOLDERS } from "../constants";
 import { INBOX_TREE_PREFIX, compareDocNames, isScanFolderDoc, scanParentMap } from "../data/doc-groups";
 import { driveResourceId } from "../http";
 import type { DriveDocument, InboxFile } from "../types";
+import { isAudioName } from "./corpus";
 import { foldProposalText } from "./near";
 
 /** Nomes por onda. Não é a bandeja dispensada. */
 export const AI_NAME_CAP = 40;
 
-export type GapName = { name: string; inboxId: string };
+export type GapName = { name: string; inboxId: string; driveId: string };
 
 function folderTargets(slug: string, driveFolderId: string, wave: "B" | "C") {
   if (wave === "B" || slug === "radio-health") {
@@ -79,22 +80,22 @@ export function selectGapNames(input: {
   const dismissedIds = new Set(input.inbox.filter((file) => file.dismissed).map((file) => file.id));
   const skip = new Set((input.skipNames ?? []).map((name) => foldProposalText(name)));
   const seen = new Set<string>();
-  const rows: { name: string; inboxId: string; sort: number }[] = [];
+  const rows: { name: string; inboxId: string; driveId: string; sort: number }[] = [];
 
   for (const doc of input.documents) {
     if (doc.dealId && doc.dealId !== input.dealId) continue;
     if (isFolderNode(doc) || dismissedInbox(doc, dismissedIds)) continue;
     const name = doc.title.replace(/\s+/g, " ").trim();
-    if (!name) continue;
+    if (!name || isAudioName(name)) continue;
     const folder = hitFolder(doc.folderId, parents, targetSet);
     if (!folder) continue;
     const key = foldProposalText(name);
     if (!key || seen.has(key) || skip.has(key)) continue;
     seen.add(key);
     const inboxId = doc.id.startsWith(INBOX_TREE_PREFIX) ? doc.id.slice(INBOX_TREE_PREFIX.length) : "";
-    rows.push({ name, inboxId, sort: order.get(folder) ?? 99 });
+    rows.push({ name, inboxId, driveId: doc.driveId || "", sort: order.get(folder) ?? 99 });
   }
 
   rows.sort((a, b) => a.sort - b.sort || compareDocNames(a.name, b.name));
-  return rows.slice(0, AI_NAME_CAP).map(({ name, inboxId }) => ({ name, inboxId }));
+  return rows.slice(0, AI_NAME_CAP).map(({ name, inboxId, driveId }) => ({ name, inboxId, driveId }));
 }

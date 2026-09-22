@@ -19,6 +19,7 @@ import type {
   DocumentStatus,
   DocumentType,
   DriveDocument,
+  FileReadStamp,
   InboxFile,
   Note,
   OpenPoint,
@@ -28,6 +29,7 @@ import { sanitizeDriveUrl } from "../http";
 import { SCAN_FOLDER_NOTE, scanFileDocId, scanFolderDocId } from "./doc-groups";
 import { isUuid } from "./room-input";
 import { deals, decisions as seedDecisions } from "./seed";
+import { laterStamp } from "../ai/corpus";
 import { mapActionRow, mapChecklistRow, mapDecisionRow, mapDocumentRow, mapInboxRow, mapNoteRow, mapOpenPointRow, packShadow } from "./store-map";
 
 function fail(context: string, error: { message: string } | null): never {
@@ -822,6 +824,73 @@ export async function addAiProposalsRemote(
   const { data, error } = await sb.from("ai_proposals").insert(rows).select("*");
   if (error || !data) fail("insert ai proposals", error);
   return data.map((row) => mapAiProposal(row)).filter((row): row is AiProposal => Boolean(row));
+}
+
+function readsTableMissing(message: string) {
+  return /ai_file_reads|schema cache|does not exist|could not find the table/i.test(message);
+}
+
+export async function listFileReadsRemote(sb: SupabaseClient): Promise<FileReadStamp[]> {
+  const byId = new Map<string, FileReadStamp>();
+  const table = await sb.from("ai_file_reads").select("drive_id,last_read_at,drive_modified_at");
+  if (table.error) {
+    if (!readsTableMissing(table.error.message)) fail("list file reads", table.error);
+  } else {
+    for (const row of table.data ?? []) {
+      const driveId = typeof row.drive_id === "string" ? row.drive_id : "";
+      const lastReadAt = typeof row.last_read_at === "string" ? row.last_read_at : "";
+      if (!driveId || !lastReadAt) continue;
+      byId.set(driveId, {
+        driveId,
+        lastReadAt,
+        driveModifiedAt: typeof row.drive_modified_at === "string" ? row.drive_modified_at : null,
+      });
+    }
+  }
+  const inbox = await sb.from("inbox_files").select("drive_id,last_read_at,drive_modified_at").not("last_read_at", "is", null);
+  if (inbox.error) {
+    if (!/last_read_at/i.test(inbox.error.message)) console.error("[ai] last_read_at", inbox.error.message);
+    return [...byId.values()];
+  }
+  for (const row of inbox.data ?? []) {
+    const driveId = typeof row.drive_id === "string" ? row.drive_id : "";
+    const lastReadAt = typeof row.last_read_at === "string" ? row.last_read_at : "";
+    if (!driveId || !lastReadAt) continue;
+    const prev = byId.get(driveId);
+    if (!prev || laterStamp(lastReadAt, prev.lastReadAt) === lastReadAt) {
+      byId.set(driveId, {
+        driveId,
+        lastReadAt,
+        driveModifiedAt: typeof row.drive_modified_at === "string" ? row.drive_modified_at : null,
+      });
+    }
+  }
+  return [...byId.values()];
+}
+
+export async function markFileReadsRemote(
+  sb: SupabaseClient,
+  rows: { driveId: string; driveModifiedAt?: string | null }[],
+): Promise<void> {
+  const now = new Date().toISOString();
+  const payload = rows
+    .map((row) => ({
+      drive_id: row.driveId.trim(),
+      last_read_at: now,
+      drive_modified_at: row.driveModifiedAt || null,
+    }))
+    .filter((row) => row.drive_id);
+  if (!payload.length) return;
+  const saved = await sb.from("ai_file_reads").upsert(payload, { onConflict: "drive_id" });
+  if (saved.error) {
+    if (!readsTableMissing(saved.error.message)) fail("mark file reads", saved.error);
+    console.error("[ai] ai_file_reads ausente — delta não persistiu na tabela leve");
+  }
+  const ids = payload.map((row) => row.drive_id);
+  const inbox = await sb.from("inbox_files").update({ last_read_at: now }).in("drive_id", ids);
+  if (inbox.error && !/last_read_at/i.test(inbox.error.message)) {
+    console.error("[ai] last_read_at", inbox.error.message);
+  }
 }
 
 export async function setAiProposalStatusRemote(

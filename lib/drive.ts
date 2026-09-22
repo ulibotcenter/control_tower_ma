@@ -1,4 +1,6 @@
 import { createSign } from "crypto";
+import { clipReading, readingKind } from "./ai/corpus";
+import { textFromDocx } from "./ai/docx-text";
 import {
   DRIVE_DO_NOT_INDEX,
   DRIVE_FOLDERS,
@@ -372,5 +374,104 @@ export async function scanDriveTree(): Promise<DriveScanResult> {
       folderIssues: [],
       truncated: false,
     };
+  }
+}
+
+const EXPORT_CAP_BYTES = 2_000_000;
+
+/**
+ * Só Ata e Transcricoes, para o delta do Pedir leitura.
+ * Não percorre Doctos, áudio nem o resto da árvore.
+ */
+export async function listAtaTranscriptFiles(): Promise<
+  { ok: true; files: DriveListedFile[] } | { ok: false; message: string }
+> {
+  if (!isDriveConfigured()) return { ok: false, message: "Drive sem credencial." };
+  try {
+    const token = await accessToken();
+    const roots = [DRIVE_FOLDERS.atas, DRIVE_FOLDERS.transcricoes];
+    const skipFolder = new Set<string>([DRIVE_DO_NOT_INDEX.id]);
+    const queue: { id: string; name: string }[] = roots.map((folder) => ({ id: folder.id, name: folder.name }));
+    const seenFolder = new Set<string>();
+    const seenFile = new Set<string>();
+    const files: DriveListedFile[] = [];
+    while (queue.length) {
+      const item = queue.shift();
+      if (!item || seenFolder.has(item.id) || skipFolder.has(item.id)) continue;
+      seenFolder.add(item.id);
+      const listed = await listChildren(token, item.id);
+      if (!listed.ok) continue;
+      for (const child of listed.files) {
+        if (child.id === DRIVE_DO_NOT_INDEX.id || child.name === ".obsidian") continue;
+        let mime = child.mimeType;
+        let id = child.id;
+        const name = child.name;
+        if (mime === SHORTCUT_MIME) {
+          const targetId = child.shortcutDetails?.targetId;
+          const targetMime = child.shortcutDetails?.targetMimeType;
+          if (!targetId || targetId === DRIVE_DO_NOT_INDEX.id) continue;
+          if (targetMime === FOLDER_MIME) {
+            queue.push({ id: targetId, name });
+            continue;
+          }
+          id = targetId;
+          mime = targetMime || DOCUMENT_MIME;
+        }
+        if (mime === FOLDER_MIME) {
+          queue.push({ id, name });
+          continue;
+        }
+        if (!isDriveFileMime(mime) || SKIP_NAMES.test(name) || seenFile.has(id)) continue;
+        if (readingKind(name, mime) === "audio") continue;
+        seenFile.add(id);
+        files.push({
+          id,
+          name,
+          folder: item.name,
+          folderId: item.id,
+          modifiedAt: child.modifiedTime || "",
+          webViewLink: child.webViewLink || driveItemUrl(id, mime),
+          mimeType: mime,
+        });
+      }
+    }
+    return { ok: true, files };
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : "falha";
+    return { ok: false, message: detail };
+  }
+}
+
+/** Google Doc exporta text/plain. Docx sai do ZIP. Áudio não é pedido. */
+export async function exportDriveText(file: { id: string; name: string; mimeType: string }): Promise<string | null> {
+  const kind = readingKind(file.name, file.mimeType);
+  if (kind === "audio" || kind === "skip" || kind === "pdf") return null;
+  if (!isDriveConfigured()) return null;
+  try {
+    const token = await accessToken();
+    if (kind === "text" && file.mimeType === DOCUMENT_MIME) {
+      const url = new URL(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}/export`);
+      url.searchParams.set("mimeType", "text/plain");
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(20_000) });
+      if (!res.ok) return null;
+      const raw = await res.text();
+      if (!raw.trim() || /^\s*</.test(raw)) return null;
+      return clipReading(raw);
+    }
+    const url = new URL(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}`);
+    url.searchParams.set("alt", "media");
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(20_000) });
+    if (!res.ok) return null;
+    const bytes = Buffer.from(await res.arrayBuffer());
+    if (!bytes.length || bytes.length > EXPORT_CAP_BYTES) return null;
+    if (kind === "docx") {
+      const text = textFromDocx(bytes);
+      return text ? clipReading(text) : null;
+    }
+    const raw = bytes.toString("utf8");
+    if (!raw.trim()) return null;
+    return clipReading(raw);
+  } catch {
+    return null;
   }
 }

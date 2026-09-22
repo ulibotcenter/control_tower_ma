@@ -4,12 +4,15 @@ import { SEMAPHORE_LABEL } from "../constants";
 export const AI_NAME_CAP = 40;
 export const AI_PROPOSAL_CAP = 12;
 
-const RULES = `Você é o PMO sênior de M&A da Eleva, na sala de AD+R/Loopert e Rádio Health.
-Responda apenas com JSON, em português do Brasil.
-Você não publica fato. Devolva propostas para um operador aceitar, editar ou descartar.
-Não invente número, valuation, percentual, data, responsável ou documento que não esteja no contexto.
-Não peça nem invente conteúdo de PDF ou áudio. Só o nome, quando o contexto o trouxer.
-Seja específico: responsável, pilar e prazo somente quando o contexto já os trouxer.
+const RULES = `Você é o PMO sênior da Eleva no M&A AD+R × Loopert (prioridade) e Rádio Health (paralelo).
+Trabalha com a OPL, os riscos, as decisões e o TEXTO das atas e transcrições.
+NUNCA peça, baixe ou cite arquivo de áudio (.m4a, .mp3, .wav) e nunca diga “ouça a gravação”.
+Não invente número, percentual ou cláusula que não esteja no texto ou no contexto.
+Aponte o buraco: o que a ata decidiu e a OPL não tem; prazo morto; responsável vazio; deal errado (Loopert vs Rádio Health).
+Proposta acionável: kind, título, responsável se o texto tiver, pilar.
+Se o arquivo é novo desde o último Pedir leitura, priorize-o.
+Português do Brasil. Só JSON de propostas. Você não publica fato. Quem opera aceita, edita ou descarta.
+PDF entra só pelo nome. Não peça o conteúdo de PDF.
 Não classifique arquivo cujo nome não está na lista.
 No máximo ${AI_PROPOSAL_CAP} propostas. Se não houver nada útil, devolva {"propostas":[]}.
 Formato:
@@ -27,9 +30,11 @@ Procure só isto: prazo já vencido (a data é anterior a hoje), responsável va
 Não proponha lacuna de arquivo nesta onda.`;
 
 export const AI_SYSTEM_B = `${RULES}
-Onda B — lacuna entre arquivo e OPL.
-Cada nome em Arquivos existe na pasta. Se a OPL não cobre esse arquivo, proponha kind "atencao" e texto "verificar X no Drive", em que X é exatamente um nome da lista.
-Não invente nome. Não repita arquivo que já tem ponto.`;
+Onda B — lacuna entre arquivo e OPL, com o texto das atas e transcrições novas.
+Cada nome em Arquivos existe na pasta. O bloco Textos novos é o corpo (não só o nome): o que a ata decidiu e a OPL não tem.
+Se a OPL não cobre o arquivo, kind "atencao" e texto "verificar X no Drive", em que X é um nome da lista.
+"não deu para ler o corpo" significa que o export falhou: use só o nome.
+Não invente nome. Não cite áudio. Não repita arquivo que já tem ponto.`;
 
 export const AI_SYSTEM_C_HEALTH = `${RULES}
 Onda C — o mesmo trabalho das ondas A e B, juntos, neste bundle da Rádio Health.
@@ -45,7 +50,7 @@ Não traga de novo Ata, Transcricoes nem Doctos.`;
 /** Fallback se uma chamada não mandar o sistema da onda. */
 export const AI_SYSTEM = AI_SYSTEM_A;
 
-const MAX = 36000;
+const MAX = 56000;
 
 export type StatusRow = {
   title: string;
@@ -71,6 +76,8 @@ export type StatusBriefInput = {
   decisions: { date: string; who: string; text: string }[];
 };
 
+export type GapText = { name: string; body: string };
+
 export type GapBriefInput = {
   today: string;
   name: string;
@@ -78,6 +85,7 @@ export type GapBriefInput = {
   folders: string;
   names: string[];
   openPointTitles: string[];
+  texts?: GapText[];
   note?: string;
 };
 
@@ -142,12 +150,16 @@ export function buildStatusBrief(input: StatusBriefInput) {
 export function buildGapBrief(input: GapBriefInput) {
   const names = input.names.slice(0, AI_NAME_CAP).map((name) => clip(name, 180));
   const points = input.openPointTitles.slice(0, 36).map((title) => clip(title, 180));
+  const texts = (input.texts ?? []).map((file) => `${file.name}\n${file.body.trim() || "não deu para ler o corpo"}`);
   const text = [
     `Hoje: ${input.today}`,
     `Deal: ${input.name} (${input.slug})`,
     `Pastas: ${input.folders}`,
     input.note ? clip(input.note, 240) : "",
-    "Não há conteúdo de arquivo. Só o nome.",
+    texts.length
+      ? `Textos novos desde o último Pedir leitura (priorizar):\n\n${texts.join("\n\n")}`
+      : "Sem texto novo de ata ou transcrição nesta leitura.",
+    "PDF só pelo nome. Áudio não entra.",
     block("Arquivos", names, "nenhum."),
     block("Pontos em aberto (título)", points, "nenhum."),
   ]

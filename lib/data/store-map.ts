@@ -87,6 +87,7 @@ export function mapInboxRow(row: {
   received_at: string;
   classified: boolean;
   dismissed?: boolean | null;
+  last_read_at?: string | null;
   deal_id: string | null;
   type: string | null;
   workstream_slug: string | null;
@@ -103,6 +104,7 @@ export function mapInboxRow(row: {
     receivedAt: row.received_at,
     classified: row.classified,
     dismissed: row.dismissed === true,
+    lastReadAt: row.last_read_at || null,
   };
   if (row.classified && row.deal_id && row.type && row.status) {
     file.classification = {

@@ -12,6 +12,7 @@ import type {
   DocumentStatus,
   DocumentType,
   DriveDocument,
+  FileReadStamp,
   InboxFile,
   Note,
   OpenPoint,
@@ -20,6 +21,7 @@ import { folderUrl } from "../constants";
 import { sanitizeDriveUrl } from "../http";
 import { decisions as seedDecisions, inboxSeed } from "./seed";
 import { SCAN_FOLDER_NOTE, scanFileDocId, scanFolderDocId } from "./doc-groups";
+import { laterStamp } from "../ai/corpus";
 import { checklistFromInbox, documentFromInbox } from "./store-map";
 
 type Store = {
@@ -35,6 +37,8 @@ type Store = {
   driveSyncedAt: string | null;
   /** Fila de propostas. A IA não grava fato aqui. */
   proposals: AiProposal[];
+  /** Delta do Pedir leitura, por drive_id. */
+  fileReads: FileReadStamp[];
 };
 
 const defaultStore = (): Store => ({
@@ -47,6 +51,7 @@ const defaultStore = (): Store => ({
   notes: [],
   driveSyncedAt: null,
   proposals: [],
+  fileReads: [],
 });
 
 const filePath = path.join(process.cwd(), ".data", "store.json");
@@ -76,6 +81,7 @@ async function load(): Promise<Store> {
       notes: parsed.notes ?? [],
       driveSyncedAt: parsed.driveSyncedAt ?? null,
       proposals: parsed.proposals ?? [],
+      fileReads: parsed.fileReads ?? [],
     };
     return memory;
   } catch {
@@ -546,6 +552,45 @@ export async function addAiProposalsLocal(
   memory = s;
   await writeStore(s);
   return rows;
+}
+
+export async function listFileReadsLocal(): Promise<FileReadStamp[]> {
+  const s = await load();
+  const byId = new Map<string, FileReadStamp>();
+  for (const row of s.fileReads ?? []) {
+    if (row?.driveId && row.lastReadAt) byId.set(row.driveId, row);
+  }
+  for (const file of s.inbox) {
+    if (!file.driveId || !file.lastReadAt) continue;
+    const prev = byId.get(file.driveId);
+    if (!prev || laterStamp(file.lastReadAt, prev.lastReadAt) === file.lastReadAt) {
+      byId.set(file.driveId, {
+        driveId: file.driveId,
+        lastReadAt: file.lastReadAt,
+        driveModifiedAt: file.driveModifiedAt ?? null,
+      });
+    }
+  }
+  return [...byId.values()];
+}
+
+export async function markFileReadsLocal(
+  rows: { driveId: string; driveModifiedAt?: string | null }[],
+): Promise<void> {
+  const s = await load();
+  const now = new Date().toISOString();
+  const byId = new Map((s.fileReads ?? []).map((row) => [row.driveId, row]));
+  for (const row of rows) {
+    const driveId = row.driveId.trim();
+    if (!driveId) continue;
+    byId.set(driveId, { driveId, lastReadAt: now, driveModifiedAt: row.driveModifiedAt ?? null });
+    for (const file of s.inbox) {
+      if (file.driveId === driveId) file.lastReadAt = now;
+    }
+  }
+  s.fileReads = [...byId.values()];
+  memory = s;
+  await writeStore(s);
 }
 
 export async function setAiProposalStatusLocal(id: string, status: AiProposalStatus): Promise<AiProposal | null> {

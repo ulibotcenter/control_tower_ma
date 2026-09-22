@@ -7,6 +7,11 @@ export function varreduraToast(counts: WaveCounts) {
   return `Varredura PMO · A ${counts.A} · B ${counts.B} · C ${counts.C} propostas`;
 }
 
+/** Delta de ata/transcrição. Áudio é frase fixa: não entra número nem nome. */
+export function leituraToast(read: number, seen: number) {
+  return `Leu ${read} atas/transcrições novas · pulou áudio · ${seen} já vistas`;
+}
+
 /** OpenRouter caiu no meio: a frase da API e o que já entrou na fila. */
 export function varreduraFailToast(phrase: string, counts: WaveCounts) {
   const clean = phrase.replace(/\s+/g, " ").trim();

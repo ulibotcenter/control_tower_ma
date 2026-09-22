@@ -1,9 +1,11 @@
 import { SEMAPHORE_LABEL } from "../constants";
 import { blockersFrom, getPillarViews } from "../data/pillar-view";
 import { getDealBundle } from "../data/provider";
-import { addAiProposals, listAiProposals, listDecisions, listInbox } from "../data/store";
+import { addAiProposals, listAiProposals, listDecisions, listFileReads, listInbox, markFileReads } from "../data/store";
+import { exportDriveText, listAtaTranscriptFiles } from "../drive";
 import { formatDate } from "../format";
 import type { AiProposal, DealBundle, Decision } from "../types";
+import { isUnread, laterStamp, planReading } from "./corpus";
 import { AI_UNCONFIGURED, isOpenRouterConfigured } from "./env";
 import {
   AI_PROPOSAL_CAP,
@@ -23,7 +25,7 @@ import { isNearAny } from "./near";
 import { askOpenRouter } from "./openrouter";
 import { parseModelProposals, type ProposalDraft } from "./proposals";
 import { gapFolderLabel, selectGapNames, type GapName } from "./scope";
-import { varreduraFailToast, varreduraToast, type WaveCounts } from "./toast-line";
+import { leituraToast, varreduraFailToast, type WaveCounts } from "./toast-line";
 
 export type ReadOutcome = {
   configured: boolean;
@@ -82,7 +84,13 @@ function statusBrief(bundle: DealBundle, decisions: Decision[]) {
   });
 }
 
-function gapBrief(bundle: DealBundle, names: GapName[], folders: string, note?: string) {
+function gapBrief(
+  bundle: DealBundle,
+  names: GapName[],
+  folders: string,
+  texts: { name: string; body: string }[],
+  note?: string,
+) {
   return buildGapBrief({
     today: todayLabel(),
     name: bundle.deal.name,
@@ -90,8 +98,44 @@ function gapBrief(bundle: DealBundle, names: GapName[], folders: string, note?: 
     folders,
     names: names.map((file) => file.name),
     openPointTitles: bundle.openPoints.filter((point) => point.status !== "resolvido").map((point) => point.title),
+    texts,
     note,
   });
+}
+
+function stillDue(names: GapName[], lastReadAt: Map<string, string>, modifiedAt: Map<string, string>) {
+  return names.filter((file) => {
+    if (!file.driveId) return true;
+    return isUnread(lastReadAt.get(file.driveId), modifiedAt.get(file.driveId) || null);
+  });
+}
+
+async function readNewTexts(inboxLast: Map<string, string>) {
+  const stamps = await listFileReads();
+  const lastReadAt = new Map(inboxLast);
+  for (const row of stamps) {
+    const prev = lastReadAt.get(row.driveId);
+    if (!prev || laterStamp(row.lastReadAt, prev) === row.lastReadAt) lastReadAt.set(row.driveId, row.lastReadAt);
+  }
+  const listed = await listAtaTranscriptFiles();
+  if (!listed.ok) {
+    return { texts: [] as { name: string; body: string }[], read: 0, seen: stamps.length, lastReadAt, modifiedAt: new Map<string, string>() };
+  }
+  const plan = planReading(listed.files, lastReadAt);
+  const modifiedAt = new Map(listed.files.map((file) => [file.id, file.modifiedAt]));
+  const texts: { name: string; body: string }[] = [];
+  const stamped: { driveId: string; driveModifiedAt: string | null }[] = [];
+  for (const file of plan.batch) {
+    const body = await exportDriveText(file);
+    if (body) {
+      texts.push({ name: file.name, body });
+      stamped.push({ driveId: file.id, driveModifiedAt: file.modifiedAt || null });
+    } else {
+      texts.push({ name: file.name, body: "não deu para ler o corpo" });
+    }
+  }
+  if (stamped.length) await markFileReads(stamped);
+  return { texts, read: stamped.length, seen: plan.seen, lastReadAt, modifiedAt };
 }
 
 function freshDrafts(drafts: ProposalDraft[], prior: string[]) {
@@ -127,28 +171,42 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
   const prior = pending.map((row) => [row.payload.text, row.payload.title].filter(Boolean).join(" "));
   const counts: WaveCounts = { A: 0, B: 0, C: 0 };
   const saved: AiProposal[] = [];
-  const namesB = selectGapNames({
+  const inboxLast = new Map<string, string>();
+  for (const file of inbox) {
+    if (file.driveId && file.lastReadAt) inboxLast.set(file.driveId, file.lastReadAt);
+  }
+  const corpus = await readNewTexts(inboxLast);
+  const deltaLine = leituraToast(corpus.read, corpus.seen);
+  const namesB = stillDue(
+    selectGapNames({
     dealId: bundle.deal.id,
     slug: bundle.deal.slug,
     driveFolderId: bundle.deal.driveFolderId,
     documents: bundle.documents,
     inbox,
     wave: "B",
-  });
+  }),
+    corpus.lastReadAt,
+    corpus.modifiedAt,
+  );
   const radio = bundle.deal.slug === "radio-health";
   const namesC = radio
     ? namesB
-    : selectGapNames({
-        dealId: bundle.deal.id,
-        slug: bundle.deal.slug,
-        driveFolderId: bundle.deal.driveFolderId,
-        documents: bundle.documents,
-        inbox,
-        wave: "C",
-        skipNames: namesB.map((file) => file.name),
-      });
+    : stillDue(
+        selectGapNames({
+          dealId: bundle.deal.id,
+          slug: bundle.deal.slug,
+          driveFolderId: bundle.deal.driveFolderId,
+          documents: bundle.documents,
+          inbox,
+          wave: "C",
+          skipNames: namesB.map((file) => file.name),
+        }),
+        corpus.lastReadAt,
+        corpus.modifiedAt,
+      );
   const status = statusBrief(bundle, decisions);
-  const gapB = gapBrief(bundle, namesB, gapFolderLabel(bundle.deal.slug, "B"));
+  const gapB = gapBrief(bundle, namesB, gapFolderLabel(bundle.deal.slug, "B"), corpus.texts);
   const waves: { id: keyof WaveCounts; system: string; brief: string; files: GapName[] }[] = [
     { id: "A", system: AI_SYSTEM_A, brief: status, files: [] },
     { id: "B", system: AI_SYSTEM_B, brief: gapB, files: namesB },
@@ -166,6 +224,7 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
             bundle,
             namesC,
             gapFolderLabel(bundle.deal.slug, "C"),
+            [],
             "Nomes de Relatorios e Open Point List que não entraram na lista de Ata, Transcricoes e Doctos.",
           ),
           files: namesC,
@@ -184,7 +243,7 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
         message: answer.message,
         proposals: saved,
         waves: counts,
-        toast: varreduraFailToast(answer.message, counts),
+        toast: `${varreduraFailToast(answer.message, counts)} · ${deltaLine}`,
       };
     }
     const drafts = freshDrafts(
@@ -218,11 +277,10 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
         message,
         proposals: saved,
         waves: counts,
-        toast: varreduraFailToast(message, counts),
+        toast: `${varreduraFailToast(message, counts)} · ${deltaLine}`,
       };
     }
   }
 
-  const toast = varreduraToast(counts);
-  return { configured: true, message: toast, proposals: saved, waves: counts, toast };
+  return { configured: true, message: deltaLine, proposals: saved, waves: counts, toast: deltaLine };
 }

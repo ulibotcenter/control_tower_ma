@@ -25,6 +25,7 @@ import type {
   Decision,
   DocumentStatus,
   DocumentType,
+  FileReadStamp,
   InboxFile,
   Note,
   OpenPoint,
@@ -68,6 +69,8 @@ import {
   getAiProposalLocal,
   addAiProposalsLocal,
   setAiProposalStatusLocal,
+  listFileReadsLocal,
+  markFileReadsLocal,
 } from "./store-local";
 import {
   addActionRemote,
@@ -103,6 +106,8 @@ import {
   getAiProposalRemote,
   addAiProposalsRemote,
   setAiProposalStatusRemote,
+  listFileReadsRemote,
+  markFileReadsRemote,
 } from "./store-supabase";
 
 function remote() {
@@ -433,6 +438,28 @@ export async function addAiProposals(
   if (sb) return addAiProposalsRemote(sb, inputs);
   if (forbidLocalStore()) refuseLocalWrite("addAiProposals");
   return addAiProposalsLocal(inputs);
+}
+
+export async function listFileReads(): Promise<FileReadStamp[]> {
+  const sb = remote();
+  if (sb) return safeRead("listFileReads", () => listFileReadsRemote(sb), []);
+  if (forbidLocalStore()) return [];
+  return listFileReadsLocal();
+}
+
+export async function markFileReads(rows: { driveId: string; driveModifiedAt?: string | null }[]): Promise<void> {
+  if (!rows.length) return;
+  const sb = remote();
+  if (sb) {
+    try {
+      await markFileReadsRemote(sb, rows);
+    } catch (err) {
+      console.error("[ai] carimbo de leitura", err instanceof Error ? err.message : "falha");
+    }
+    return;
+  }
+  if (forbidLocalStore()) return;
+  await markFileReadsLocal(rows);
 }
 
 export async function setAiProposalStatus(id: string, status: AiProposalStatus): Promise<AiProposal | null> {

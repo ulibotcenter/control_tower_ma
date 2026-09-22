@@ -162,6 +162,7 @@ create table inbox_files (
   received_at timestamptz not null default now(),
   classified boolean not null default false,
   dismissed boolean not null default false,
+  last_read_at timestamptz,
   deal_id uuid references deals(id) on delete set null,
   type document_type,
   workstream_slug text,
@@ -203,4 +204,23 @@ begin
   loop
     execute format('create policy eleva_all on %I for all using (is_eleva()) with check (is_eleva());', t);
   end loop;
+end $$;
+
+-- Delta do Pedir leitura. Ata oficial não cai na bandeja, então o carimbo mora aqui.
+create table if not exists ai_file_reads (
+  drive_id text primary key,
+  last_read_at timestamptz not null,
+  drive_modified_at timestamptz
+);
+
+alter table ai_file_reads enable row level security;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'ai_file_reads' and policyname = 'eleva_all'
+  ) then
+    create policy eleva_all on ai_file_reads for all using (is_eleva()) with check (is_eleva());
+  end if;
 end $$;
