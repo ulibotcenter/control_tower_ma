@@ -5,8 +5,8 @@ import { denyUnlessOperate } from "@/lib/room-write";
 import { AI_UNCONFIGURED } from "@/lib/ai/env";
 
 export const runtime = "nodejs";
-/** A, até quatro chamadas de B e C, cada uma com uma retentativa sem json_object. */
-export const maxDuration = 800;
+/** Hobby: o teto da função é 300. */
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   const denied = await denyUnlessOperate();
