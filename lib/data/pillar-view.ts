@@ -22,7 +22,6 @@ import type {
   ChecklistItem,
   DealBundle,
   DriveDocument,
-  MeetingMode,
   Milestone,
   Risk,
   Semaphore,
@@ -193,44 +192,4 @@ export function firstOpenAction(actions: ActionItem[]): ActionItem | null {
     actions.find((a) => a.status === "open") ??
     null
   );
-}
-
-export type AxisBullet = { id: string; text: string };
-
-/**
- * Até 5 linhas já escritas no pilar: travas (título), próximo passo (título
- * da ação) e um fato (resumo do marco). Não compõe frase nova.
- */
-export function pillarAxisBullets(view: PillarView, mode: MeetingMode): AxisBullet[] {
-  const out: AxisBullet[] = [];
-  const seen = new Set<string>();
-
-  function push(id: string, text: string) {
-    const clean = text.trim();
-    if (!clean || out.length >= 5) return;
-    const key = clean.toLowerCase();
-    if (seen.has(key)) return;
-    seen.add(key);
-    out.push({ id, text: clean });
-  }
-
-  for (const blocker of blockersFrom(view.risks, view.checklist, 3, view.actions)) {
-    push(blocker.id, blocker.title);
-  }
-
-  const next = firstOpenAction(view.actions);
-  if (next) push(`next-${next.id}`, next.title);
-
-  const fact = axisFact(view, mode);
-  if (fact) push(fact.id, fact.text);
-
-  return out;
-}
-
-/** Marco atual do pilar, ou o primeiro. Texto que o corte já tem. */
-function axisFact(view: PillarView, mode: MeetingMode): AxisBullet | null {
-  const milestone = view.milestones.find((item) => item.status === "current") ?? view.milestones[0];
-  if (!milestone) return null;
-  const text = mode === "target" ? milestone.summaryTarget : milestone.summary;
-  return { id: `fact-${milestone.id}`, text: text.trim() || milestone.name };
 }

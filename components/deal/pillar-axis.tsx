@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { WithTerms } from "@/components/ui/with-terms";
-import { pillarAxisBullets, type PillarView } from "@/lib/data/pillar-view";
+import { PROGRAM_BIBLE } from "@/lib/data/program-bible";
+import type { PillarView } from "@/lib/data/pillar-view";
 import { semaphoreShortFor } from "@/lib/mode-meta";
 import type { MeetingMode } from "@/lib/types";
 
 /**
  * Eixo vertical dos seis pilares. A cor sai do semáforo que o bundle já tem.
- * Os pontos são título de trava, título do próximo passo e o resumo do marco.
+ * Os pontos são a bíblia fixa do programa, a mesma em todo deal.
  */
 export function PillarAxis({
   dealSlug,
@@ -20,7 +21,7 @@ export function PillarAxis({
   return (
     <ol className="pillar-axis">
       {pillars.map((pillar) => {
-        const bullets = pillarAxisBullets(pillar, mode);
+        const bullets = PROGRAM_BIBLE[pillar.slug];
         const href = `/deals/${dealSlug}/${pillar.slug}`;
         return (
           <li key={pillar.slug} className="pillar-axis-stop">
@@ -34,8 +35,8 @@ export function PillarAxis({
             {bullets.length > 0 ? (
               <ul className="pillar-axis-notes">
                 {bullets.map((bullet) => (
-                  <li key={bullet.id}>
-                    <WithTerms text={bullet.text} interactive={false} />
+                  <li key={bullet}>
+                    <WithTerms text={bullet} interactive={false} />
                   </li>
                 ))}
               </ul>
