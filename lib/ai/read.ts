@@ -20,7 +20,7 @@ import {
   withPending,
   type StatusRow,
 } from "./context";
-import { isNearAny } from "./near";
+import { repeatsSeen, type SeenProposal } from "./near";
 import { askOpenRouter } from "./openrouter";
 import { extractJson, parseModelProposals, type ProposalDraft } from "./proposals";
 import { gapFolderLabel, selectGapNames, type GapName } from "./scope";
@@ -145,14 +145,18 @@ async function loadNewTexts(inboxLast: Map<string, string>) {
   return { files, seen: plan.seen, lastReadAt, modifiedAt };
 }
 
-function freshDrafts(drafts: ProposalDraft[], prior: string[]) {
+function freshDrafts(drafts: ProposalDraft[], prior: SeenProposal[]) {
   const seen = [...prior];
   const out: ProposalDraft[] = [];
   for (const draft of drafts) {
-    const text = [draft.payload.text, draft.payload.title].filter(Boolean).join(" ");
-    if (isNearAny(text, seen)) continue;
+    if (repeatsSeen({ kind: draft.kind, text: draft.payload.text, title: draft.payload.title }, seen)) continue;
     out.push(draft);
-    seen.push(text);
+    seen.push({
+      kind: draft.kind,
+      status: "pendente",
+      text: draft.payload.text,
+      title: draft.payload.title || "",
+    });
   }
   return out;
 }
@@ -172,13 +176,19 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
   const dealId = bundle.deal.id;
   const dealSlug = bundle.deal.slug;
 
-  const [decisions, inbox, pending] = await Promise.all([
+  const [decisions, inbox, history] = await Promise.all([
     listDecisions(),
     listInbox(),
-    listAiProposals({ status: "pendente", dealSlug: bundle.deal.slug }),
+    listAiProposals({ dealSlug: bundle.deal.slug }),
   ]);
 
-  const prior = pending.map((row) => [row.payload.text, row.payload.title].filter(Boolean).join(" "));
+  const seen: SeenProposal[] = history.map((row) => ({
+    kind: row.kind,
+    status: row.status,
+    text: row.payload.text,
+    title: row.payload.title || "",
+  }));
+  const prior = history.map((row) => [row.payload.text, row.payload.title].filter(Boolean).join(" "));
   const counts: WaveCounts = { A: 0, B: 0, C: 0 };
   const saved: AiProposal[] = [];
   const inboxLast = new Map<string, string>();
@@ -250,7 +260,7 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
         workstreamSlugs: fronts,
         limit: room,
       }),
-      prior,
+      seen,
     ).slice(0, room);
     if (!drafts.length) return { ok: true, content: answer.content };
     try {
@@ -263,6 +273,14 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
       );
       counts[id] += rows.length;
       saved.push(...rows);
+      seen.push(
+        ...rows.map((row) => ({
+          kind: row.kind,
+          status: row.status,
+          text: row.payload.text,
+          title: row.payload.title || "",
+        })),
+      );
       prior.push(...rows.map((row) => [row.payload.text, row.payload.title].filter(Boolean).join(" ")));
       return { ok: true, content: answer.content };
     } catch (err) {
@@ -312,10 +330,11 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
               limit: room,
             })
           : [];
-      const drafts = (
+      const drafts = freshDrafts(
         json && typeof json === "object"
           ? fromModel
-          : [{ kind: "atencao" as const, payload: { text: fileB.name, title: fileB.name } }]
+          : [{ kind: "atencao" as const, payload: { text: fileB.name, title: fileB.name } }],
+        seen,
       ).slice(0, Math.max(0, room));
       if (drafts.length && counts.B < AI_PROPOSAL_CAP) {
         try {
@@ -328,6 +347,14 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
           );
           counts.B += rows.length;
           saved.push(...rows);
+          seen.push(
+            ...rows.map((row) => ({
+              kind: row.kind,
+              status: row.status,
+              text: row.payload.text,
+              title: row.payload.title || "",
+            })),
+          );
           prior.push(...rows.map((row) => [row.payload.text, row.payload.title].filter(Boolean).join(" ")));
         } catch (err) {
           bOk = false;

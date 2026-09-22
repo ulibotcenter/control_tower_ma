@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import { formatDate, dueSortKey } from "@/lib/format";
 import { isUuid } from "@/lib/data/room-input";
+import { OPL_FILTERS, pointInFilter, taskInFilter, type OplFilter } from "@/lib/opl-filter";
 import { isPillarSlug, pillarOf, PILLAR_BY_SLUG } from "@/lib/pillars";
 import type { ActionItem, OpenPoint, OpenPointStatus } from "@/lib/types";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -89,8 +93,12 @@ export function PendingTable({
   canEdit: boolean;
   empty?: string;
 }) {
-  const rows = rowsOf(points, tasks);
-  if (!rows.length) return <EmptyState compact title={empty} />;
+  const [filter, setFilter] = useState<OplFilter>("abertos");
+  const all = rowsOf(points, tasks);
+  const rows = all.filter((line) =>
+    line.kind === "point" ? pointInFilter(line.point.status, filter) : taskInFilter(line.task.status, filter),
+  );
+  if (!all.length) return <EmptyState compact title={empty} />;
 
   return (
     <div className="ops-scroll">
@@ -102,13 +110,36 @@ export function PendingTable({
             <th scope="col">Responsável</th>
             <th scope="col">Prazo</th>
             <th scope="col">Pilar</th>
-            <th scope="col">Status</th>
+            <th scope="col">
+              <span className="ops-status-head">
+                Status
+                <select
+                  className="ops-status-filter no-print"
+                  aria-label="Filtrar status"
+                  value={filter}
+                  onChange={(event) => setFilter(event.target.value as OplFilter)}
+                >
+                  {OPL_FILTERS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </span>
+            </th>
             <th scope="col">
               <span className="sr-only">Ações</span>
             </th>
           </tr>
         </thead>
         <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={7} className="ops-empty">
+                Nada neste filtro.
+              </td>
+            </tr>
+          ) : null}
           {rows.map((line) =>
             line.kind === "point" ? (
               <tr key={`point-${line.point.id}`} className={pointTone(line.point.status)}>
