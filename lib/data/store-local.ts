@@ -3,6 +3,10 @@ import { promises as fs } from "fs";
 import path from "path";
 import type {
   ActionItem,
+  AiProposal,
+  AiProposalKind,
+  AiProposalPayload,
+  AiProposalStatus,
   ChecklistItem,
   Decision,
   DocumentStatus,
@@ -29,6 +33,8 @@ type Store = {
   notes: Note[];
   /** Última varredura do Drive que devolveu ok. ISO. */
   driveSyncedAt: string | null;
+  /** Fila de propostas. A IA não grava fato aqui. */
+  proposals: AiProposal[];
 };
 
 const defaultStore = (): Store => ({
@@ -40,6 +46,7 @@ const defaultStore = (): Store => ({
   actions: [],
   notes: [],
   driveSyncedAt: null,
+  proposals: [],
 });
 
 const filePath = path.join(process.cwd(), ".data", "store.json");
@@ -68,6 +75,7 @@ async function load(): Promise<Store> {
       actions: parsed.actions ?? [],
       notes: parsed.notes ?? [],
       driveSyncedAt: parsed.driveSyncedAt ?? null,
+      proposals: parsed.proposals ?? [],
     };
     return memory;
   } catch {
@@ -438,4 +446,58 @@ export async function setDriveSyncedAtLocal(iso: string): Promise<string> {
   memory = s;
   await writeStore(s);
   return iso;
+}
+
+const PROPOSAL_STATUSES: AiProposalStatus[] = ["pendente", "aceita", "descartada", "editada"];
+
+function asProposal(row: AiProposal | null | undefined): AiProposal | null {
+  if (!row?.id || !row.dealSlug || !row.kind || !row.payload || !row.status) return null;
+  if (!PROPOSAL_STATUSES.includes(row.status)) return null;
+  return row;
+}
+
+export async function listAiProposalsLocal(filter?: {
+  dealSlug?: string;
+  status?: AiProposalStatus;
+}): Promise<AiProposal[]> {
+  const s = await load();
+  return [...(s.proposals ?? [])]
+    .filter((row) => asProposal(row))
+    .filter((row) => (filter?.dealSlug ? row.dealSlug === filter.dealSlug : true))
+    .filter((row) => (filter?.status ? row.status === filter.status : true))
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}
+
+export async function getAiProposalLocal(id: string): Promise<AiProposal | null> {
+  const s = await load();
+  return asProposal((s.proposals ?? []).find((row) => row.id === id) ?? null);
+}
+
+export async function addAiProposalsLocal(
+  inputs: { dealSlug: string; kind: AiProposalKind; payload: AiProposalPayload }[],
+): Promise<AiProposal[]> {
+  const s = await load();
+  const now = new Date().toISOString();
+  const rows: AiProposal[] = inputs.map((input) => ({
+    id: randomUUID(),
+    dealSlug: input.dealSlug,
+    kind: input.kind,
+    payload: input.payload,
+    status: "pendente",
+    createdAt: now,
+  }));
+  s.proposals = [...rows, ...(s.proposals ?? [])];
+  memory = s;
+  await writeStore(s);
+  return rows;
+}
+
+export async function setAiProposalStatusLocal(id: string, status: AiProposalStatus): Promise<AiProposal | null> {
+  const s = await load();
+  const row = (s.proposals ?? []).find((item) => item.id === id);
+  if (!row || row.status !== "pendente") return null;
+  row.status = status;
+  memory = s;
+  await writeStore(s);
+  return row;
 }

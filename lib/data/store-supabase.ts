@@ -10,6 +10,10 @@ import { randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   ActionItem,
+  AiProposal,
+  AiProposalKind,
+  AiProposalPayload,
+  AiProposalStatus,
   ChecklistItem,
   Decision,
   DocumentStatus,
@@ -654,4 +658,83 @@ export async function unclassifiedCountRemote(sb: SupabaseClient) {
     .eq("classified", false);
   if (error) fail("count inbox", error);
   return count ?? 0;
+}
+
+const PROPOSAL_KINDS: AiProposalKind[] = ["opl", "tarefa", "nota", "classificacao", "atencao"];
+const PROPOSAL_STATUSES: AiProposalStatus[] = ["pendente", "aceita", "descartada", "editada"];
+
+function mapAiProposal(row: {
+  id?: string;
+  deal_slug?: string;
+  kind?: string;
+  payload?: unknown;
+  status?: string;
+  created_at?: string;
+}): AiProposal | null {
+  if (!row.id || !row.deal_slug || !row.kind || !row.status || !row.created_at) return null;
+  if (!(PROPOSAL_KINDS as string[]).includes(row.kind)) return null;
+  if (!(PROPOSAL_STATUSES as string[]).includes(row.status)) return null;
+  const payload = row.payload && typeof row.payload === "object" && !Array.isArray(row.payload) ? row.payload : null;
+  const text = payload && "text" in payload && typeof payload.text === "string" ? payload.text : "";
+  if (!text) return null;
+  return {
+    id: row.id,
+    dealSlug: row.deal_slug,
+    kind: row.kind as AiProposalKind,
+    payload: { ...(payload as AiProposalPayload), text },
+    status: row.status as AiProposalStatus,
+    createdAt: row.created_at,
+  };
+}
+
+export async function listAiProposalsRemote(
+  sb: SupabaseClient,
+  filter?: { dealSlug?: string; status?: AiProposalStatus },
+): Promise<AiProposal[]> {
+  let query = sb.from("ai_proposals").select("*").order("created_at", { ascending: false });
+  if (filter?.dealSlug) query = query.eq("deal_slug", filter.dealSlug);
+  if (filter?.status) query = query.eq("status", filter.status);
+  const { data, error } = await query;
+  if (error) fail("list ai proposals", error);
+  return (data ?? []).map((row) => mapAiProposal(row)).filter((row): row is AiProposal => Boolean(row));
+}
+
+export async function getAiProposalRemote(sb: SupabaseClient, id: string): Promise<AiProposal | null> {
+  const { data, error } = await sb.from("ai_proposals").select("*").eq("id", id).maybeSingle();
+  if (error) fail("get ai proposal", error);
+  return data ? mapAiProposal(data) : null;
+}
+
+export async function addAiProposalsRemote(
+  sb: SupabaseClient,
+  inputs: { dealSlug: string; kind: AiProposalKind; payload: AiProposalPayload }[],
+): Promise<AiProposal[]> {
+  const now = new Date().toISOString();
+  const rows = inputs.map((input) => ({
+    id: randomUUID(),
+    deal_slug: input.dealSlug,
+    kind: input.kind,
+    payload: input.payload,
+    status: "pendente",
+    created_at: now,
+  }));
+  const { data, error } = await sb.from("ai_proposals").insert(rows).select("*");
+  if (error || !data) fail("insert ai proposals", error);
+  return data.map((row) => mapAiProposal(row)).filter((row): row is AiProposal => Boolean(row));
+}
+
+export async function setAiProposalStatusRemote(
+  sb: SupabaseClient,
+  id: string,
+  status: AiProposalStatus,
+): Promise<AiProposal | null> {
+  const { data, error } = await sb
+    .from("ai_proposals")
+    .update({ status })
+    .eq("id", id)
+    .eq("status", "pendente")
+    .select("*")
+    .maybeSingle();
+  if (error) fail("update ai proposal", error);
+  return data ? mapAiProposal(data) : null;
 }

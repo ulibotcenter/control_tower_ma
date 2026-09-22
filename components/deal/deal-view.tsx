@@ -4,7 +4,7 @@ import { semaphoreLabelFor, semaphoreShortFor, TARGET_COPY, viewChrome } from "@
 import { blockersFrom, type PillarView } from "@/lib/data/pillar-view";
 import { pillarOfDealPhase } from "@/lib/pillars";
 import type { TemaSlug } from "@/lib/data/temas";
-import type { DealBundle, MeetingMode, Semaphore } from "@/lib/types";
+import type { AiRoomSeed, DealBundle, MeetingMode, Semaphore } from "@/lib/types";
 import { ThemePanel, ThemeRail } from "./theme-rail";
 import { Term } from "@/components/ui/term";
 import { WithTerms } from "@/components/ui/with-terms";
@@ -25,12 +25,14 @@ export function DealView({
   mode,
   present = false,
   tema = null,
+  seed = null,
 }: {
   bundle: DealBundle;
   pillars: PillarView[];
   mode: MeetingMode;
   present?: boolean;
   tema?: TemaSlug | null;
+  seed?: AiRoomSeed | null;
 }) {
   if (present) {
     return <PresentDeck bundle={bundle} pillars={pillars} mode={mode} />;
@@ -202,7 +204,7 @@ export function DealView({
         </section>
       )}
 
-      <RoomProvider dealSlug={deal.slug}>
+      <RoomProvider dealSlug={deal.slug} seed={canWrite ? seed : null}>
       <section id="opl" className="war-block war-opl">
         <MeetingTabs
           tools={canWrite ? <RoomStrip /> : null}

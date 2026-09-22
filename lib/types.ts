@@ -339,3 +339,46 @@ export interface SessionUser {
   email: string;
   name: string;
 }
+
+export type AiProposalKind = "opl" | "tarefa" | "nota" | "classificacao" | "atencao";
+
+export type AiProposalStatus = "pendente" | "aceita" | "descartada" | "editada";
+
+/** O que o operador lê e, se aceitar, o que as APIs já existentes recebem. */
+export interface AiProposalPayload {
+  text: string;
+  title?: string;
+  owner?: string;
+  due?: string;
+  pillarSlug?: string | null;
+  visibility?: Visibility;
+  body?: string;
+  inboxId?: string;
+  /** Id do deal no app (`deal-loopert`), para a classificação chamar a API já existente. */
+  dealId?: string;
+  fileName?: string;
+  type?: DocumentType;
+  workstreamSlug?: string | null;
+  docStatus?: DocumentStatus;
+}
+
+export interface AiProposal {
+  id: string;
+  dealSlug: string;
+  kind: AiProposalKind;
+  payload: AiProposalPayload;
+  status: AiProposalStatus;
+  createdAt: string;
+}
+
+/** Rascunho para abrir o diálogo de ponto, tarefa ou nota já preenchido. */
+export interface AiRoomSeed {
+  proposalId: string;
+  kind: "opl" | "task" | "note";
+  title: string;
+  owner: string;
+  due: string;
+  pillarSlug: string | null;
+  visibility: string;
+  body: string;
+}

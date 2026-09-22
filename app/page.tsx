@@ -1,4 +1,6 @@
+import { ProposalQueue } from "@/components/ai/proposal-queue";
 import { AppShell } from "@/components/shell/app-shell";
+import { isOpenRouterConfigured } from "@/lib/ai/env";
 import { AttentionPanel } from "@/components/home/attention-panel";
 import { DealCard } from "@/components/home/deal-card";
 import { ActivityFeed } from "@/components/home/activity-feed";
@@ -14,7 +16,7 @@ import type { DealBundle } from "@/lib/types";
 import { canSeeDecisions } from "@/lib/visibility";
 import { Freshness } from "@/components/ui/freshness";
 import { DriveSyncStamp } from "@/components/shell/drive-sync-stamp";
-import { getDriveSyncedAt } from "@/lib/data/store";
+import { getDriveSyncedAt, listAiProposals } from "@/lib/data/store";
 
 export default async function HomePage({
   searchParams,
@@ -69,6 +71,7 @@ export default async function HomePage({
   const several = cards.length > 1;
   const gridClass = `cover-grid${several ? " has-lead" : ""}${present ? " is-deck" : ""}`;
   const driveSyncedAt = showRail ? await getDriveSyncedAt().catch(() => null) : null;
+  const proposals = showRail ? await listAiProposals({ status: "pendente" }).catch(() => []) : [];
 
   return (
     <AppShell focusSlug={focusSlugFromQuery(dealQuery)}>
@@ -77,6 +80,11 @@ export default async function HomePage({
         <h1 className="cover-title">{target ? TARGET_COPY.homeTitle : "Operações"}</h1>
         <Freshness mode={mode} />
         {showRail ? <DriveSyncStamp syncedAt={driveSyncedAt} className="drive-sync-stamp cover-sync-stamp" /> : null}
+        {showRail ? (
+          <p className="ia-jump">
+            <a href="#ia">Leitura da IA</a>
+          </p>
+        ) : null}
         {target && (
           <p className="mt-3 text-[15px] leading-relaxed">
             <WithTerms text={MODE_META.target.homeLead} />
@@ -136,6 +144,14 @@ export default async function HomePage({
           </aside>
         )}
       </div>
+
+      {showRail ? (
+        <ProposalQueue
+          configured={isOpenRouterConfigured()}
+          deals={program.deals.map((deal) => ({ slug: deal.slug, name: deal.name, id: deal.id }))}
+          proposals={proposals}
+        />
+      ) : null}
     </AppShell>
   );
 }

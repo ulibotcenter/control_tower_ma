@@ -28,3 +28,9 @@ A torre usa seed + `.data/store.json`. Serve para `npm run dev`.
 Rode `patch_opl.sql` no SQL Editor. Não rode `schema.sql` de novo.
 
 O patch cria `open_points` (RLS `is_eleva()`) e a coluna aditiva `actions.pillar_slug`. Tarefa nova grava em `actions`. Nota nova grava em `notes`. O corte do seed continua como base. Sem o patch, o dev local segue em `.data/store.json`.
+
+## Bloco 8 — fila de propostas
+
+Rode `patch_ai_proposals.sql` no SQL Editor. Não rode `schema.sql` de novo.
+
+O patch cria `ai_proposals` (`deal_slug` texto, sem drop de tabela). A IA grava proposta. Aceitar chama as APIs que já existem. Sem o patch, o dev local segue em `.data/store.json`.

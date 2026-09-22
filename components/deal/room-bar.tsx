@@ -5,8 +5,8 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { PILLARS, pillarOf, type PillarSlug } from "@/lib/pillars";
 import { isUuid } from "@/lib/data/room-input";
 import { toast } from "@/lib/toast";
+import type { ActionItem, AiRoomSeed, Note, OpenPoint } from "@/lib/types";
 import { useMeetingTab } from "./meeting-tabs";
-import type { ActionItem, Note, OpenPoint } from "@/lib/types";
 
 const VISIBILITY = [
   { value: "operate", label: "Operar" },
@@ -15,7 +15,8 @@ const VISIBILITY = [
 ] as const;
 
 type Draft =
-  | { mode: "create"; kind: "opl" | "task" }
+  | { mode: "create"; kind: "opl" | "task"; defaults?: AiRoomSeed }
+  | { mode: "create"; kind: "note"; defaults: AiRoomSeed }
   | { mode: "edit"; kind: "opl"; point: OpenPoint }
   | { mode: "edit"; kind: "task"; action: ActionItem }
   | { mode: "edit"; kind: "note"; note: Note };
@@ -42,10 +43,12 @@ function dateValue(due: string) {
 export function RoomProvider({
   dealSlug,
   pillarSlug = null,
+  seed = null,
   children,
 }: {
   dealSlug: string;
   pillarSlug?: PillarSlug | null;
+  seed?: AiRoomSeed | null;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -67,6 +70,20 @@ export function RoomProvider({
     if (!dialog || dialog.open) return;
     dialog.showModal();
   }, [formKey]);
+
+  const seedId = seed?.proposalId ?? "";
+  useEffect(() => {
+    if (!seed) return;
+    setError(null);
+    setDraft(
+      seed.kind === "note"
+        ? { mode: "create", kind: "note", defaults: seed }
+        : { mode: "create", kind: seed.kind, defaults: seed },
+    );
+    setFormKey((key) => key + 1);
+    // Abre uma vez por proposta. O seed em si não muda enquanto o id for o mesmo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seedId]);
 
   async function remove(path: string, message: string) {
     if (!window.confirm(message)) return;
@@ -100,24 +117,35 @@ export function RoomProvider({
     const form = new FormData(event.currentTarget);
     const kind = draft.kind;
     const editing = draft.mode === "edit";
+    const defaults = draft.mode === "create" ? draft.defaults : undefined;
+    const proposalId = defaults?.proposalId;
     let res: Response;
     try {
       if (draft.kind === "note") {
-        res = await fetch(`/api/notes/${draft.note.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            body: String(form.get("body") || ""),
-            visibility: String(form.get("visibility") || "operate"),
-          }),
-        });
+        const noteBody = {
+          body: String(form.get("body") || ""),
+          visibility: String(form.get("visibility") || "operate"),
+        };
+        res =
+          draft.mode === "edit"
+            ? await fetch(`/api/notes/${draft.note.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(noteBody),
+              })
+            : await fetch("/api/notes", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ dealSlug, ...noteBody }),
+              });
       } else {
         const current = editing ? (draft.kind === "opl" ? draft.point : draft.action) : null;
-        const originalDue = current?.due ?? "";
+        const originalDue = current?.due ?? defaults?.due ?? "";
         let due = String(form.get("due") || "");
         if (!due && originalDue && !dateValue(originalDue)) due = originalDue;
         const chosen = String(form.get("kind") || "");
         const targetKind = chosen === "task" || chosen === "opl" ? chosen : kind;
+        const postKind = defaults ? targetKind : kind;
         const payload = {
           dealSlug,
           title: String(form.get("title") || ""),
@@ -131,7 +159,7 @@ export function RoomProvider({
           ? draft.kind === "opl"
             ? `/api/open-points/${current.id}`
             : `/api/actions/${current.id}`
-          : draft.kind === "opl"
+          : postKind === "opl"
             ? "/api/open-points"
             : "/api/actions";
         res = await fetch(path, {
@@ -157,7 +185,26 @@ export function RoomProvider({
       setBusy(false);
       return;
     }
-    toast(editing ? "Alteração registrada." : kind === "opl" ? "Ponto em aberto registrado." : "Tarefa registrada.");
+    if (proposalId) {
+      try {
+        await fetch(`/api/ai/proposals/${proposalId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "editada" }),
+        });
+      } catch {
+        toast("Gravado. A fila de propostas não atualizou.", "warn");
+      }
+    }
+    toast(
+      editing || proposalId
+        ? "Alteração registrada."
+        : kind === "note"
+          ? "Nota registrada."
+          : kind === "opl"
+            ? "Ponto em aberto registrado."
+            : "Tarefa registrada.",
+    );
     const dialog = dialogRef.current;
     if (dialog?.open) dialog.close();
     setBusy(false);
@@ -165,17 +212,43 @@ export function RoomProvider({
   }
 
   const editing = draft?.mode === "edit" ? draft : null;
+  const defaults = draft?.mode === "create" ? draft.defaults : undefined;
   const note = editing?.kind === "note" ? editing.note : null;
   const point = editing?.kind === "opl" ? editing.point : null;
   const task = editing?.kind === "task" ? editing.action : null;
   const kind = draft?.kind ?? "opl";
-  const heading =
-    kind === "note" ? "Editar nota" : draft?.mode === "edit" ? (kind === "opl" ? "Editar ponto" : "Editar tarefa") : kind === "opl" ? "Novo ponto" : "Nova tarefa";
+  const heading = defaults
+    ? kind === "note"
+      ? "Editar nota"
+      : kind === "opl"
+        ? "Editar ponto"
+        : "Editar tarefa"
+    : kind === "note"
+      ? "Editar nota"
+      : draft?.mode === "edit"
+        ? kind === "opl"
+          ? "Editar ponto"
+          : "Editar tarefa"
+        : kind === "opl"
+          ? "Novo ponto"
+          : "Nova tarefa";
 
   return (
     <RoomContext.Provider value={api}>
       {children}
-      <dialog ref={dialogRef} className="room-dialog" aria-labelledby="room-dialog-title">
+      <dialog
+        ref={dialogRef}
+        className="room-dialog"
+        aria-labelledby="room-dialog-title"
+        onClose={() => {
+          if (!seedId) return;
+          const url = new URL(window.location.href);
+          if (!url.searchParams.has("proposta")) return;
+          url.searchParams.delete("proposta");
+          const next = `${url.pathname}${url.search}${url.hash}`;
+          router.replace(next, { scroll: false });
+        }}
+      >
         <form key={formKey} onSubmit={onSubmit} className="grid gap-3">
           <h2 id="room-dialog-title" className="war-label">
             {heading}
@@ -183,22 +256,22 @@ export function RoomProvider({
           {kind === "note" ? (
             <div>
               <label htmlFor="room-body">Nota</label>
-              <textarea id="room-body" name="body" rows={4} required maxLength={4000} defaultValue={note?.body ?? ""} />
+              <textarea id="room-body" name="body" rows={4} required maxLength={4000} defaultValue={note?.body ?? defaults?.body ?? ""} />
             </div>
           ) : (
             <>
               <div>
                 <label htmlFor="room-title">Descrição</label>
-                <input id="room-title" name="title" required maxLength={280} defaultValue={point?.title ?? task?.title ?? ""} />
+                <input id="room-title" name="title" required maxLength={280} defaultValue={defaults?.title ?? point?.title ?? task?.title ?? ""} />
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label htmlFor="room-owner">Responsável</label>
-                  <input id="room-owner" name="owner" maxLength={120} defaultValue={point?.owner ?? task?.owner ?? ""} />
+                  <input id="room-owner" name="owner" maxLength={120} defaultValue={defaults?.owner ?? point?.owner ?? task?.owner ?? ""} />
                 </div>
                 <div>
                   <label htmlFor="room-due">Prazo</label>
-                  <input id="room-due" name="due" type="date" defaultValue={dateValue(point?.due ?? task?.due ?? "")} />
+                  <input id="room-due" name="due" type="date" defaultValue={dateValue(defaults?.due ?? point?.due ?? task?.due ?? "")} />
                 </div>
               </div>
             </>
@@ -207,7 +280,7 @@ export function RoomProvider({
             {kind === "note" ? null : (
               <div>
                 <label htmlFor="room-pillar">Pilar</label>
-                <select id="room-pillar" name="pillar" defaultValue={pillarDefault(point, task, pillarSlug ?? "")}>
+                <select id="room-pillar" name="pillar" defaultValue={pillarDefault(point, task, defaults?.pillarSlug || pillarSlug || "")}>
                   <option value="">Sem pilar</option>
                   {PILLARS.map((pillar) => (
                     <option key={pillar.slug} value={pillar.slug}>
@@ -217,7 +290,7 @@ export function RoomProvider({
                 </select>
               </div>
             )}
-            {editing && kind !== "note" ? (
+            {(editing || defaults) && kind !== "note" ? (
               <div>
                 <label htmlFor="room-kind">Tipo</label>
                 <select id="room-kind" name="kind" defaultValue={kind === "task" ? "task" : "opl"}>
@@ -231,7 +304,7 @@ export function RoomProvider({
               <select
                 id="room-visibility"
                 name="visibility"
-                defaultValue={note?.visibility ?? point?.visibility ?? task?.visibility ?? (kind === "note" ? "operate" : "advisors")}
+                defaultValue={defaults?.visibility ?? note?.visibility ?? point?.visibility ?? task?.visibility ?? (kind === "note" ? "operate" : "advisors")}
               >
                 {VISIBILITY.map((item) => (
                   <option key={item.value} value={item.value}>

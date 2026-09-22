@@ -109,7 +109,14 @@ export async function AppShell({
             showToggle={!present}
             toggleLabel={dealNav ? "Abrir pilares" : "Abrir navegação"}
           />
-          {showWork && <WorkNav mode={mode} inboxCount={inboxCount} driveSyncedAt={driveSyncedAt} />}
+          {showWork && (
+            <WorkNav
+              mode={mode}
+              inboxCount={inboxCount}
+              driveSyncedAt={driveSyncedAt}
+              readDeals={dealOptions.map((deal) => deal.slug)}
+            />
+          )}
         </div>
         {mode !== "target" && <Onboarding openOnMount={showTour} />}
         {/*

@@ -28,7 +28,11 @@ export default async function InboxPage({
       <p className="kicker">Só modo Operar</p>
       <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
         <h1 className="serif text-4xl text-navy">Novos arquivos</h1>
-        <DriveSyncButton variant="page" />
+        <DriveSyncButton
+          variant="page"
+          readDeals={deals.map((item) => item.slug)}
+          readFocus={focus}
+        />
       </div>
       <p className="mt-3 max-w-2xl text-[16px] leading-relaxed">
         O Drive é a verdade dos documentos. A torre só lê. Arquivo novo cai aqui, um humano

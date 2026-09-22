@@ -82,10 +82,12 @@ export function WorkNav({
   mode,
   inboxCount,
   driveSyncedAt = null,
+  readDeals = [],
 }: {
   mode: MeetingMode;
   inboxCount: number;
   driveSyncedAt?: string | null;
+  readDeals?: string[];
 }) {
   const path = usePathname();
   const params = useSearchParams();
@@ -116,7 +118,7 @@ export function WorkNav({
             ) : null}
           </Link>
         ))}
-        <DriveSyncButton variant="work" />
+        <DriveSyncButton variant="work" readDeals={readDeals} readFocus={focus} />
         <DriveSyncStamp syncedAt={driveSyncedAt} className="drive-sync-stamp work-sync-stamp" />
       </nav>
     </div>

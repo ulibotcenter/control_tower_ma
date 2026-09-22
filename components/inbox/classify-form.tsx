@@ -25,14 +25,20 @@ export function ClassifyForm({
   already,
   deals,
   workstreams,
+  propostaId = null,
+  initial = null,
 }: {
   id: string;
   already: boolean;
   deals: { id: string; name: string; slug: string }[];
   workstreams: { dealId: string; slug: string; name: string }[];
+  propostaId?: string | null;
+  initial?: { dealId?: string; type?: string; workstreamSlug?: string; status?: string } | null;
 }) {
   const router = useRouter();
-  const [dealId, setDealId] = useState(deals[0]?.id ?? "");
+  const [dealId, setDealId] = useState(
+    initial?.dealId && deals.some((deal) => deal.id === initial.dealId) ? initial.dealId : (deals[0]?.id ?? ""),
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const ws = useMemo(
@@ -60,6 +66,13 @@ export function ClassifyForm({
       setError("Não foi possível classificar.");
       return;
     }
+    if (propostaId) {
+      await fetch(`/api/ai/proposals/${propostaId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "editada" }),
+      }).catch(() => null);
+    }
     toast("Arquivo classificado. O item entra no checklist sem concluir.");
     const slug = deals.find((d) => d.id === String(data.dealId))?.slug ?? "loopert";
     router.push(`/deals/${slug}#checklist`);
@@ -84,7 +97,7 @@ export function ClassifyForm({
       </div>
       <div>
         <label htmlFor="type">Tipo</label>
-        <select id="type" name="type" required>
+        <select id="type" name="type" required defaultValue={initial?.type || undefined}>
           {TYPES.map((t) => (
             <option key={t.id} value={t.id}>
               {t.label}
@@ -94,7 +107,7 @@ export function ClassifyForm({
       </div>
       <div>
         <label htmlFor="workstreamSlug">Workstream</label>
-        <select id="workstreamSlug" name="workstreamSlug" required>
+        <select id="workstreamSlug" name="workstreamSlug" required defaultValue={initial?.workstreamSlug || ""}>
           <option value="">Escolha a frente</option>
           {ws.map((w) => (
             <option key={w.slug} value={w.slug}>
@@ -105,7 +118,7 @@ export function ClassifyForm({
       </div>
       <div>
         <label htmlFor="status">Status do documento</label>
-        <select id="status" name="status" required>
+        <select id="status" name="status" required defaultValue={initial?.status || undefined}>
           {STATUSES.map((s) => (
             <option key={s.id} value={s.id}>
               {s.label}

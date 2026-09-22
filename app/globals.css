@@ -3071,6 +3071,99 @@ td.ops-meta-cell {
   }
 }
 
+.ai-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ai-also {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ai-also input {
+  accent-color: var(--logo);
+}
+
+.ia-jump {
+  margin: 0.45rem 0 0;
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.ia-jump a {
+  color: var(--brand);
+}
+
+.ia-panel {
+  margin-top: 1.75rem;
+  padding: 1rem 1rem 1.1rem;
+}
+
+.ia-lead {
+  margin: 0.35rem 0 0;
+  max-width: 42rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.ia-unconfigured {
+  margin: 0.65rem 0 0;
+  color: var(--alert);
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.ia-actions,
+.ia-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ia-actions {
+  margin-top: 0.75rem;
+}
+
+.ia-list {
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ia-item {
+  padding: 0.75rem 0 0.15rem;
+  border-top: 1px solid var(--line);
+}
+
+.ia-item p {
+  margin: 0.25rem 0 0;
+}
+
+.ia-kind {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.ia-row {
+  margin-top: 0.55rem;
+}
+
+.ia-row .btn {
+  min-height: 2rem;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8125rem;
+  box-shadow: none;
+}
+
 @media print {
   .deck-slide {
     min-height: 0;

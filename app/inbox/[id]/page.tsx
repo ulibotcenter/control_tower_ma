@@ -11,10 +11,10 @@ export default async function ClassifyPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ deal?: string }>;
+  searchParams: Promise<{ deal?: string; proposta?: string; tipo?: string; frente?: string; situacao?: string }>;
 }) {
   const { id } = await params;
-  const { deal } = await searchParams;
+  const { deal, proposta, tipo, frente, situacao } = await searchParams;
   const file = await getInboxFile(id);
   if (!file) notFound();
 
@@ -34,6 +34,13 @@ export default async function ClassifyPage({
       <ClassifyForm
         id={file.id}
         already={file.classified}
+        propostaId={proposta || null}
+        initial={{
+          dealId: deals.find((item) => item.slug === deal)?.id,
+          type: tipo,
+          workstreamSlug: frente,
+          status: situacao,
+        }}
         deals={deals.map((d) => ({ id: d.id, name: d.name, slug: d.slug }))}
         workstreams={workstreams.map((w) => ({
           dealId: w.dealId,

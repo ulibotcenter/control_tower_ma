@@ -1,8 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/app-shell";
 import { DealView } from "@/components/deal/deal-view";
+import { seedFromProposal } from "@/lib/ai/seed";
 import { getDealBundle } from "@/lib/data/provider";
 import { getPillarViews } from "@/lib/data/pillar-view";
+import { getAiProposal } from "@/lib/data/store";
 import { isDealAllowed } from "@/lib/meeting";
 import { getMeeting } from "@/lib/mode";
 import { getPresent } from "@/lib/present";
@@ -14,10 +16,10 @@ export default async function DealPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ tema?: string }>;
+  searchParams: Promise<{ tema?: string; proposta?: string }>;
 }) {
   const { slug } = await params;
-  const { tema: raw } = await searchParams;
+  const { tema: raw, proposta } = await searchParams;
   const meeting = await getMeeting();
   // Reunião travada num alvo: o outro deal não abre nem por URL direta.
   if (!isDealAllowed(meeting, slug)) redirect(`/deals/${meeting.targetDeal}`);
@@ -25,6 +27,9 @@ export default async function DealPage({
   const bundle = await getDealBundle(slug, meeting.mode);
   if (!bundle) notFound();
   const pillars = getPillarViews(bundle);
+  const proposal =
+    meeting.mode === "operate" && !present && proposta ? await getAiProposal(proposta).catch(() => null) : null;
+  const seed = proposal && proposal.dealSlug === slug ? seedFromProposal(proposal) : null;
 
   return (
     <AppShell
@@ -46,6 +51,7 @@ export default async function DealPage({
         mode={meeting.mode}
         present={present}
         tema={isTemaSlug(raw) ? raw : null}
+        seed={seed}
       />
     </AppShell>
   );

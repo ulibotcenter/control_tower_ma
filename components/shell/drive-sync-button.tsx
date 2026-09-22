@@ -1,6 +1,8 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { requestAiReading } from "@/components/ai/request-reading";
 import { toast } from "@/lib/toast";
 
 export type DriveReviewItem = {
@@ -33,8 +35,18 @@ function rememberSyncedAt(iso: string) {
   window.dispatchEvent(new CustomEvent(DRIVE_SYNCED_EVENT, { detail: { syncedAt: iso } }));
 }
 
-export function DriveSyncButton({ variant = "nav" }: { variant?: "nav" | "page" | "work" }) {
+export function DriveSyncButton({
+  variant = "nav",
+  readDeals = [],
+  readFocus = null,
+}: {
+  variant?: "nav" | "page" | "work";
+  readDeals?: string[];
+  readFocus?: string | null;
+}) {
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [alsoRead, setAlsoRead] = useState(false);
 
   async function run() {
     if (busy) return;
@@ -70,6 +82,7 @@ export function DriveSyncButton({ variant = "nav" }: { variant?: "nav" | "page" 
       if (files.length) {
         window.dispatchEvent(new CustomEvent(DRIVE_REVIEW_EVENT, { detail: { files } }));
       }
+      if (alsoRead) await readAfterSync(readFocus ? [readFocus] : readDeals, router);
     } catch {
       toast("Falha ao atualizar o Drive.", "err");
     } finally {
@@ -79,23 +92,63 @@ export function DriveSyncButton({ variant = "nav" }: { variant?: "nav" | "page" 
 
   const label = busy ? "Lendo o Drive…" : variant === "work" ? "Sincronizar Drive" : "Atualizar Drive";
 
+  const checkbox = (
+    <label className="ai-also">
+      <input
+        type="checkbox"
+        checked={alsoRead}
+        onChange={(event) => setAlsoRead(event.target.checked)}
+        disabled={busy}
+      />
+      também pedir leitura
+    </label>
+  );
+
   if (variant === "page") {
     return (
-      <button type="button" className="btn" onClick={run} disabled={busy}>
-        {label}
-      </button>
+      <span className="ai-sync">
+        <button type="button" className="btn" onClick={run} disabled={busy}>
+          {label}
+        </button>
+        {checkbox}
+      </span>
     );
   }
 
   return (
-    <button
-      type="button"
-      className={variant === "work" ? "work-btn" : "hdr-btn"}
-      onClick={run}
-      disabled={busy}
-      title="Ler a árvore do Drive. Arquivo novo cai na bandeja, a classificar."
-    >
-      {busy ? "Drive…" : variant === "work" ? "Sincronizar Drive" : "Atualizar Drive"}
-    </button>
+    <span className="ai-sync">
+      <button
+        type="button"
+        className={variant === "work" ? "work-btn" : "hdr-btn"}
+        onClick={run}
+        disabled={busy}
+        title="Ler a árvore do Drive. Arquivo novo cai na bandeja, a classificar."
+      >
+        {busy ? "Drive…" : variant === "work" ? "Sincronizar Drive" : "Atualizar Drive"}
+      </button>
+      {checkbox}
+    </span>
   );
+}
+
+async function readAfterSync(slugs: string[], router: { refresh: () => void }) {
+  if (!slugs.length) {
+    toast("Sync feito. Sem deal para a leitura.", "warn");
+    return;
+  }
+  let any = false;
+  for (const slug of slugs) {
+    const ai = await requestAiReading(slug);
+    if (!ai.configured) {
+      toast("IA não configurada", "warn");
+      return;
+    }
+    if (ai.error) {
+      toast(ai.error, "err");
+      return;
+    }
+    any = any || ai.count > 0;
+    toast(ai.count ? `${ai.count} propostas para revisar.` : ai.message || "Nenhuma proposta.", ai.count ? "ok" : "warn");
+  }
+  if (any) router.refresh();
 }

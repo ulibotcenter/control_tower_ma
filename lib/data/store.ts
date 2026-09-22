@@ -7,7 +7,7 @@
  *
  * Coleções aqui (já migráveis / já migradas):
  *   inbox_files, decisions, documents extras, checklist extras,
- *   open_points, actions novas, notes novas.
+ *   open_points, actions novas, notes novas, ai_proposals.
  *
  * Actions do corte continuam no seed até a primeira gravação: aí viram linha
  * (origin_id) e a cópia só-leitura sai da lista. Notes do corte seguem no seed.
@@ -16,7 +16,19 @@
  *   deals, risks, milestones, metrics, thesis, prices, …
  *   → ver lib/data/sources.ts
  */
-import type { ActionItem, Decision, DocumentStatus, DocumentType, InboxFile, Note, OpenPoint } from "../types";
+import type {
+  ActionItem,
+  AiProposal,
+  AiProposalKind,
+  AiProposalPayload,
+  AiProposalStatus,
+  Decision,
+  DocumentStatus,
+  DocumentType,
+  InboxFile,
+  Note,
+  OpenPoint,
+} from "../types";
 import { forbidLocalStore, isSupabaseConfigured } from "../config";
 import { createSupabaseAdmin } from "../supabase/server";
 import { decisions as seedDecisions } from "./seed";
@@ -50,6 +62,10 @@ import {
   updateOpenPointLocal,
   getDriveSyncedAtLocal,
   setDriveSyncedAtLocal,
+  listAiProposalsLocal,
+  getAiProposalLocal,
+  addAiProposalsLocal,
+  setAiProposalStatusLocal,
 } from "./store-local";
 import {
   addActionRemote,
@@ -79,6 +95,10 @@ import {
   updateActionRemote,
   updateNoteRemote,
   updateOpenPointRemote,
+  listAiProposalsRemote,
+  getAiProposalRemote,
+  addAiProposalsRemote,
+  setAiProposalStatusRemote,
 } from "./store-supabase";
 
 function remote() {
@@ -363,4 +383,37 @@ export async function getDriveSyncedAt(): Promise<string | null> {
 
 export async function setDriveSyncedAt(iso: string): Promise<string> {
   return setDriveSyncedAtLocal(iso);
+}
+
+export async function listAiProposals(filter?: {
+  dealSlug?: string;
+  status?: AiProposalStatus;
+}): Promise<AiProposal[]> {
+  const sb = remote();
+  if (sb) return safeRead("listAiProposals", () => listAiProposalsRemote(sb, filter), []);
+  if (forbidLocalStore()) return [];
+  return listAiProposalsLocal(filter);
+}
+
+export async function getAiProposal(id: string): Promise<AiProposal | null> {
+  const sb = remote();
+  if (sb) return safeRead("getAiProposal", () => getAiProposalRemote(sb, id), null);
+  if (forbidLocalStore()) return null;
+  return getAiProposalLocal(id);
+}
+
+export async function addAiProposals(
+  inputs: { dealSlug: string; kind: AiProposalKind; payload: AiProposalPayload }[],
+): Promise<AiProposal[]> {
+  const sb = remote();
+  if (sb) return addAiProposalsRemote(sb, inputs);
+  if (forbidLocalStore()) refuseLocalWrite("addAiProposals");
+  return addAiProposalsLocal(inputs);
+}
+
+export async function setAiProposalStatus(id: string, status: AiProposalStatus): Promise<AiProposal | null> {
+  const sb = remote();
+  if (sb) return setAiProposalStatusRemote(sb, id, status);
+  if (forbidLocalStore()) refuseLocalWrite("setAiProposalStatus");
+  return setAiProposalStatusLocal(id, status);
 }
