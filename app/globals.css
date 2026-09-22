@@ -1167,13 +1167,19 @@ html:has(.shell[data-work="1"]) {
   font-weight: 650;
 }
 
-.ops-status-filter {
+.ops-status-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  max-width: 16rem;
+}
+
+.ops-status-chips .chip {
   width: auto;
-  max-width: 8.5rem;
-  height: 1.65rem;
-  padding: 0 1.4rem 0 0.4rem;
-  font-size: 0.75rem;
-  font-weight: 550;
+  height: 1.5rem;
+  padding: 0 0.45rem;
+  font-size: 0.6875rem;
+  cursor: pointer;
 }
 
 .ops-table tbody td {

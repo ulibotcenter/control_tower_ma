@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { formatDate, dueSortKey } from "@/lib/format";
 import { isUuid } from "@/lib/data/room-input";
-import { OPL_FILTERS, pointInFilter, taskInFilter, type OplFilter } from "@/lib/opl-filter";
+import { OPL_CHIPS, OPL_DEFAULT, pointInChips, taskInChips, toggleOplChip, type OplChip } from "@/lib/opl-filter";
 import { isPillarSlug, pillarOf, PILLAR_BY_SLUG } from "@/lib/pillars";
 import type { ActionItem, OpenPoint, OpenPointStatus } from "@/lib/types";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -93,11 +93,12 @@ export function PendingTable({
   canEdit: boolean;
   empty?: string;
 }) {
-  const [filter, setFilter] = useState<OplFilter>("abertos");
+  const [chips, setChips] = useState<OplChip[]>(OPL_DEFAULT);
   const all = rowsOf(points, tasks);
   const rows = all.filter((line) =>
-    line.kind === "point" ? pointInFilter(line.point.status, filter) : taskInFilter(line.task.status, filter),
+    line.kind === "point" ? pointInChips(line.point.status, chips) : taskInChips(line.task.status, chips),
   );
+  const tudoOn = chips.length === OPL_CHIPS.length;
   if (!all.length) return <EmptyState compact title={empty} />;
 
   return (
@@ -113,18 +114,30 @@ export function PendingTable({
             <th scope="col">
               <span className="ops-status-head">
                 Status
-                <select
-                  className="ops-status-filter no-print"
-                  aria-label="Filtrar status"
-                  value={filter}
-                  onChange={(event) => setFilter(event.target.value as OplFilter)}
-                >
-                  {OPL_FILTERS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                <span className="ops-status-chips no-print" role="group" aria-label="Filtrar status">
+                  {OPL_CHIPS.map((option) => {
+                    const on = chips.includes(option.value);
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={on ? "chip is-on" : "chip"}
+                        aria-pressed={on}
+                        onClick={() => setChips((current) => toggleOplChip(current, option.value))}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    className={tudoOn ? "chip is-on" : "chip"}
+                    aria-pressed={tudoOn}
+                    onClick={() => setChips((current) => toggleOplChip(current, "tudo"))}
+                  >
+                    Tudo
+                  </button>
+                </span>
               </span>
             </th>
             <th scope="col">

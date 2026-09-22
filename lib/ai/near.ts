@@ -68,6 +68,83 @@ function nearly(a: string, b: string) {
   return short.length >= 16 && long.includes(short);
 }
 
+const KEY_TOKENS = [
+  "targa",
+  "cnd",
+  "municipal",
+  "nda",
+  "tese",
+  "envelope",
+  "jardel",
+  "hunter",
+  "relatorios",
+  "70% carteira",
+  "george",
+] as const;
+
+/** Minúsculas, sem acento, sem pontuação. O corpo entra só nos 120 primeiros. */
+export function fingerprintText(title: string, text: string) {
+  return `${title} ${text.slice(0, 120)}`
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tokenHay(title: string, text: string) {
+  return `${title} ${text}`
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9%]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function keyTokensOf(title: string, text: string) {
+  const hay = ` ${tokenHay(title, text)} `;
+  const found: string[] = [];
+  for (const token of KEY_TOKENS) {
+    if (token.includes("%")) {
+      if (hay.includes(` ${token} `) || hay.includes(" 70 carteira ")) found.push(token);
+      continue;
+    }
+    const re = new RegExp(`(?:^|\\s)${token}(?:\\s|$)`);
+    if (re.test(hay.trim())) found.push(token);
+  }
+  return found;
+}
+
+export type SeenIndex = {
+  prints: Set<string>;
+  tokens: Set<string>;
+};
+
+function printKey(kind: string, title: string, text: string) {
+  return `${kind}|${fingerprintText(title, text)}`;
+}
+
+export function seenIndex(rows: { kind: string; text: string; title?: string }[]): SeenIndex {
+  const index: SeenIndex = { prints: new Set(), tokens: new Set() };
+  for (const row of rows) rememberSeen(index, row);
+  return index;
+}
+
+export function rememberSeen(index: SeenIndex, row: { kind: string; text: string; title?: string }) {
+  const title = row.title || "";
+  index.prints.add(printKey(row.kind, title, row.text));
+  for (const token of keyTokensOf(title, row.text)) index.tokens.add(`${row.kind}|${token}`);
+}
+
+/** Fingerprint igual, ou o mesmo kind já guardou um token-chave. */
+export function blockedBySeen(draft: { kind: string; text: string; title?: string }, index: SeenIndex) {
+  const title = draft.title || "";
+  if (index.prints.has(printKey(draft.kind, title, draft.text))) return true;
+  return keyTokensOf(title, draft.text).some((token) => index.tokens.has(`${draft.kind}|${token}`));
+}
+
 const SETTLED = new Set(["aceita", "descartada", "editada"]);
 
 /** Já existe neste deal: mesmo kind e texto/título parecido, ou título já aceito, descartado ou editado. */

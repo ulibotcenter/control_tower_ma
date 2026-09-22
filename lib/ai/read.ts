@@ -20,11 +20,11 @@ import {
   withPending,
   type StatusRow,
 } from "./context";
-import { repeatsSeen, type SeenProposal } from "./near";
+import { blockedBySeen, rememberSeen, seenIndex, type SeenIndex, type SeenProposal } from "./near";
 import { askOpenRouter } from "./openrouter";
 import { extractJson, parseModelProposals, type ProposalDraft } from "./proposals";
 import { gapFolderLabel, selectGapNames, type GapName } from "./scope";
-import { bClickToast, leituraToast, varreduraFailToast, type WaveCounts } from "./toast-line";
+import { insertToast, varreduraFailToast, type WaveCounts } from "./toast-line";
 
 export type ReadOutcome = {
   configured: boolean;
@@ -36,6 +36,7 @@ export type ReadOutcome = {
 };
 
 const WAVE_TOKENS = 4000;
+const WAVE_NEW = 5;
 
 function lightOf(tone: string) {
   const label = SEMAPHORE_LABEL[tone];
@@ -145,20 +146,34 @@ async function loadNewTexts(inboxLast: Map<string, string>) {
   return { files, seen: plan.seen, lastReadAt, modifiedAt };
 }
 
-function freshDrafts(drafts: ProposalDraft[], prior: SeenProposal[]) {
-  const seen = [...prior];
-  const out: ProposalDraft[] = [];
-  for (const draft of drafts) {
-    if (repeatsSeen({ kind: draft.kind, text: draft.payload.text, title: draft.payload.title }, seen)) continue;
-    out.push(draft);
-    seen.push({
-      kind: draft.kind,
-      status: "pendente",
-      text: draft.payload.text,
-      title: draft.payload.title || "",
-    });
+function titlesOf(rows: SeenProposal[]) {
+  const out: string[] = [];
+  const used = new Set<string>();
+  for (const row of rows) {
+    const title = (row.title || row.text).replace(/\s+/g, " ").trim();
+    const key = title.toLowerCase();
+    if (!title || used.has(key)) continue;
+    used.add(key);
+    out.push(title);
+    if (out.length >= 40) break;
   }
   return out;
+}
+
+function takeNew(drafts: ProposalDraft[], index: SeenIndex) {
+  const kept: ProposalDraft[] = [];
+  let skipped = 0;
+  for (const draft of drafts) {
+    const row = { kind: draft.kind, text: draft.payload.text, title: draft.payload.title };
+    if (blockedBySeen(row, index)) {
+      skipped += 1;
+      continue;
+    }
+    if (kept.length >= WAVE_NEW) break;
+    kept.push(draft);
+    rememberSeen(index, row);
+  }
+  return { kept, skipped };
 }
 
 /**
@@ -188,7 +203,8 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
     text: row.payload.text,
     title: row.payload.title || "",
   }));
-  const prior = history.map((row) => [row.payload.text, row.payload.title].filter(Boolean).join(" "));
+  const index = seenIndex(seen);
+  let skipped = 0;
   const counts: WaveCounts = { A: 0, B: 0, C: 0 };
   const saved: AiProposal[] = [];
   const inboxLast = new Map<string, string>();
@@ -227,7 +243,6 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
   const status = statusBrief(bundle, decisions);
   const fronts = bundle.workstreams.map((item) => item.slug);
   const foldersB = gapFolderLabel(bundle.deal.slug, "B");
-  let read = 0;
   let failPhrase = "";
 
   async function askWave(
@@ -239,7 +254,7 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
     json = true,
     store = true,
   ): Promise<{ ok: true; content: string } | { ok: false; message: string }> {
-    const brief = withPending(briefText, prior);
+    const brief = withPending(briefText, titlesOf(seen));
     const answer = await askOpenRouter(brief, { system, maxTokens: WAVE_TOKENS, json });
     if (!answer.ok) {
       console.error("[ai] leitura falhou", { slug, wave: id, status: answer.status });
@@ -247,21 +262,20 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
     }
     if (stamp?.driveId) {
       await markFileReads([{ driveId: stamp.driveId, driveModifiedAt: stamp.driveModifiedAt }]);
-      read += 1;
     }
     if (!store) return { ok: true, content: answer.content };
-    const room = AI_PROPOSAL_CAP - counts[id];
-    if (room <= 0) return { ok: true, content: answer.content };
-    const drafts = freshDrafts(
+    const picked = takeNew(
       parseModelProposals(answer.content, {
         brief,
         dealId,
         files: files.filter((file) => file.inboxId).map((file) => ({ id: file.inboxId, name: file.name })),
         workstreamSlugs: fronts,
-        limit: room,
+        limit: AI_PROPOSAL_CAP,
       }),
-      seen,
-    ).slice(0, room);
+      index,
+    );
+    skipped += picked.skipped;
+    const drafts = picked.kept;
     if (!drafts.length) return { ok: true, content: answer.content };
     try {
       const rows = await addAiProposals(
@@ -281,7 +295,6 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
           title: row.payload.title || "",
         })),
       );
-      prior.push(...rows.map((row) => [row.payload.text, row.payload.title].filter(Boolean).join(" ")));
       return { ok: true, content: answer.content };
     } catch (err) {
       const message = err instanceof Error ? err.message : "Falha ao gravar a fila";
@@ -318,7 +331,6 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
       bPhrase = hit.message;
     } else {
       bOk = true;
-      const room = AI_PROPOSAL_CAP - counts.B;
       const json = extractJson(hit.content);
       const fromModel =
         json && typeof json === "object"
@@ -327,16 +339,13 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
               dealId,
               files: linked.filter((item) => item.inboxId).map((item) => ({ id: item.inboxId, name: item.name })),
               workstreamSlugs: fronts,
-              limit: room,
+              limit: AI_PROPOSAL_CAP,
             })
-          : [];
-      const drafts = freshDrafts(
-        json && typeof json === "object"
-          ? fromModel
-          : [{ kind: "atencao" as const, payload: { text: fileB.name, title: fileB.name } }],
-        seen,
-      ).slice(0, Math.max(0, room));
-      if (drafts.length && counts.B < AI_PROPOSAL_CAP) {
+          : [{ kind: "atencao" as const, payload: { text: fileB.name, title: fileB.name } }];
+      const picked = takeNew(fromModel, index);
+      skipped += picked.skipped;
+      const drafts = picked.kept;
+      if (drafts.length) {
         try {
           const rows = await addAiProposals(
             drafts.map((draft) => ({
@@ -355,7 +364,6 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
               title: row.payload.title || "",
             })),
           );
-          prior.push(...rows.map((row) => [row.payload.text, row.payload.title].filter(Boolean).join(" ")));
         } catch (err) {
           bOk = false;
           bPhrase = err instanceof Error ? err.message : "Falha ao gravar a fila";
@@ -382,12 +390,10 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
   if (!waveC.ok && !failPhrase) failPhrase = waveC.message;
 
   const allFailed = !waveA.ok && !waveC.ok && (!fileB || !bOk);
-  const bLine = fileB ? bClickToast(bOk ? fileB.name : "", bOk ? "" : bPhrase || failPhrase) : "";
-  const toast =
-    bLine ||
-    (allFailed
-      ? varreduraFailToast(failPhrase || "A IA não devolveu texto.", counts)
-      : leituraToast(read, corpus.seen));
+  const inserted = insertToast(saved.length, skipped);
+  const toast = allFailed
+    ? `${varreduraFailToast(failPhrase || "A IA não devolveu texto.", counts)} · ${inserted}`
+    : inserted;
   return {
     configured: true,
     failed: allFailed,

@@ -18,6 +18,10 @@ export function varreduraFailToast(phrase: string, counts: WaveCounts) {
   return `${clean} · ${varreduraToast(counts)}`;
 }
 
+export function insertToast(inserted: number, skipped: number) {
+  return `Inseridas ${inserted} · puladas já vistas ${skipped}`;
+}
+
 /** Onda B deste clique: o arquivo que entrou, ou a frase da falha. */
 export function bClickToast(name: string, failPhrase = "") {
   const fail = failPhrase.replace(/\s+/g, " ").trim();

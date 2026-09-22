@@ -171,12 +171,14 @@ export function buildRadioCloseBrief(status: string, gap: string) {
   return fit(`Onda C — status e lacuna no mesmo bundle.\n\n${status}\n\n${gap}`);
 }
 
-export function withPending(brief: string, pending: string[]) {
-  const lines = pending
+/** Bloco fixo em toda onda. Até 40 títulos já gravados, qualquer status. */
+export function withPending(brief: string, titles: string[]) {
+  const lines = titles
     .map((item) => clip(item, 180))
     .filter(Boolean)
-    .slice(-30);
-  const tail = lines.length ? `Já na fila (não repetir):\n- ${lines.join("\n- ")}` : "Já na fila (não repetir): nenhuma.";
+    .slice(0, 40);
+  const body = lines.length ? lines.map((item) => `- ${item}`).join("\n") : "- nenhum";
+  const tail = `Já visto neste deal (NÃO proponha de novo, nem com outras palavras):\n${body}`;
   return fit(`${brief}\n\n${tail}`);
 }
 
