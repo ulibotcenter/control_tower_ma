@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { formatDate, dueSortKey } from "@/lib/format";
 import { isUuid } from "@/lib/data/room-input";
 import { OPL_CHIPS, OPL_DEFAULT, applyOplDraft, pointInChips, taskInChips, type OplChip } from "@/lib/opl-filter";
@@ -45,6 +46,21 @@ function byFresh(a: Line, b: Line) {
 
 function seedRank(task: ActionItem) {
   return task.status === "open" ? 0 : 1;
+}
+
+/** Menu no body: à direita do botão, ou à esquerda se não cabe na viewport. */
+export function statusPopoverBox(
+  anchor: { left: number; right: number; bottom: number },
+  menuWidth: number,
+  viewportWidth: number,
+  pad = 8,
+  gap = 4,
+) {
+  const width = Math.max(220, menuWidth);
+  let left = anchor.left;
+  if (left + width > viewportWidth - pad) left = anchor.right - width;
+  if (left < pad) left = pad;
+  return { top: anchor.bottom + gap, left };
 }
 
 function pointTone(status: OpenPointStatus) {
@@ -96,27 +112,51 @@ export function PendingTable({
   const [chips, setChips] = useState<OplChip[]>(OPL_DEFAULT);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<OplChip[]>(OPL_DEFAULT);
+  const [box, setBox] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const popRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const all = rowsOf(points, tasks);
   const rows = all.filter((line) =>
     line.kind === "point" ? pointInChips(line.point.status, chips) : taskInChips(line.task.status, chips),
   );
 
+  const place = useCallback(() => {
+    const anchor = btnRef.current;
+    if (!anchor) return;
+    setBox(statusPopoverBox(anchor.getBoundingClientRect(), menuRef.current?.offsetWidth ?? 0, window.innerWidth));
+  }, []);
+
+  const setMenuNode = useCallback(
+    (node: HTMLDivElement | null) => {
+      menuRef.current = node;
+      if (node) place();
+    },
+    [place],
+  );
+
   useEffect(() => {
     if (!open) return;
+    place();
     function onPointer(event: MouseEvent) {
-      if (!popRef.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (popRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
     }
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") setOpen(false);
     }
     document.addEventListener("mousedown", onPointer);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
     return () => {
       document.removeEventListener("mousedown", onPointer);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
     };
-  }, [open]);
+  }, [open, place]);
 
   if (!all.length) return <EmptyState compact title={empty} />;
 
@@ -137,41 +177,54 @@ export function PendingTable({
             <th scope="col">
               <div className="ops-status-pop" ref={popRef}>
                 <button
+                  ref={btnRef}
                   type="button"
                   className="ops-status-btn"
                   aria-expanded={open}
                   aria-haspopup="dialog"
                   onClick={() => {
                     setDraft(chips);
+                    if (btnRef.current) {
+                      setBox(statusPopoverBox(btnRef.current.getBoundingClientRect(), 220, window.innerWidth));
+                    }
                     setOpen((current) => !current);
                   }}
                 >
                   Status ▾
                 </button>
-                {open ? (
-                  <div className="ops-status-menu no-print" role="dialog" aria-label="Filtrar status">
-                    {OPL_CHIPS.map((option) => (
-                      <label key={option.value} className="ops-status-tick">
-                        <input
-                          type="checkbox"
-                          checked={draft.includes(option.value)}
-                          onChange={() => toggleDraft(option.value)}
-                        />
-                        {option.label}
-                      </label>
-                    ))}
-                    <button
-                      type="button"
-                      className="btn btn-soft ops-status-apply"
-                      onClick={() => {
-                        setChips(applyOplDraft(draft));
-                        setOpen(false);
-                      }}
-                    >
-                      Aplicar
-                    </button>
-                  </div>
-                ) : null}
+                {open && typeof document !== "undefined"
+                  ? createPortal(
+                      <div
+                        ref={setMenuNode}
+                        className="ops-status-menu no-print"
+                        role="dialog"
+                        aria-label="Filtrar status"
+                        style={{ top: box.top, left: box.left }}
+                      >
+                        {OPL_CHIPS.map((option) => (
+                          <label key={option.value} className="ops-status-tick">
+                            <input
+                              type="checkbox"
+                              checked={draft.includes(option.value)}
+                              onChange={() => toggleDraft(option.value)}
+                            />
+                            {option.label}
+                          </label>
+                        ))}
+                        <button
+                          type="button"
+                          className="btn btn-soft ops-status-apply"
+                          onClick={() => {
+                            setChips(applyOplDraft(draft));
+                            setOpen(false);
+                          }}
+                        >
+                          Aplicar
+                        </button>
+                      </div>,
+                      document.body,
+                    )
+                  : null}
               </div>
             </th>
             <th scope="col">
