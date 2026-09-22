@@ -47,7 +47,7 @@ import {
   unclassifiedCount,
 } from "./store";
 import { DATA_ORIGIN } from "./sources";
-import { dealIdForDriveFolder, isScanFolderDoc, scanParentMap } from "./doc-groups";
+import { applyScanFileHints, dealIdForDriveFolder, isScanFolderDoc, scanParentMap } from "./doc-groups";
 import { treeDocFromInbox } from "./store-map";
 import { driveResourceId } from "../http";
 
@@ -169,11 +169,13 @@ export async function getDealBundle(slug: string, mode: MeetingMode): Promise<De
     milestones: milestones.filter((m) => m.dealId === deal.id),
     documents: filterVisible(
       mode,
-      mergeById(
-        inbox.map(treeDocFromInbox).filter(belongsToDeal),
+      applyScanFileHints(
         mergeById(
-          storedDocs.filter(belongsToDeal),
-          documents.filter((d) => d.dealId === deal.id),
+          inbox.map(treeDocFromInbox).filter(belongsToDeal),
+          mergeById(
+            storedDocs.filter(belongsToDeal),
+            documents.filter((d) => d.dealId === deal.id),
+          ),
         ),
       ),
     ),

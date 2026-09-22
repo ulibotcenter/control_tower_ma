@@ -9,6 +9,7 @@ const PROGRAM_FOLDER_IDS = new Set<string>(Object.values(DRIVE_FOLDERS).map((fol
 /** Pasta gravada pela varredura. Não é documento de pilar. */
 export const SCAN_FOLDER_PREFIX = "scan-folder-";
 export const SCAN_FOLDER_NOTE = "Pasta lida na varredura.";
+export const SCAN_FILE_PREFIX = "scan-file-";
 export const INBOX_TREE_PREFIX = "inbox-";
 
 export function scanFolderDocId(folderId: string) {
@@ -22,6 +23,44 @@ export function isScanFolderDoc(doc: { id: string; note?: string | null }) {
 /** Arquivo novo da varredura, ainda na bandeja. Entra no finder; não conta no pilar. */
 export function isPendingInboxDoc(doc: { id: string; classified?: boolean }) {
   return doc.id.startsWith(INBOX_TREE_PREFIX) && doc.classified === false;
+}
+
+export function isScanFileOverlay(doc: { id: string }) {
+  return doc.id.startsWith(SCAN_FILE_PREFIX);
+}
+
+export function scanFileDocId(driveId: string) {
+  return `${SCAN_FILE_PREFIX}${driveId}`;
+}
+
+/** Pasta-pai e nome da varredura vencem o seed quando o driveId já existia. */
+export function applyScanFileHints(docs: DriveDocument[]): DriveDocument[] {
+  const folderByDrive = new Map<string, string>();
+  const nameByDrive = new Map<string, string>();
+  for (const doc of docs) {
+    if (!doc.driveId || !doc.folderId) continue;
+    if (!folderByDrive.has(doc.driveId) || isScanFileOverlay(doc) || isPendingInboxDoc(doc)) {
+      folderByDrive.set(doc.driveId, doc.folderId);
+      nameByDrive.set(doc.driveId, doc.title);
+    }
+  }
+  const seen = new Set<string>();
+  const out: DriveDocument[] = [];
+  for (const doc of docs) {
+    if (isScanFileOverlay(doc)) continue;
+    if (doc.driveId) {
+      if (seen.has(doc.driveId)) continue;
+      seen.add(doc.driveId);
+      out.push({
+        ...doc,
+        folderId: folderByDrive.get(doc.driveId) ?? doc.folderId,
+        title: nameByDrive.get(doc.driveId) ?? doc.title,
+      });
+      continue;
+    }
+    out.push(doc);
+  }
+  return out;
 }
 
 /**

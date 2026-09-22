@@ -25,7 +25,7 @@ import type {
 } from "../types";
 import { folderUrl } from "../constants";
 import { sanitizeDriveUrl } from "../http";
-import { SCAN_FOLDER_NOTE, scanFolderDocId } from "./doc-groups";
+import { SCAN_FOLDER_NOTE, scanFileDocId, scanFolderDocId } from "./doc-groups";
 import { isUuid } from "./room-input";
 import { deals, decisions as seedDecisions } from "./seed";
 import { mapActionRow, mapChecklistRow, mapDecisionRow, mapDocumentRow, mapInboxRow, mapNoteRow, mapOpenPointRow, packShadow } from "./store-map";
@@ -291,6 +291,54 @@ export async function upsertDriveFolderRemote(
     return;
   }
   if (error) fail("insert drive folder", error);
+}
+
+export async function upsertScannedFileRemote(
+  sb: SupabaseClient,
+  input: { driveId: string; name: string; folderId: string; driveUrl: string | null; dealId: string | null },
+): Promise<void> {
+  const driveId = input.driveId.trim();
+  const payload = {
+    title: input.name.trim(),
+    drive_url: sanitizeDriveUrl(input.driveUrl) || "",
+    folder_id: input.folderId,
+    deal_id: input.dealId,
+  };
+  const { data: existing, error: readErr } = await sb.from("documents").select("id").eq("drive_id", driveId).limit(1);
+  if (readErr) fail("lookup scan file", readErr);
+  if (existing && existing.length) {
+    const { error } = await sb.from("documents").update(payload).eq("id", existing[0].id);
+    if (error && /folder_id/i.test(error.message)) {
+      const retry = { title: payload.title, drive_url: payload.drive_url };
+      const again = await sb.from("documents").update(retry).eq("id", existing[0].id);
+      if (again.error) fail("update scan file", again.error);
+      return;
+    }
+    if (error) fail("update scan file", error);
+    return;
+  }
+  const row = {
+    id: scanFileDocId(driveId),
+    drive_id: driveId,
+    ...payload,
+    type: "outro",
+    workstream_slug: null,
+    status: "vigente",
+    classified: true,
+    note: null,
+    visibility: "advisors",
+    sensitivities: [],
+  };
+  let { error } = await sb.from("documents").insert(row);
+  if (error && /folder_id/i.test(error.message)) {
+    const retry = { ...row } as Record<string, unknown>;
+    delete retry.folder_id;
+    ({ error } = await sb.from("documents").insert(retry));
+  }
+  if (error && /invalid input syntax for type uuid|uuid/i.test(error.message)) {
+    ({ error } = await sb.from("documents").insert({ ...row, id: randomUUID() }));
+  }
+  if (error) fail("insert scan file", error);
 }
 
 export async function extraDocumentsRemote(sb: SupabaseClient): Promise<DriveDocument[]> {

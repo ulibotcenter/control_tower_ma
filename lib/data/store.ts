@@ -39,6 +39,7 @@ import {
   updateInboxDriveLocal,
   updateStoredDocumentDriveLocal,
   upsertDriveFolderLocal,
+  upsertScannedFileLocal,
   addNoteLocal,
   addOpenPointLocal,
   classifyInboxFileLocal,
@@ -74,6 +75,7 @@ import {
   updateInboxDriveRemote,
   updateStoredDocumentDriveRemote,
   upsertDriveFolderRemote,
+  upsertScannedFileRemote,
   addNoteRemote,
   addOpenPointRemote,
   classifyInboxFileRemote,
@@ -189,6 +191,19 @@ export async function upsertDriveFolder(input: {
   if (sb) return upsertDriveFolderRemote(sb, input);
   if (forbidLocalStore()) refuseLocalWrite("upsertDriveFolder");
   return upsertDriveFolderLocal(input);
+}
+
+export async function upsertScannedFile(input: {
+  driveId: string;
+  name: string;
+  folderId: string;
+  driveUrl: string | null;
+  dealId: string | null;
+}): Promise<void> {
+  const sb = remote();
+  if (sb) return upsertScannedFileRemote(sb, input);
+  if (forbidLocalStore()) refuseLocalWrite("upsertScannedFile");
+  return upsertScannedFileLocal(input);
 }
 
 export async function classifyInboxFile(

@@ -23,6 +23,7 @@ export type DriveListedFile = {
   folderId: string;
   modifiedAt: string;
   webViewLink: string;
+  mimeType: string;
 };
 
 export type DriveFolderIssue = {
@@ -55,9 +56,35 @@ export type DriveScanResult = {
 };
 
 const FOLDER_MIME = "application/vnd.google-apps.folder";
+const DOCUMENT_MIME = "application/vnd.google-apps.document";
+const SPREADSHEET_MIME = "application/vnd.google-apps.spreadsheet";
+const PRESENTATION_MIME = "application/vnd.google-apps.presentation";
+const SHORTCUT_MIME = "application/vnd.google-apps.shortcut";
 const SKIP_NAMES = /^(icon\r?|\.ds_store|~\$.*)$/i;
 const SAFETY_FOLDERS = 400;
 const SAFETY_FILES = 5000;
+
+/** Qualquer coisa que não é pasta: PDF, Doc, Sheet, atalho resolvido, etc. */
+export function isDriveFileMime(mimeType: string | null | undefined): boolean {
+  return Boolean(mimeType) && mimeType !== FOLDER_MIME;
+}
+
+export function driveItemUrl(id: string, mimeType?: string | null): string {
+  if (mimeType === DOCUMENT_MIME) return `https://docs.google.com/document/d/${id}/edit`;
+  if (mimeType === SPREADSHEET_MIME) return `https://docs.google.com/spreadsheets/d/${id}/edit`;
+  if (mimeType === PRESENTATION_MIME) return `https://docs.google.com/presentation/d/${id}/edit`;
+  return fileUrl(id);
+}
+
+export function formatAtaSyncLine(input: { read: number; saved: number; errors: number } | null | undefined): string | null {
+  if (!input) return null;
+  return `Pasta Ata: ${input.read} arquivos lidos, ${input.saved} gravados na bandeja, ${input.errors} erros de insert.`;
+}
+
+export function firstErrorLine(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err || "falha");
+  return raw.split(/\r?\n/)[0]?.trim() || "falha";
+}
 
 export function getDriveStatus(): DriveStatus {
   return {
@@ -133,6 +160,7 @@ type GFile = {
   modifiedTime?: string;
   parents?: string[];
   webViewLink?: string;
+  shortcutDetails?: { targetId?: string; targetMimeType?: string };
 };
 
 type ListedChildren =
@@ -148,7 +176,10 @@ async function listChildren(token: string, parentId: string): Promise<ListedChil
   do {
     const url = new URL("https://www.googleapis.com/drive/v3/files");
     url.searchParams.set("q", `'${parentId}' in parents and trashed = false`);
-    url.searchParams.set("fields", "nextPageToken,files(id,name,mimeType,modifiedTime,parents,webViewLink)");
+    url.searchParams.set(
+      "fields",
+      "nextPageToken,files(id,name,mimeType,modifiedTime,parents,webViewLink,shortcutDetails(targetId,targetMimeType))",
+    );
     url.searchParams.set("pageSize", "100");
     url.searchParams.set("supportsAllDrives", "true");
     url.searchParams.set("includeItemsFromAllDrives", "true");
@@ -171,11 +202,15 @@ export function formatDriveSyncSummary(input: {
   folderIssues: { name: string; status: number }[];
   missing: number;
   truncated: boolean;
+  ata?: { read: number; saved: number; errors: number } | null;
+  insertError?: string | null;
 }): string {
   const novo = input.created === 1 ? "1 novo" : `${input.created} novos`;
   const atualizado = input.updated === 1 ? "1 atualizado" : `${input.updated} atualizados`;
   const pastas = input.foldersRead === 1 ? "1 pasta lida" : `${input.foldersRead} pastas lidas`;
   const parts = [`${novo}, ${atualizado}, ${pastas}`];
+  const ataLine = formatAtaSyncLine(input.ata);
+  if (ataLine) parts.push(ataLine.replace(/\.$/, ""));
   const notFound = input.folderIssues.filter((folder) => folder.status === 404);
   if (notFound.length) {
     parts.push(`Pasta não encontrada: ${notFound.map((folder) => `${folder.name} (404)`).join(", ")}`);
@@ -184,6 +219,7 @@ export function formatDriveSyncSummary(input: {
   if (other.length) {
     parts.push(other.map((folder) => `${folder.name} falhou (${folder.status})`).join(", "));
   }
+  if (input.insertError) parts.push(input.insertError);
   if (input.missing === 1) parts.push("1 arquivo sumiu do Drive (registro mantido)");
   else if (input.missing > 1) parts.push(`${input.missing} arquivos sumiram do Drive (registro mantido)`);
   if (input.truncated) parts.push("Varredura interrompida no limite de segurança");
@@ -267,23 +303,44 @@ export async function scanDriveTree(): Promise<DriveScanResult> {
           skipFolder.add(child.id);
           continue;
         }
-        if (child.mimeType === FOLDER_MIME) {
-          if (!skipFolder.has(child.id)) queue.push({ id: child.id, name: child.name, parentId: item.id });
+        let mime = child.mimeType;
+        let id = child.id;
+        const name = child.name;
+        if (mime === SHORTCUT_MIME) {
+          const targetId = child.shortcutDetails?.targetId;
+          const targetMime = child.shortcutDetails?.targetMimeType;
+          if (targetId && (targetId === DRIVE_DO_NOT_INDEX.id || name === ".obsidian")) {
+            skipFolder.add(targetId);
+            continue;
+          }
+          if (targetId && targetMime === FOLDER_MIME) {
+            if (!skipFolder.has(targetId)) queue.push({ id: targetId, name, parentId: item.id });
+            continue;
+          }
+          if (targetId) {
+            id = targetId;
+            mime = targetMime || DOCUMENT_MIME;
+          }
+        }
+        if (mime === FOLDER_MIME) {
+          if (!skipFolder.has(id)) queue.push({ id, name, parentId: item.id });
           continue;
         }
-        if (SKIP_NAMES.test(child.name) || seenFile.has(child.id)) continue;
+        // PDF, google-apps.document / spreadsheet / shortcut resolvido e o resto que não é pasta.
+        if (!isDriveFileMime(mime) || SKIP_NAMES.test(name) || seenFile.has(id)) continue;
         if (files.length >= SAFETY_FILES) {
           truncated = true;
           break;
         }
-        seenFile.add(child.id);
+        seenFile.add(id);
         files.push({
-          id: child.id,
-          name: child.name,
+          id,
+          name,
           folder: item.name,
           folderId: item.id,
           modifiedAt: child.modifiedTime || "",
-          webViewLink: child.webViewLink || fileUrl(child.id),
+          webViewLink: child.webViewLink || driveItemUrl(id, mime),
+          mimeType: mime,
         });
       }
       if (truncated) break;

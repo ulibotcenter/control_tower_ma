@@ -19,7 +19,7 @@ import type {
 import { folderUrl } from "../constants";
 import { sanitizeDriveUrl } from "../http";
 import { decisions as seedDecisions, inboxSeed } from "./seed";
-import { SCAN_FOLDER_NOTE, scanFolderDocId } from "./doc-groups";
+import { SCAN_FOLDER_NOTE, scanFileDocId, scanFolderDocId } from "./doc-groups";
 import { checklistFromInbox, documentFromInbox } from "./store-map";
 
 type Store = {
@@ -231,6 +231,43 @@ export async function upsertDriveFolderLocal(input: {
       sensitivities: [],
     });
   }
+  memory = s;
+  await writeStore(s);
+}
+
+/** drive_id já conhecido (seed): não cria bandeja; guarda pasta-pai para o finder. */
+export async function upsertScannedFileLocal(input: {
+  driveId: string;
+  name: string;
+  folderId: string;
+  driveUrl: string | null;
+  dealId: string | null;
+}): Promise<void> {
+  const s = await load();
+  const driveId = input.driveId.trim();
+  const existing = s.documents.find((doc) => doc.driveId === driveId);
+  if (existing) {
+    existing.title = input.name.trim() || existing.title;
+    existing.folderId = input.folderId;
+    if (input.driveUrl) existing.driveUrl = sanitizeDriveUrl(input.driveUrl) || existing.driveUrl;
+    memory = s;
+    await writeStore(s);
+    return;
+  }
+  s.documents.unshift({
+    id: scanFileDocId(driveId),
+    dealId: input.dealId,
+    title: input.name.trim(),
+    driveUrl: sanitizeDriveUrl(input.driveUrl) || "",
+    driveId,
+    folderId: input.folderId,
+    type: "outro",
+    workstreamSlug: null,
+    status: "vigente",
+    classified: true,
+    visibility: "advisors",
+    sensitivities: [],
+  });
   memory = s;
   await writeStore(s);
 }

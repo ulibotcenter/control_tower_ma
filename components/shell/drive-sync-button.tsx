@@ -60,6 +60,8 @@ export function DriveSyncButton({
         files?: DriveReviewItem[];
         missing?: unknown[];
         folderIssues?: { status?: number }[];
+        ata?: { errors?: number } | null;
+        ataMessage?: string | null;
         error?: string;
         syncedAt?: string | null;
       };
@@ -75,7 +77,10 @@ export function DriveSyncButton({
         toast(data.message || "Falha ao atualizar o Drive.", "err");
         return;
       }
-      const attention = (data.folderIssues?.length ?? 0) > 0 || (data.missing?.length ?? 0) > 0;
+      const attention =
+        (data.folderIssues?.length ?? 0) > 0 ||
+        (data.missing?.length ?? 0) > 0 ||
+        (data.ata?.errors ?? 0) > 0;
       toast(data.message || "Drive atualizado", attention ? "warn" : "ok");
       if (data.syncedAt) rememberSyncedAt(data.syncedAt);
       const files = data.files ?? [];

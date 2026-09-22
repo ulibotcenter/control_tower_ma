@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getMode } from "@/lib/mode";
 import { canSeeInbox } from "@/lib/visibility";
-import { formatDriveSyncSummary, getDriveStatus, scanDriveTree, type DriveListedFile } from "@/lib/drive";
+import {
+  firstErrorLine,
+  formatAtaSyncLine,
+  formatDriveSyncSummary,
+  getDriveStatus,
+  scanDriveTree,
+  type DriveListedFile,
+} from "@/lib/drive";
 import {
   addInboxFile,
   extraDocuments,
@@ -12,8 +19,10 @@ import {
   updateInboxDrive,
   updateStoredDocumentDrive,
   upsertDriveFolder,
+  upsertScannedFile,
 } from "@/lib/data/store";
 import { deals, documents } from "@/lib/data/seed";
+import { DRIVE_FOLDERS } from "@/lib/constants";
 import { dealIdForDriveFolder, scanFolderDocId } from "@/lib/data/doc-groups";
 import { driveResourceId } from "@/lib/http";
 import { formatDate } from "@/lib/format";
@@ -98,6 +107,11 @@ async function runSync() {
   const emptyReview: DriveReviewItem[] = [];
   const emptyMissing: DriveMissingItem[] = [];
 
+  const ataId = DRIVE_FOLDERS.atas.id;
+  const ataWasRead = listed.foldersOk.includes(ataId);
+  const ataReadCount = listed.files.filter((file) => file.folderId === ataId).length;
+  const ataStats = ataWasRead ? { read: ataReadCount, saved: 0, errors: 0 } : null;
+
   if (!listed.configured || !listed.ok) {
     return {
       configured: listed.configured,
@@ -110,18 +124,24 @@ async function runSync() {
       folderIssues: listed.folderIssues,
       seedDrift: [] as { driveId: string; name: string; driveName: string }[],
       files: emptyReview,
+      ata: null,
+      ataMessage: null,
       syncedAt: await getDriveSyncedAt(),
     };
   }
 
   let created = 0;
   let updated = 0;
+  let insertError: string | null = null;
   const added: DriveReviewItem[] = [];
   const seedDrift: { driveId: string; name: string; driveName: string }[] = [];
   const seen = new Set<string>();
+  const parentOf = new Map(listed.folders.map((folder) => [folder.id, folder.parentId]));
+  const rooms = deals.map((deal) => ({ id: deal.id, driveFolderId: deal.driveFolderId }));
 
   for (const file of listed.files) {
     seen.add(file.id);
+    const inAta = file.folderId === ataId;
     const inInbox = inboxByDrive.get(file.id);
     const inExtra = extraByDrive.get(file.id);
     const inSeed = seedByDrive.get(file.id);
@@ -147,7 +167,7 @@ async function runSync() {
 
     if (inExtra) {
       const diff = changedMeta({ name: inExtra.title, driveUrl: inExtra.driveUrl, driveModifiedAt: null }, file);
-      const folderId = file.folderId && !inExtra.folderId ? file.folderId : undefined;
+      const folderId = file.folderId && inExtra.folderId !== file.folderId ? file.folderId : undefined;
       if (diff.nameChanged || diff.linkArrived || folderId) {
         try {
           const hit = await updateStoredDocumentDrive(file.id, {
@@ -167,6 +187,26 @@ async function runSync() {
       if (inSeed.title.trim() !== file.name.trim()) {
         seedDrift.push({ driveId: file.id, name: inSeed.title, driveName: file.name });
       }
+      if (file.folderId && inSeed.folderId !== file.folderId) {
+        try {
+          const hit = await updateStoredDocumentDrive(file.id, {
+            title: file.name,
+            driveUrl: file.webViewLink,
+            folderId: file.folderId,
+          });
+          if (!hit) {
+            await upsertScannedFile({
+              driveId: file.id,
+              name: file.name,
+              folderId: file.folderId,
+              driveUrl: file.webViewLink,
+              dealId: dealIdForDriveFolder(file.folderId, parentOf, rooms) ?? inSeed.dealId,
+            });
+          }
+        } catch (err) {
+          console.error("[drive/sync] seed folder", err);
+        }
+      }
       continue;
     }
 
@@ -181,8 +221,14 @@ async function runSync() {
       });
       const alreadyHad = inbox.some((item) => item.id === row.id);
       inboxByDrive.set(file.id, row);
-      if (alreadyHad) continue;
+      if (alreadyHad) {
+        if (file.folderId && row.folderId !== file.folderId) {
+          await updateInboxDrive(file.id, { folderId: file.folderId, name: file.name, driveUrl: file.webViewLink });
+        }
+        continue;
+      }
       created += 1;
+      if (inAta && ataStats) ataStats.saved += 1;
       added.push({
         id: row.id,
         name: row.name,
@@ -192,6 +238,8 @@ async function runSync() {
       });
     } catch (err) {
       console.error("[drive/sync] inbox insert", err);
+      if (!insertError) insertError = firstErrorLine(err);
+      if (inAta && ataStats) ataStats.errors += 1;
     }
   }
 
@@ -220,8 +268,6 @@ async function runSync() {
     }
   }
 
-  const parentOf = new Map(listed.folders.map((folder) => [folder.id, folder.parentId]));
-  const rooms = deals.map((deal) => ({ id: deal.id, driveFolderId: deal.driveFolderId }));
   const knownFolderUrl = (folderId: string) => `/folders/${folderId}`;
   for (const folder of listed.folders) {
     const url = knownFolderUrl(folder.id);
@@ -254,6 +300,8 @@ async function runSync() {
       folderIssues: listed.folderIssues,
       missing: missing.length,
       truncated: listed.truncated,
+      ata: ataStats,
+      insertError,
     }),
     created,
     updated,
@@ -262,6 +310,8 @@ async function runSync() {
     folderIssues: listed.folderIssues,
     seedDrift,
     files: added,
+    ata: ataStats,
+    ataMessage: formatAtaSyncLine(ataStats),
     syncedAt,
   };
 }
