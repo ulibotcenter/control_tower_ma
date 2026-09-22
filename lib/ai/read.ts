@@ -190,6 +190,7 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
   if (!bundle) return { configured: true, message: "Deal desconhecido.", proposals: [] };
   const dealId = bundle.deal.id;
   const dealSlug = bundle.deal.slug;
+  const readingAt = new Date().toISOString();
 
   const [decisions, inbox, history] = await Promise.all([
     listDecisions(),
@@ -284,6 +285,7 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
           kind: draft.kind,
           payload: draft.kind === "classificacao" ? { ...draft.payload, dealId } : draft.payload,
         })),
+        readingAt,
       );
       counts[id] += rows.length;
       saved.push(...rows);
@@ -353,6 +355,7 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
               kind: draft.kind,
               payload: draft.kind === "classificacao" ? { ...draft.payload, dealId } : draft.payload,
             })),
+            readingAt,
           );
           counts.B += rows.length;
           saved.push(...rows);

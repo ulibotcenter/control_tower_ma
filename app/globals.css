@@ -1159,27 +1159,61 @@ html:has(.shell[data-work="1"]) {
   padding: 0.35rem 0.55rem 0.35rem 0;
 }
 
-.ops-status-head {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
-  font-weight: 650;
+.ops-status-pop {
+  position: relative;
+  display: inline-block;
 }
 
-.ops-status-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  max-width: 16rem;
-}
-
-.ops-status-chips .chip {
+.ops-status-btn {
   width: auto;
-  height: 1.5rem;
-  padding: 0 0.45rem;
-  font-size: 0.6875rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+  font-weight: 650;
+  color: inherit;
   cursor: pointer;
+  white-space: nowrap;
+}
+
+.ops-status-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  min-width: 9.5rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: 0 8px 24px rgba(20, 24, 28, 0.12);
+}
+
+.ops-status-tick {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.2rem 0;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.ops-status-tick input {
+  width: 0.95rem;
+  height: 0.95rem;
+  margin: 0;
+  padding: 0;
+}
+
+.ops-status-apply {
+  width: 100%;
+  margin-top: 0.35rem;
+  min-height: 1.75rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
 }
 
 .ops-table tbody td {
@@ -3180,6 +3214,32 @@ td.ops-meta-cell {
   margin-top: 0.75rem;
 }
 
+.ia-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+}
+
+.ia-tabs button {
+  width: auto;
+  min-height: 1.85rem;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.ia-tabs button.is-on {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #ffffff;
+  font-weight: 650;
+}
+
 .ia-list {
   margin: 0.9rem 0 0;
   padding: 0;
@@ -3187,8 +3247,31 @@ td.ops-meta-cell {
 }
 
 .ia-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
   padding: 0.75rem 0 0.15rem;
   border-top: 1px solid var(--line);
+}
+
+.ia-check {
+  display: flex;
+  flex: 0 0 auto;
+  margin: 0.15rem 0 0;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.ia-check input {
+  width: 0.95rem;
+  height: 0.95rem;
+  margin: 0;
+  padding: 0;
+}
+
+.ia-card {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .ia-item p {

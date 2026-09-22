@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatDate, dueSortKey } from "@/lib/format";
 import { isUuid } from "@/lib/data/room-input";
-import { OPL_CHIPS, OPL_DEFAULT, pointInChips, taskInChips, toggleOplChip, type OplChip } from "@/lib/opl-filter";
+import { OPL_CHIPS, OPL_DEFAULT, applyOplDraft, pointInChips, taskInChips, type OplChip } from "@/lib/opl-filter";
 import { isPillarSlug, pillarOf, PILLAR_BY_SLUG } from "@/lib/pillars";
 import type { ActionItem, OpenPoint, OpenPointStatus } from "@/lib/types";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -94,12 +94,35 @@ export function PendingTable({
   empty?: string;
 }) {
   const [chips, setChips] = useState<OplChip[]>(OPL_DEFAULT);
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<OplChip[]>(OPL_DEFAULT);
+  const popRef = useRef<HTMLDivElement>(null);
   const all = rowsOf(points, tasks);
   const rows = all.filter((line) =>
     line.kind === "point" ? pointInChips(line.point.status, chips) : taskInChips(line.task.status, chips),
   );
-  const tudoOn = chips.length === OPL_CHIPS.length;
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointer(event: MouseEvent) {
+      if (!popRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   if (!all.length) return <EmptyState compact title={empty} />;
+
+  function toggleDraft(value: OplChip) {
+    setDraft((current) => (current.includes(value) ? current.filter((item) => item !== value) : [...current, value]));
+  }
 
   return (
     <div className="ops-scroll">
@@ -112,33 +135,44 @@ export function PendingTable({
             <th scope="col">Prazo</th>
             <th scope="col">Pilar</th>
             <th scope="col">
-              <span className="ops-status-head">
-                Status
-                <span className="ops-status-chips no-print" role="group" aria-label="Filtrar status">
-                  {OPL_CHIPS.map((option) => {
-                    const on = chips.includes(option.value);
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={on ? "chip is-on" : "chip"}
-                        aria-pressed={on}
-                        onClick={() => setChips((current) => toggleOplChip(current, option.value))}
-                      >
+              <div className="ops-status-pop" ref={popRef}>
+                <button
+                  type="button"
+                  className="ops-status-btn"
+                  aria-expanded={open}
+                  aria-haspopup="dialog"
+                  onClick={() => {
+                    setDraft(chips);
+                    setOpen((current) => !current);
+                  }}
+                >
+                  Status ▾
+                </button>
+                {open ? (
+                  <div className="ops-status-menu no-print" role="dialog" aria-label="Filtrar status">
+                    {OPL_CHIPS.map((option) => (
+                      <label key={option.value} className="ops-status-tick">
+                        <input
+                          type="checkbox"
+                          checked={draft.includes(option.value)}
+                          onChange={() => toggleDraft(option.value)}
+                        />
                         {option.label}
-                      </button>
-                    );
-                  })}
-                  <button
-                    type="button"
-                    className={tudoOn ? "chip is-on" : "chip"}
-                    aria-pressed={tudoOn}
-                    onClick={() => setChips((current) => toggleOplChip(current, "tudo"))}
-                  >
-                    Tudo
-                  </button>
-                </span>
-              </span>
+                      </label>
+                    ))}
+                    <button
+                      type="button"
+                      className="btn btn-soft ops-status-apply"
+                      onClick={() => {
+                        setChips(applyOplDraft(draft));
+                        setOpen(false);
+                      }}
+                    >
+                      Aplicar
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </th>
             <th scope="col">
               <span className="sr-only">Ações</span>

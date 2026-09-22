@@ -537,9 +537,10 @@ export async function getAiProposalLocal(id: string): Promise<AiProposal | null>
 
 export async function addAiProposalsLocal(
   inputs: { dealSlug: string; kind: AiProposalKind; payload: AiProposalPayload }[],
+  createdAt?: string,
 ): Promise<AiProposal[]> {
   const s = await load();
-  const now = new Date().toISOString();
+  const now = createdAt?.trim() || new Date().toISOString();
   const rows: AiProposal[] = inputs.map((input) => ({
     id: randomUUID(),
     dealSlug: input.dealSlug,

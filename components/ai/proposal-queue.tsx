@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { inLatestReading } from "@/lib/ai/queue-view";
 import { toast } from "@/lib/toast";
 import type { AiProposal, AiProposalKind } from "@/lib/types";
 import { requestAiReading } from "./request-reading";
@@ -18,14 +19,21 @@ export function ProposalQueue({
   configured,
   deals,
   proposals,
+  selection = false,
 }: {
   configured: boolean;
   deals: { slug: string; name: string; id: string }[];
   proposals: AiProposal[];
+  /** Página /ia: abas, checkbox e ações da fila visível. */
+  selection?: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(configured ? null : "IA não configurada");
+  const [tab, setTab] = useState<"leitura" | "fila">("leitura");
+  const [picked, setPicked] = useState<string[]>([]);
+  const visible = selection && tab === "leitura" ? inLatestReading(proposals) : proposals;
+  const chosen = visible.filter((proposal) => picked.includes(proposal.id));
 
   async function ask(slug: string) {
     if (busy) return;
@@ -97,11 +105,10 @@ export function ProposalQueue({
     }
   }
 
-  async function acceptAll(dealSlug: string) {
-    const rows = proposals.filter((proposal) => proposal.dealSlug === dealSlug);
+  async function acceptRows(rows: AiProposal[], busyKey: string) {
     if (!rows.length || busy) return;
     if (!window.confirm(`Aceitar as ${rows.length}?`)) return;
-    setBusy(`all:${dealSlug}`);
+    setBusy(busyKey);
     try {
       for (const proposal of rows) {
         const ok = await commit(proposal);
@@ -112,6 +119,7 @@ export function ProposalQueue({
       }
       const onlyAttention = rows.every((proposal) => proposal.kind === "atencao");
       toast(onlyAttention ? "Propostas retiradas da fila. Nenhum fato foi gravado." : "Propostas aceitas.");
+      setPicked([]);
       router.refresh();
     } catch {
       toast("Falha de rede.", "err");
@@ -119,6 +127,39 @@ export function ProposalQueue({
     } finally {
       setBusy(null);
     }
+  }
+
+  async function rejectRows(rows: AiProposal[], busyKey: string) {
+    if (!rows.length || busy) return;
+    if (!window.confirm(`Rejeitar as ${rows.length}?`)) return;
+    setBusy(busyKey);
+    try {
+      for (const proposal of rows) {
+        const ok = await mark(proposal.id, "descartada");
+        if (!ok) {
+          toast("Não foi possível descartar.", "err");
+          router.refresh();
+          return;
+        }
+      }
+      toast("Propostas descartadas.");
+      setPicked([]);
+      router.refresh();
+    } catch {
+      toast("Falha de rede.", "err");
+      router.refresh();
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function togglePick(id: string) {
+    setPicked((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
+  }
+
+  function showTab(next: "leitura" | "fila") {
+    setTab(next);
+    setPicked([]);
   }
 
   async function discard(proposal: AiProposal) {
@@ -148,6 +189,16 @@ export function ProposalQueue({
       </div>
       <p className="ia-lead">A IA propõe. Quem opera aceita, edita ou descarta. Nada entra sozinho.</p>
       {notice ? <p className={notice === "IA não configurada" ? "ia-unconfigured" : "ia-lead"}>{notice}</p> : null}
+      {selection ? (
+        <div className="ia-tabs" role="tablist" aria-label="Fila da IA">
+          <button type="button" role="tab" aria-selected={tab === "leitura"} className={tab === "leitura" ? "is-on" : ""} onClick={() => showTab("leitura")}>
+            Desta leitura
+          </button>
+          <button type="button" role="tab" aria-selected={tab === "fila"} className={tab === "fila" ? "is-on" : ""} onClick={() => showTab("fila")}>
+            Fila toda
+          </button>
+        </div>
+      ) : null}
       <div className="ia-actions">
         {deals.map((deal) => {
           const pending = proposals.filter((proposal) => proposal.dealSlug === deal.slug);
@@ -157,24 +208,57 @@ export function ProposalQueue({
               <button type="button" className="btn btn-soft" disabled={Boolean(busy)} onClick={() => void ask(deal.slug)}>
                 {busy === deal.slug ? "Lendo…" : `Pedir leitura à IA · ${deal.name}`}
               </button>
-              {pending.length > 0 ? (
-                <button type="button" className="btn btn-line" disabled={Boolean(busy)} onClick={() => void acceptAll(deal.slug)}>
+              {!selection && pending.length > 0 ? (
+                <button
+                  type="button"
+                  className="btn btn-line"
+                  disabled={Boolean(busy)}
+                  onClick={() => void acceptRows(pending, `all:${deal.slug}`)}
+                >
                   {busy === `all:${deal.slug}` ? "Aceitando…" : acceptLabel}
                 </button>
               ) : null}
             </span>
           );
         })}
+        {selection ? (
+          <>
+            <button type="button" className="btn btn-line" disabled={Boolean(busy) || visible.length === 0} onClick={() => void acceptRows(visible, "accept-visible")}>
+              {busy === "accept-visible" ? "Aceitando…" : "Aceitar todos"}
+            </button>
+            <button type="button" className="btn btn-ghost" disabled={Boolean(busy) || visible.length === 0} onClick={() => void rejectRows(visible, "reject-visible")}>
+              {busy === "reject-visible" ? "Rejeitando…" : "Rejeitar todos"}
+            </button>
+            <button type="button" className="btn btn-line" disabled={Boolean(busy) || chosen.length === 0} onClick={() => void acceptRows(chosen, "accept-picked")}>
+              {busy === "accept-picked" ? "Aceitando…" : "Aceitar selecionados"}
+            </button>
+            <button type="button" className="btn btn-ghost" disabled={Boolean(busy) || chosen.length === 0} onClick={() => void rejectRows(chosen, "reject-picked")}>
+              {busy === "reject-picked" ? "Rejeitando…" : "Rejeitar selecionados"}
+            </button>
+          </>
+        ) : null}
       </div>
-      {proposals.length === 0 ? (
-        <p className="ia-lead">Nenhuma proposta pendente.</p>
+      {visible.length === 0 ? (
+        <p className="ia-lead">{selection && tab === "leitura" ? "Nada nesta leitura." : "Nenhuma proposta pendente."}</p>
       ) : (
         <ul className="ia-list">
-          {proposals.map((proposal) => {
+          {visible.map((proposal) => {
             const deal = deals.find((item) => item.slug === proposal.dealSlug);
             const edit = editHref(proposal);
             return (
               <li key={proposal.id} className="ia-item">
+                {selection ? (
+                  <label className="ia-check">
+                    <input
+                      type="checkbox"
+                      checked={picked.includes(proposal.id)}
+                      onChange={() => togglePick(proposal.id)}
+                      disabled={Boolean(busy)}
+                    />
+                    <span className="sr-only">Selecionar {proposal.payload.text}</span>
+                  </label>
+                ) : null}
+                <div className="ia-card">
                 <p className="ia-kind">
                   {KIND[proposal.kind]}
                   {deal ? ` · ${deal.name}` : ""}
@@ -195,6 +279,7 @@ export function ProposalQueue({
                   <button type="button" className="btn btn-ghost" disabled={Boolean(busy)} onClick={() => void discard(proposal)}>
                     Descartar
                   </button>
+                </div>
                 </div>
               </li>
             );

@@ -433,11 +433,12 @@ export async function getAiProposal(id: string): Promise<AiProposal | null> {
 
 export async function addAiProposals(
   inputs: { dealSlug: string; kind: AiProposalKind; payload: AiProposalPayload }[],
+  createdAt?: string,
 ): Promise<AiProposal[]> {
   const sb = remote();
-  if (sb) return addAiProposalsRemote(sb, inputs);
+  if (sb) return addAiProposalsRemote(sb, inputs, createdAt);
   if (forbidLocalStore()) refuseLocalWrite("addAiProposals");
-  return addAiProposalsLocal(inputs);
+  return addAiProposalsLocal(inputs, createdAt);
 }
 
 export async function listFileReads(): Promise<FileReadStamp[]> {

@@ -14,6 +14,12 @@ export const OPL_DEFAULT: OplChip[] = ["abertos", "atrasadas"];
 
 const ALL: OplChip[] = ["abertos", "atrasadas", "concluidas"];
 
+/** Aplicar sem nenhum tick volta ao padrão. */
+export function applyOplDraft(draft: OplChip[]): OplChip[] {
+  const next = OPL_CHIPS.map((chip) => chip.value).filter((value) => draft.includes(value));
+  return next.length ? next : [...OPL_DEFAULT];
+}
+
 export function toggleOplChip(current: OplChip[], chip: OplChip | "tudo"): OplChip[] {
   if (chip === "tudo") {
     return current.length === ALL.length ? [...OPL_DEFAULT] : [...ALL];

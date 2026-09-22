@@ -811,8 +811,9 @@ export async function getAiProposalRemote(sb: SupabaseClient, id: string): Promi
 export async function addAiProposalsRemote(
   sb: SupabaseClient,
   inputs: { dealSlug: string; kind: AiProposalKind; payload: AiProposalPayload }[],
+  createdAt?: string,
 ): Promise<AiProposal[]> {
-  const now = new Date().toISOString();
+  const now = createdAt?.trim() || new Date().toISOString();
   const rows = inputs.map((input) => ({
     id: randomUUID(),
     deal_slug: input.dealSlug,

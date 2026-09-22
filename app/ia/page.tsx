@@ -43,6 +43,7 @@ export default async function IaPage({
         configured={isOpenRouterConfigured()}
         deals={[{ slug: deal.slug, name: deal.name, id: deal.id }]}
         proposals={proposals}
+        selection
       />
     </AppShell>
   );
