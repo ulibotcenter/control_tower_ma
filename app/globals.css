@@ -1281,6 +1281,112 @@ td.ops-meta-cell {
   border-bottom: 0;
 }
 
+.doc-tree {
+  font-size: 0.9375rem;
+}
+
+.doc-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.85rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.doc-tree-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0.28rem 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.doc-tree-toggle:focus-visible,
+.doc-tree-link:focus-visible,
+.doc-tree-open:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+
+.doc-tree-chevron {
+  flex: none;
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--muted);
+  transition: transform 120ms ease;
+}
+
+.doc-tree-chevron.is-open {
+  transform: rotate(90deg);
+}
+
+.doc-tree-spacer {
+  visibility: hidden;
+}
+
+.doc-tree-name,
+.doc-tree-file {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-tree-name {
+  font-weight: 650;
+}
+
+.doc-tree-file {
+  flex: 1;
+}
+
+.doc-tree-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 0.18em;
+}
+
+.doc-tree-link:hover {
+  text-decoration-color: var(--navy);
+}
+
+.doc-tree-mark {
+  flex: none;
+  max-width: 8.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.doc-tree-open {
+  display: inline-flex;
+  flex: none;
+  padding: 0.2rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.doc-tree-open svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.doc-tree-open:hover {
+  color: var(--navy);
+}
+
 .data-table tbody tr.doc-front th {
   padding: 0.55rem 0.75rem 0.2rem 0;
   font-size: 0.75rem;
@@ -2928,6 +3034,24 @@ td.ops-meta-cell {
 .present-deck .data-table thead th,
 .present-deck .data-table tbody tr.doc-front th {
   font-size: 1.125rem;
+}
+
+.present-deck .doc-tree {
+  font-size: 1.35rem;
+}
+
+.present-deck .doc-tree-row {
+  min-height: 2.45rem;
+}
+
+.present-deck .doc-tree-mark {
+  font-size: 1.05rem;
+}
+
+.present-deck .doc-tree-chevron,
+.present-deck .doc-tree-open svg {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .deck-perguntas {

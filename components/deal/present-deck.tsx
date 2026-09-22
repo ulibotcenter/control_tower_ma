@@ -5,7 +5,8 @@ import { pillarOfDealPhase } from "@/lib/pillars";
 import type { DealBundle, MeetingMode, Semaphore } from "@/lib/types";
 import { WithTerms } from "@/components/ui/with-terms";
 import { Timeline } from "./timeline";
-import { DocsList, MetricsGrid } from "./lists";
+import { MetricsGrid } from "./lists";
+import { DocTree } from "./doc-tree";
 
 /**
  * Apresentar é o mesmo bundle, outro cromo: uma sequência de lâminas.
@@ -142,7 +143,7 @@ export function PresentDeck({
       {showDocs && (
         <section id="documentos" className="deck-slide">
           <h2 className="deck-heading">Documentos</h2>
-          <DocsList items={bundle.documents} />
+          <DocTree items={bundle.documents} roomId={deal.driveFolderId} />
         </section>
       )}
 

@@ -12,8 +12,10 @@ import type {
   Note,
   OpenPoint,
 } from "../types";
+import { folderUrl } from "../constants";
 import { sanitizeDriveUrl } from "../http";
 import { decisions as seedDecisions, inboxSeed } from "./seed";
+import { scanFolderDocId } from "./doc-groups";
 import { checklistFromInbox, documentFromInbox } from "./store-map";
 
 type Store = {
@@ -87,6 +89,7 @@ export async function addInboxFileLocal(input: {
   name: string;
   driveUrl?: string | null;
   driveId?: string | null;
+  folderId?: string | null;
   driveModifiedAt?: string | null;
   source?: "manual" | "drive";
 }): Promise<InboxFile> {
@@ -102,6 +105,7 @@ export async function addInboxFileLocal(input: {
     source: input.source ?? "manual",
     driveUrl: sanitizeDriveUrl(input.driveUrl),
     driveId,
+    folderId: input.folderId?.trim() || null,
     driveModifiedAt: input.driveModifiedAt || null,
     receivedAt: new Date().toISOString(),
     classified: false,
@@ -115,19 +119,21 @@ export async function addInboxFileLocal(input: {
 /** Atualiza nome/link/hora. Não classifica e não conclui checklist. */
 export async function updateInboxDriveLocal(
   driveId: string,
-  patch: { name?: string; driveUrl?: string | null; driveModifiedAt?: string | null },
+  patch: { name?: string; driveUrl?: string | null; folderId?: string | null; driveModifiedAt?: string | null },
 ): Promise<InboxFile | null> {
   const s = await load();
   const file = s.inbox.find((item) => item.driveId === driveId);
   if (!file) return null;
   if (patch.name != null) file.name = patch.name.trim();
   if (patch.driveUrl !== undefined) file.driveUrl = sanitizeDriveUrl(patch.driveUrl);
+  if (patch.folderId !== undefined) file.folderId = patch.folderId?.trim() || null;
   if (patch.driveModifiedAt !== undefined) file.driveModifiedAt = patch.driveModifiedAt;
-  if (patch.name != null || patch.driveUrl !== undefined) {
+  if (patch.name != null || patch.driveUrl !== undefined || patch.folderId !== undefined) {
     for (const doc of s.documents) {
       if (doc.driveId !== driveId) continue;
       if (patch.name != null) doc.title = patch.name.trim();
       if (patch.driveUrl !== undefined) doc.driveUrl = file.driveUrl || "";
+      if (patch.folderId !== undefined && !doc.folderId) doc.folderId = file.folderId ?? null;
     }
     const checklistId = `inbox-${file.id}`;
     for (const item of s.checklist) {
@@ -143,7 +149,7 @@ export async function updateInboxDriveLocal(
 
 export async function updateStoredDocumentDriveLocal(
   driveId: string,
-  patch: { title?: string; driveUrl?: string | null },
+  patch: { title?: string; driveUrl?: string | null; folderId?: string | null },
 ): Promise<boolean> {
   const s = await load();
   let hit = false;
@@ -152,6 +158,7 @@ export async function updateStoredDocumentDriveLocal(
     hit = true;
     if (patch.title != null) doc.title = patch.title.trim();
     if (patch.driveUrl !== undefined) doc.driveUrl = sanitizeDriveUrl(patch.driveUrl) || "";
+    if (patch.folderId !== undefined && !doc.folderId) doc.folderId = patch.folderId;
   }
   if (!hit) return false;
   memory = s;
@@ -180,6 +187,42 @@ export async function classifyInboxFileLocal(
   memory = s;
   await writeStore(s);
   return file;
+}
+
+/** Pasta lida na varredura. O id estável não entra na conta do pilar. */
+export async function upsertDriveFolderLocal(input: {
+  folderId: string;
+  name: string;
+  parentId: string | null;
+  dealId: string;
+}): Promise<void> {
+  const s = await load();
+  const id = scanFolderDocId(input.folderId);
+  const parentId = input.parentId && input.parentId !== input.folderId ? input.parentId : input.folderId;
+  const existing = s.documents.find((doc) => doc.id === id);
+  if (existing) {
+    existing.title = input.name.trim();
+    existing.driveUrl = folderUrl(input.folderId);
+    existing.folderId = parentId;
+    existing.dealId = input.dealId;
+  } else {
+    s.documents.unshift({
+      id,
+      dealId: input.dealId,
+      title: input.name.trim(),
+      driveUrl: folderUrl(input.folderId),
+      driveId: null,
+      folderId: parentId,
+      type: "outro",
+      workstreamSlug: null,
+      status: "vigente",
+      classified: true,
+      visibility: "advisors",
+      sensitivities: [],
+    });
+  }
+  memory = s;
+  await writeStore(s);
 }
 
 export async function extraChecklistLocal(): Promise<ChecklistItem[]> {

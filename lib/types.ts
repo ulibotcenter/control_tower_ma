@@ -215,6 +215,8 @@ export interface InboxFile {
   source: "manual" | "drive";
   driveUrl: string | null;
   driveId: string | null;
+  /** Pasta-pai no Drive. A varredura grava; a bandeja manual pode não ter. */
+  folderId?: string | null;
   /** modifiedTime lido no Drive. Ausente até a primeira varredura que gravou. */
   driveModifiedAt?: string | null;
   receivedAt: string;

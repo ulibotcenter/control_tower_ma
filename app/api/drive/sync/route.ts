@@ -11,8 +11,10 @@ import {
   setDriveSyncedAt,
   updateInboxDrive,
   updateStoredDocumentDrive,
+  upsertDriveFolder,
 } from "@/lib/data/store";
-import { documents } from "@/lib/data/seed";
+import { deals, documents } from "@/lib/data/seed";
+import { scanFolderDocId } from "@/lib/data/doc-groups";
 import { driveResourceId } from "@/lib/http";
 import { formatDate } from "@/lib/format";
 import type { DriveDocument, InboxFile } from "@/lib/types";
@@ -126,12 +128,14 @@ async function runSync() {
 
     if (inInbox) {
       const diff = changedMeta(inInbox, file);
-      if (diff.material || diff.baselineOnly) {
+      const folderId = file.folderId && inInbox.folderId !== file.folderId ? file.folderId : undefined;
+      if (diff.material || diff.baselineOnly || folderId) {
         try {
           const row = await updateInboxDrive(file.id, {
             name: diff.nameChanged ? file.name : undefined,
             driveUrl: diff.linkArrived ? file.webViewLink : undefined,
-            driveModifiedAt: file.modifiedAt || null,
+            folderId,
+            driveModifiedAt: diff.material || diff.baselineOnly ? file.modifiedAt || null : undefined,
           });
           if (row && diff.material) updated += 1;
         } catch (err) {
@@ -143,13 +147,15 @@ async function runSync() {
 
     if (inExtra) {
       const diff = changedMeta({ name: inExtra.title, driveUrl: inExtra.driveUrl, driveModifiedAt: null }, file);
-      if (diff.nameChanged || diff.linkArrived) {
+      const folderId = file.folderId && !inExtra.folderId ? file.folderId : undefined;
+      if (diff.nameChanged || diff.linkArrived || folderId) {
         try {
           const hit = await updateStoredDocumentDrive(file.id, {
             title: diff.nameChanged ? file.name : undefined,
             driveUrl: diff.linkArrived ? file.webViewLink : undefined,
+            folderId,
           });
-          if (hit) updated += 1;
+          if (hit && (diff.nameChanged || diff.linkArrived)) updated += 1;
         } catch (err) {
           console.error("[drive/sync] document update", err);
         }
@@ -169,6 +175,7 @@ async function runSync() {
         name: file.name,
         driveUrl: file.webViewLink,
         driveId: file.id,
+        folderId: file.folderId,
         driveModifiedAt: file.modifiedAt || null,
         source: "drive",
       });
@@ -198,7 +205,7 @@ async function runSync() {
     }
     for (const [id, file] of inboxByDrive) {
       const prev = known.get(id);
-      known.set(id, { name: file.name, folderId: prev?.folderId ?? null });
+      known.set(id, { name: file.name, folderId: file.folderId ?? prev?.folderId ?? null });
     }
     for (const [driveId, row] of known) {
       if (seen.has(driveId)) continue;
@@ -208,6 +215,36 @@ async function runSync() {
         continue;
       }
       missing.push({ driveId, name: row.name });
+    }
+  }
+
+  const parentOf = new Map(listed.folders.map((folder) => [folder.id, folder.parentId]));
+  const knownFolderUrl = (folderId: string) => `/folders/${folderId}`;
+  for (const folder of listed.folders) {
+    const url = knownFolderUrl(folder.id);
+    const already =
+      documents.some((doc) => !doc.driveId && doc.driveUrl.includes(url)) ||
+      extras.some((doc) => !doc.driveId && doc.id !== scanFolderDocId(folder.id) && doc.driveUrl.includes(url));
+    if (already) continue;
+    let dealId: string | null = null;
+    let cursor: string | null = folder.id;
+    const seenFolder = new Set<string>();
+    while (cursor && !seenFolder.has(cursor)) {
+      seenFolder.add(cursor);
+      dealId = deals.find((deal) => deal.driveFolderId === cursor)?.id ?? null;
+      if (dealId) break;
+      cursor = parentOf.get(cursor) ?? null;
+    }
+    if (!dealId) continue;
+    try {
+      await upsertDriveFolder({
+        folderId: folder.id,
+        name: folder.name,
+        parentId: folder.parentId,
+        dealId,
+      });
+    } catch (err) {
+      console.error("[drive/sync] folder", err);
     }
   }
 

@@ -26,6 +26,7 @@ import {
   addInboxFileLocal,
   updateInboxDriveLocal,
   updateStoredDocumentDriveLocal,
+  upsertDriveFolderLocal,
   addNoteLocal,
   addOpenPointLocal,
   classifyInboxFileLocal,
@@ -56,6 +57,7 @@ import {
   addInboxFileRemote,
   updateInboxDriveRemote,
   updateStoredDocumentDriveRemote,
+  upsertDriveFolderRemote,
   addNoteRemote,
   addOpenPointRemote,
   classifyInboxFileRemote,
@@ -127,6 +129,7 @@ export async function addInboxFile(input: {
   name: string;
   driveUrl?: string | null;
   driveId?: string | null;
+  folderId?: string | null;
   driveModifiedAt?: string | null;
   source?: "manual" | "drive";
 }): Promise<InboxFile> {
@@ -138,7 +141,7 @@ export async function addInboxFile(input: {
 
 export async function updateInboxDrive(
   driveId: string,
-  patch: { name?: string; driveUrl?: string | null; driveModifiedAt?: string | null },
+  patch: { name?: string; driveUrl?: string | null; folderId?: string | null; driveModifiedAt?: string | null },
 ): Promise<InboxFile | null> {
   const sb = remote();
   if (sb) return updateInboxDriveRemote(sb, driveId, patch);
@@ -148,12 +151,24 @@ export async function updateInboxDrive(
 
 export async function updateStoredDocumentDrive(
   driveId: string,
-  patch: { title?: string; driveUrl?: string | null },
+  patch: { title?: string; driveUrl?: string | null; folderId?: string | null },
 ): Promise<boolean> {
   const sb = remote();
   if (sb) return updateStoredDocumentDriveRemote(sb, driveId, patch);
   if (forbidLocalStore()) refuseLocalWrite("updateStoredDocumentDrive");
   return updateStoredDocumentDriveLocal(driveId, patch);
+}
+
+export async function upsertDriveFolder(input: {
+  folderId: string;
+  name: string;
+  parentId: string | null;
+  dealId: string;
+}): Promise<void> {
+  const sb = remote();
+  if (sb) return upsertDriveFolderRemote(sb, input);
+  if (forbidLocalStore()) refuseLocalWrite("upsertDriveFolder");
+  return upsertDriveFolderLocal(input);
 }
 
 export async function classifyInboxFile(

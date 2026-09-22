@@ -3,3 +3,6 @@
 -- Não rode schema.sql de novo: ele derruba as tabelas.
 
 alter table inbox_files add column if not exists drive_modified_at timestamptz;
+
+-- Pasta-pai do arquivo, para a árvore de Documentos. Sem isto a varredura só guarda o arquivo solto.
+alter table inbox_files add column if not exists folder_id text;

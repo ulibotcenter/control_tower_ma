@@ -2,6 +2,7 @@
  * Temas do eixo especialista. Só recorte do bundle já filtrado pelo modo.
  * Não inventa cultura, preço, LOI nem SPA. Sem rota nova: ?tema= na página do deal.
  */
+import { isScanFolderDoc } from "./doc-groups";
 import { pillarOf, PILLAR_BY_SLUG, type PillarSlug } from "../pillars";
 import type { DealBundle } from "../types";
 
@@ -76,7 +77,7 @@ function hit(
 function coletar(bundle: DealBundle, tema: TemaSlug): TemaHit[] {
   const riscos = bundle.risks.filter((r) => caiNoTema(r, tema)).map((r) => hit(r, "risco"));
   const acoes = bundle.actions.filter((a) => caiNoTema(a, tema)).map((a) => hit(a, "acao"));
-  const docs = bundle.documents.filter((d) => caiNoTema(d, tema)).map((d) => hit(d, "doc"));
+  const docs = bundle.documents.filter((d) => !isScanFolderDoc(d) && caiNoTema(d, tema)).map((d) => hit(d, "doc"));
   return [...riscos, ...acoes, ...docs];
 }
 

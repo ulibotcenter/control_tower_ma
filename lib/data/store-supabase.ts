@@ -19,7 +19,9 @@ import type {
   Note,
   OpenPoint,
 } from "../types";
+import { folderUrl } from "../constants";
 import { sanitizeDriveUrl } from "../http";
+import { scanFolderDocId } from "./doc-groups";
 import { isUuid } from "./room-input";
 import { deals, decisions as seedDecisions } from "./seed";
 import { mapActionRow, mapChecklistRow, mapDecisionRow, mapDocumentRow, mapInboxRow, mapNoteRow, mapOpenPointRow, packShadow } from "./store-map";
@@ -49,6 +51,7 @@ export async function addInboxFileRemote(
     name: string;
     driveUrl?: string | null;
     driveId?: string | null;
+    folderId?: string | null;
     driveModifiedAt?: string | null;
     source?: "manual" | "drive";
   },
@@ -69,13 +72,15 @@ export async function addInboxFileRemote(
     source: input.source ?? "manual",
     drive_url: sanitizeDriveUrl(input.driveUrl),
     drive_id: driveId,
+    folder_id: input.folderId?.trim() || null,
     drive_modified_at: input.driveModifiedAt || null,
     received_at: new Date().toISOString(),
     classified: false,
   };
   let { data, error } = await sb.from("inbox_files").insert(row).select("*").single();
-  if (error && /drive_modified_at/i.test(error.message)) {
-    delete row.drive_modified_at;
+  if (error && /drive_modified_at|folder_id/i.test(error.message)) {
+    if (/drive_modified_at/i.test(error.message)) delete row.drive_modified_at;
+    if (/folder_id/i.test(error.message)) delete row.folder_id;
     ({ data, error } = await sb.from("inbox_files").insert(row).select("*").single());
   }
   if (error || !data) fail("insert inbox", error);
@@ -86,16 +91,18 @@ export async function addInboxFileRemote(
 export async function updateInboxDriveRemote(
   sb: SupabaseClient,
   driveId: string,
-  patch: { name?: string; driveUrl?: string | null; driveModifiedAt?: string | null },
+  patch: { name?: string; driveUrl?: string | null; folderId?: string | null; driveModifiedAt?: string | null },
 ): Promise<InboxFile | null> {
   const payload: Record<string, unknown> = {};
   if (patch.name != null) payload.name = patch.name.trim();
   if (patch.driveUrl !== undefined) payload.drive_url = sanitizeDriveUrl(patch.driveUrl);
+  if (patch.folderId !== undefined) payload.folder_id = patch.folderId?.trim() || null;
   if (patch.driveModifiedAt !== undefined) payload.drive_modified_at = patch.driveModifiedAt;
   if (Object.keys(payload).length === 0) return null;
   let { data, error } = await sb.from("inbox_files").update(payload).eq("drive_id", driveId).select("*");
-  if (error && /drive_modified_at/i.test(error.message)) {
-    delete payload.drive_modified_at;
+  if (error && /drive_modified_at|folder_id/i.test(error.message)) {
+    if (/drive_modified_at/i.test(error.message)) delete payload.drive_modified_at;
+    if (/folder_id/i.test(error.message)) delete payload.folder_id;
     if (Object.keys(payload).length === 0) {
       const { data: current, error: readErr } = await sb
         .from("inbox_files")
@@ -117,19 +124,41 @@ export async function updateInboxDriveRemote(
     const { error: docErr } = await sb.from("documents").update(docPayload).eq("drive_id", driveId);
     if (docErr) console.error("[drive/sync] document rename", docErr.message);
   }
+  if (patch.folderId !== undefined) {
+    const { error: folderErr } = await sb
+      .from("documents")
+      .update({ folder_id: patch.folderId?.trim() || null })
+      .eq("drive_id", driveId)
+      .is("folder_id", null);
+    if (folderErr) console.error("[drive/sync] document folder", folderErr.message);
+  }
   return mapInboxRow(row);
 }
 
 export async function updateStoredDocumentDriveRemote(
   sb: SupabaseClient,
   driveId: string,
-  patch: { title?: string; driveUrl?: string | null },
+  patch: { title?: string; driveUrl?: string | null; folderId?: string | null },
 ): Promise<boolean> {
   const payload: Record<string, unknown> = {};
   if (patch.title != null) payload.title = patch.title.trim();
   if (patch.driveUrl !== undefined) payload.drive_url = sanitizeDriveUrl(patch.driveUrl) || "";
-  const { data, error } = await sb.from("documents").update(payload).eq("drive_id", driveId).select("id");
-  if (error) fail("update document drive", error);
+  let data: { id: string }[] | null = null;
+  if (Object.keys(payload).length) {
+    const updated = await sb.from("documents").update(payload).eq("drive_id", driveId).select("id");
+    if (updated.error) fail("update document drive", updated.error);
+    data = updated.data;
+  }
+  if (patch.folderId !== undefined) {
+    const folder = await sb
+      .from("documents")
+      .update({ folder_id: patch.folderId })
+      .eq("drive_id", driveId)
+      .is("folder_id", null)
+      .select("id");
+    if (folder.error) fail("update document folder", folder.error);
+    if (!data?.length) data = folder.data;
+  }
   return Boolean(data && data.length);
 }
 
@@ -153,7 +182,7 @@ export async function classifyInboxFileRemote(
     title: current.name,
     drive_url: current.driveUrl || "",
     drive_id: current.driveId,
-    folder_id: null,
+    folder_id: current.folderId ?? null,
     type: classification.type,
     workstream_slug: classification.workstreamSlug,
     status: classification.status,
@@ -194,6 +223,46 @@ export async function classifyInboxFileRemote(
     .single();
   if (error || !data) fail("update inbox", error);
   return mapInboxRow(data);
+}
+
+export async function upsertDriveFolderRemote(
+  sb: SupabaseClient,
+  input: { folderId: string; name: string; parentId: string | null; dealId: string },
+): Promise<void> {
+  const id = scanFolderDocId(input.folderId);
+  const parentId = input.parentId && input.parentId !== input.folderId ? input.parentId : input.folderId;
+  const row = {
+    id,
+    deal_id: input.dealId,
+    title: input.name.trim(),
+    drive_url: folderUrl(input.folderId),
+    drive_id: null,
+    folder_id: parentId,
+    type: "outro",
+    workstream_slug: null,
+    status: "vigente",
+    classified: true,
+    note: null,
+    visibility: "advisors",
+    sensitivities: [],
+  };
+  const { data: existing, error: readErr } = await sb.from("documents").select("id").eq("id", id).limit(1);
+  if (readErr) fail("lookup drive folder", readErr);
+  if (existing && existing.length) {
+    const { error } = await sb
+      .from("documents")
+      .update({
+        title: row.title,
+        drive_url: row.drive_url,
+        folder_id: parentId,
+        deal_id: input.dealId,
+      })
+      .eq("id", id);
+    if (error) fail("update drive folder", error);
+    return;
+  }
+  const { error } = await sb.from("documents").insert(row);
+  if (error) fail("insert drive folder", error);
 }
 
 export async function extraDocumentsRemote(sb: SupabaseClient): Promise<DriveDocument[]> {

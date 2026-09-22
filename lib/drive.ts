@@ -31,11 +31,19 @@ export type DriveFolderIssue = {
   status: number;
 };
 
+export type DriveScannedFolder = {
+  id: string;
+  name: string;
+  parentId: string | null;
+};
+
 export type DriveScanResult = {
   ok: boolean;
   configured: boolean;
   message: string;
   files: DriveListedFile[];
+  /** Pastas que a listagem leu de fato. O pai vem da varredura, não de um nome inventado. */
+  folders: DriveScannedFolder[];
   foldersRead: number;
   /** Ids whose listing returned 200, including subfolders. */
   foldersOk: string[];
@@ -194,6 +202,7 @@ export async function scanDriveTree(): Promise<DriveScanResult> {
       configured: false,
       message: "API do Google não configurada. Use a bandeja manual.",
       files: [],
+      folders: [],
       foldersRead: 0,
       foldersOk: [],
       incompleteFolders: [],
@@ -216,6 +225,7 @@ export async function scanDriveTree(): Promise<DriveScanResult> {
       }),
     );
     const files: DriveListedFile[] = [];
+    const folders: DriveScannedFolder[] = [];
     const folderIssues: DriveFolderIssue[] = [];
     const foldersOk: string[] = [];
     const incomplete = new Set<string>();
@@ -251,6 +261,7 @@ export async function scanDriveTree(): Promise<DriveScanResult> {
       }
       foldersRead += 1;
       foldersOk.push(item.id);
+      folders.push({ id: item.id, name: item.name, parentId: item.parentId });
       for (const child of listed.files) {
         if (child.id === DRIVE_DO_NOT_INDEX.id || child.name === ".obsidian") {
           skipFolder.add(child.id);
@@ -283,6 +294,7 @@ export async function scanDriveTree(): Promise<DriveScanResult> {
       configured: true,
       message: "",
       files,
+      folders,
       foldersRead,
       foldersOk,
       incompleteFolders: [...incomplete],
@@ -296,6 +308,7 @@ export async function scanDriveTree(): Promise<DriveScanResult> {
       configured: true,
       message: `Credencial presente, mas a listagem falhou (${detail}). Nenhum arquivo foi inventado. Use a bandeja manual.`,
       files: [],
+      folders: [],
       foldersRead: 0,
       foldersOk: [],
       incompleteFolders: [],

@@ -1,22 +1,21 @@
-import { DRIVE_FOLDERS, DOC_STATUS_LABEL, DOC_TYPE_LABEL, WS_LABEL, workstreamLabel } from "../constants";
+import { DOC_STATUS_LABEL, DOC_TYPE_LABEL, DRIVE_FOLDERS, folderUrl, fileUrl } from "../constants";
 import { driveResourceId } from "../http";
 import { isPillarSlug, pillarOf, type PillarSlug } from "../pillars";
 import type { DriveDocument } from "../types";
 
 const FOLDER_ORDER: readonly string[] = Object.values(DRIVE_FOLDERS).map((folder) => folder.id);
-const FRONT_ORDER = Object.keys(WS_LABEL);
+const PROGRAM_FOLDER_IDS = new Set<string>(Object.values(DRIVE_FOLDERS).map((folder) => folder.id));
 
-export type DocFront = {
-  slug: string | null;
-  label: string | null;
-  items: DriveDocument[];
-};
+/** Pasta gravada pela varredura. Não é documento de pilar. */
+export const SCAN_FOLDER_PREFIX = "scan-folder-";
 
-export type DocFolderGroup = {
-  folderId: string | null;
-  folderName: string;
-  fronts: DocFront[];
-};
+export function scanFolderDocId(folderId: string) {
+  return `${SCAN_FOLDER_PREFIX}${folderId}`;
+}
+
+export function isScanFolderDoc(doc: { id: string }) {
+  return doc.id.startsWith(SCAN_FOLDER_PREFIX);
+}
 
 /**
  * Número já presente no nome: 01, 02, 5ª, 1.1, (2.9).
@@ -43,218 +42,192 @@ export function compareDocNames(a: string, b: string): number {
   return a.localeCompare(b, "pt", { sensitivity: "base" });
 }
 
-function folderNameFor(folderId: string | null, items: DriveDocument[]): string {
-  if (!folderId) return "Sem pasta";
-  const known = Object.values(DRIVE_FOLDERS).find((folder) => folder.id === folderId);
-  if (known) return known.name;
-  const pointer = items.find(
-    (doc) => doc.folderId === folderId && doc.driveUrl.includes(`/folders/${folderId}`),
-  );
-  if (pointer) return pointer.title.replace(/^Pasta\s+/i, "");
-  return "Outra pasta";
-}
-
-/**
- * Agrupa o que o bundle já entregou (seed + o que a classificação gravou).
- * Pasta do Drive primeiro; frente só quando o arquivo já tem workstream.
- */
-export function groupDocuments(items: DriveDocument[]): DocFolderGroup[] {
-  const byFolder = new Map<string, DriveDocument[]>();
-  for (const item of items) {
-    const key = item.folderId || "";
-    const list = byFolder.get(key) ?? [];
-    list.push(item);
-    byFolder.set(key, list);
-  }
-
-  const keys = [...byFolder.keys()].sort((a, b) => {
-    const ia = FOLDER_ORDER.indexOf(a);
-    const ib = FOLDER_ORDER.indexOf(b);
-    if (ia !== -1 || ib !== -1) {
-      if (ia === -1) return 1;
-      if (ib === -1) return -1;
-      return ia - ib;
-    }
-    if (!a) return 1;
-    if (!b) return -1;
-    return folderNameFor(a, byFolder.get(a) ?? []).localeCompare(
-      folderNameFor(b, byFolder.get(b) ?? []),
-      "pt",
-      { sensitivity: "base" },
-    );
-  });
-
-  return keys.map((key) => {
-    const docs = byFolder.get(key) ?? [];
-    const byFront = new Map<string, DriveDocument[]>();
-    for (const doc of docs) {
-      const front = doc.workstreamSlug || "";
-      const list = byFront.get(front) ?? [];
-      list.push(doc);
-      byFront.set(front, list);
-    }
-    const frontKeys = [...byFront.keys()].sort((a, b) => {
-      if (!a) return -1;
-      if (!b) return 1;
-      const ia = FRONT_ORDER.indexOf(a);
-      const ib = FRONT_ORDER.indexOf(b);
-      if (ia === -1 && ib === -1) return a.localeCompare(b, "pt", { sensitivity: "base" });
-      if (ia === -1) return 1;
-      if (ib === -1) return -1;
-      return ia - ib;
-    });
-    return {
-      folderId: key || null,
-      folderName: folderNameFor(key || null, docs),
-      fronts: frontKeys.map((front) => ({
-        slug: front || null,
-        label: front ? workstreamLabel(front) : null,
-        items: (byFront.get(front) ?? []).slice().sort((a, b) => compareDocNames(a.title, b.title)),
-      })),
-    };
-  });
-}
-
-/**
- * Pastas numeradas que o corte já indexa (1.1 societário, 2.1 demonstrações, …).
- * Só entra na tela quando há arquivo ou atalho de pasta de verdade.
- */
-const SECTION_FOLDER: Record<number, string> = {
-  1: "1. Societários",
-  2: "2. Financeiros",
-  3: "3. Tributários",
-  4: "4. Trabalhistas",
-  5: "5. Contratos",
-  6: "6. Tecnologia",
-  7: "7. Processos",
-};
-
-const PROGRAM_FOLDER_IDS = new Set<string>(Object.values(DRIVE_FOLDERS).map((folder) => folder.id));
-
-export type RoomFile = {
+export type DocTreeFile = {
+  kind: "file";
   id: string;
-  title: string;
-  /** Link do arquivo. Null = sem âncora morta. */
+  name: string;
+  /** Link do arquivo. Null = sem id, sem âncora. */
   href: string | null;
-  /** Rótulo curto da última coluna (status ou tipo). */
+  /** Rótulo curto. Sem id de arquivo é só "—". */
   mark: string;
 };
 
-export type RoomGroup = {
-  key: string;
-  label: string;
-  order: number;
-  /** Atalho da pasta do grupo — uma vez no cabeçalho, não em cada linha. */
-  folderHref: string | null;
-  files: RoomFile[];
+export type DocTreeFolder = {
+  kind: "folder";
+  id: string;
+  name: string;
+  href: string | null;
+  children: DocTreeNode[];
 };
 
-/** N.N no nome (1.1, 2.7, 7.1). Ano e número solto não viram pasta. */
-export function sectionMajor(name: string): number | null {
-  const match = name.trim().match(/(?:^|[^\d])(\d{1,2})\.(\d{1,2})(?!\d)/);
-  if (!match) return null;
-  const major = Number(match[1]);
-  if (major < 1 || major > 12) return null;
-  return major;
+export type DocTreeNode = DocTreeFolder | DocTreeFile;
+
+function knownFolderName(id: string): string | null {
+  return Object.values(DRIVE_FOLDERS).find((folder) => folder.id === id)?.name ?? null;
 }
 
-function linkKind(doc: DriveDocument): "file" | "folder" | "none" {
+function urlFolderId(doc: DriveDocument): string | null {
+  if (!doc.driveUrl.includes("/folders/")) return null;
+  return driveResourceId(doc.driveUrl);
+}
+
+function cleanFolderTitle(title: string) {
+  return title.replace(/^Pasta\s+/i, "").split("(")[0].trim();
+}
+
+function isFolderContainer(doc: DriveDocument): boolean {
+  if (doc.driveId) return false;
+  if (!urlFolderId(doc)) return false;
+  return isScanFolderDoc(doc) || /^Pasta\s+/i.test(doc.title);
+}
+
+/** Só id de arquivo vira link. URL de pasta não vira âncora na linha. */
+function fileHref(doc: DriveDocument): string | null {
+  if (!doc.driveId) return null;
   const href = doc.driveUrl || "";
-  if (href.includes("/folders/")) return "folder";
-  if (doc.driveId || href.includes("/file/") || driveResourceId(href)) return "file";
-  return "none";
+  if (href.includes("/file/") || (driveResourceId(href) && !href.includes("/folders/"))) return href;
+  return fileUrl(doc.driveId);
 }
 
-function shortMark(doc: DriveDocument): string {
+function fileMark(doc: DriveDocument): string {
+  if (!doc.driveId) return "—";
   if (doc.status && DOC_STATUS_LABEL[doc.status]) return DOC_STATUS_LABEL[doc.status];
   if (doc.type && DOC_TYPE_LABEL[doc.type]) return DOC_TYPE_LABEL[doc.type];
   return "—";
 }
 
-function inDataRoom(doc: DriveDocument, roomId: string): boolean {
-  if (!doc.folderId) return Boolean(doc.driveId);
-  if (doc.folderId === roomId) return true;
-  if (PROGRAM_FOLDER_IDS.has(doc.folderId)) return false;
-  return true;
-}
-
-function folderLabel(doc: DriveDocument): string {
-  return doc.title.replace(/^Pasta\s+/i, "").split("(")[0].trim() || doc.title;
-}
+type FolderAcc = {
+  id: string;
+  name: string;
+  href: string;
+  parentId: string | null;
+};
 
 /**
- * Finder do Doctos Loopert / HeathData: grupos numerados e arquivos que o
- * seed ou a bandeja já classificou. Sem arquivo inventado.
- * “Abrir pasta” só no cabeçalho do grupo. Linha = arquivo (ou nome sem link).
+ * Árvore do que o corte e a varredura já guardam (folderId, pasta-pai, nome, driveId).
+ * Não cria as pastas 1…13 a partir do nome do arquivo.
+ * Pasta sem pai conhecido e que não é pasta do programa fica dentro da pasta oficial do deal.
  */
-export function dataRoomGroups(items: DriveDocument[], room: { id: string; label: string }): RoomGroup[] {
-  const groups = new Map<string, RoomGroup>();
-  const inRoom = items.filter((doc) => room.id && inDataRoom(doc, room.id));
-  const folderName = new Map<string, string>();
-  for (const doc of inRoom) {
-    if (linkKind(doc) === "folder" && doc.folderId && doc.folderId !== room.id && !sectionMajor(doc.title)) {
-      if (!folderName.has(doc.folderId)) folderName.set(doc.folderId, folderLabel(doc));
+export function buildDocTree(items: DriveDocument[], roomId: string | null): DocTreeNode[] {
+  const folders = new Map<string, FolderAcc>();
+
+  function ensure(id: string) {
+    if (!id || folders.has(id)) return;
+    const known = knownFolderName(id);
+    folders.set(id, {
+      id,
+      name: known ?? "Pasta",
+      href: folderUrl(id),
+      parentId: null,
+    });
+  }
+
+  if (roomId) ensure(roomId);
+  for (const doc of items) {
+    if (doc.folderId) ensure(doc.folderId);
+    const self = urlFolderId(doc);
+    if (self && !doc.driveId) ensure(self);
+  }
+
+  for (const doc of items) {
+    const self = urlFolderId(doc);
+    if (!self || doc.driveId) continue;
+    const folder = folders.get(self);
+    if (!folder) continue;
+    if (!knownFolderName(self)) {
+      const name = cleanFolderTitle(doc.title);
+      if (name && (isScanFolderDoc(doc) || /^Pasta\s+/i.test(doc.title))) folder.name = name;
+    }
+    if (isScanFolderDoc(doc) && doc.folderId && doc.folderId !== self) {
+      folder.parentId = doc.folderId;
+      ensure(doc.folderId);
     }
   }
 
-  function group(key: string, label: string, order: number): RoomGroup {
-    const found = groups.get(key);
-    if (found) return found;
-    const created: RoomGroup = { key, label, order, folderHref: null, files: [] };
-    groups.set(key, created);
-    return created;
+  const namedByPointer = new Set<string>();
+  for (const [id, folder] of folders) {
+    if (knownFolderName(id) || folder.name !== "Pasta") continue;
+    const pointers = items.filter((doc) => !doc.driveId && !isScanFolderDoc(doc) && urlFolderId(doc) === id);
+    if (pointers.length !== 1) continue;
+    const name = cleanFolderTitle(pointers[0].title);
+    if (!name) continue;
+    folder.name = name;
+    namedByPointer.add(pointers[0].id);
   }
 
-  function placeFile(doc: DriveDocument, href: string | null) {
-    const section = sectionMajor(doc.title);
-    const target = section
-      ? group(`sec-${section}`, SECTION_FOLDER[section] ?? `${section}.`, section)
-      : doc.folderId && doc.folderId !== room.id
-        ? group(`child-${doc.folderId}`, folderName.get(doc.folderId) ?? "Pasta", 800)
-        : group("room", room.label, 900);
-    target.files.push({ id: doc.id, title: doc.title, href, mark: shortMark(doc) });
+  for (const folder of folders.values()) {
+    if (folder.parentId || PROGRAM_FOLDER_IDS.has(folder.id)) continue;
+    if (roomId && folder.id !== roomId && folders.has(roomId)) folder.parentId = roomId;
   }
 
-  for (const doc of inRoom) {
-    const kind = linkKind(doc);
-    const section = sectionMajor(doc.title);
-    const isRoomPointer = kind === "folder" && doc.folderId === room.id && !section;
-
-    if (kind === "file") {
-      placeFile(doc, doc.driveUrl);
-      continue;
+  const filesByFolder = new Map<string, DocTreeFile[]>();
+  const loose: DocTreeFile[] = [];
+  for (const doc of items) {
+    if (isFolderContainer(doc) || namedByPointer.has(doc.id)) continue;
+    const file: DocTreeFile = {
+      kind: "file",
+      id: doc.id,
+      name: doc.title,
+      href: fileHref(doc),
+      mark: fileMark(doc),
+    };
+    if (doc.folderId && folders.has(doc.folderId)) {
+      const list = filesByFolder.get(doc.folderId) ?? [];
+      list.push(file);
+      filesByFolder.set(doc.folderId, list);
+    } else {
+      loose.push(file);
     }
-
-    if (kind === "none") {
-      // Nome sem âncora: o seed/inbox tem a linha, mas sem id de arquivo.
-      placeFile(doc, null);
-      continue;
-    }
-
-    if (isRoomPointer) {
-      const target = group("room", room.label, 900);
-      if (!target.folderHref) target.folderHref = doc.driveUrl;
-      continue;
-    }
-
-    if (section) {
-      const target = group(`sec-${section}`, SECTION_FOLDER[section] ?? `${section}.`, section);
-      if (!target.folderHref) target.folderHref = doc.driveUrl;
-      continue;
-    }
-
-    const target = group(`folder-${doc.id}`, folderLabel(doc), 700);
-    if (!target.folderHref) target.folderHref = doc.driveUrl;
   }
 
-  return [...groups.values()]
-    .map((entry) => ({
-      ...entry,
-      files: entry.files.slice().sort((a, b) => compareDocNames(a.title, b.title)),
-    }))
-    .filter((entry) => entry.files.length > 0 || Boolean(entry.folderHref))
-    .filter((entry) => entry.key !== "room" || entry.files.length > 0)
-    .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label, "pt", { sensitivity: "base" }));
+  function childrenOf(id: string, stack: Set<string>): DocTreeNode[] {
+    if (stack.has(id)) return [];
+    const next = new Set(stack);
+    next.add(id);
+    const subs = [...folders.values()]
+      .filter((folder) => folder.parentId === id)
+      .sort((a, b) => compareDocNames(a.name, b.name));
+    const files = (filesByFolder.get(id) ?? []).slice().sort((a, b) => compareDocNames(a.name, b.name));
+    return [
+      ...subs.map(
+        (folder): DocTreeFolder => ({
+          kind: "folder",
+          id: folder.id,
+          name: folder.name,
+          href: driveResourceId(folder.href) ? folder.href : null,
+          children: childrenOf(folder.id, next),
+        }),
+      ),
+      ...files,
+    ];
+  }
+
+  const roots = [...folders.values()]
+    .filter((folder) => !folder.parentId || !folders.has(folder.parentId))
+    .sort((a, b) => {
+      if (roomId) {
+        if (a.id === roomId) return -1;
+        if (b.id === roomId) return 1;
+      }
+      const ia = FOLDER_ORDER.indexOf(a.id);
+      const ib = FOLDER_ORDER.indexOf(b.id);
+      if (ia !== -1 || ib !== -1) {
+        if (ia === -1) return 1;
+        if (ib === -1) return -1;
+        return ia - ib;
+      }
+      return compareDocNames(a.name, b.name);
+    });
+
+  const nodes: DocTreeNode[] = roots.map((folder) => ({
+    kind: "folder" as const,
+    id: folder.id,
+    name: folder.name,
+    href: driveResourceId(folder.href) ? folder.href : null,
+    children: childrenOf(folder.id, new Set()),
+  }));
+  loose.sort((a, b) => compareDocNames(a.name, b.name));
+  return [...nodes, ...loose];
 }
 
 /** Cartão de pasta do programa (Audio_in, auxiliares, …). Não é documento do pilar. */
@@ -266,6 +239,7 @@ export function isProgramFolderCard(doc: DriveDocument): boolean {
 
 /** Documento já classificado neste pilar. Sem frente e sem pilar explícito fica de fora. */
 export function docClassifiedToPillar(doc: DriveDocument, pillar: PillarSlug): boolean {
+  if (isScanFolderDoc(doc)) return false;
   if (isPillarSlug(doc.pillarSlug)) return doc.pillarSlug === pillar;
   if (!doc.workstreamSlug) return false;
   return pillarOf(doc) === pillar;

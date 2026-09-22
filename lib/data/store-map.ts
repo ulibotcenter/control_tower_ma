@@ -38,7 +38,7 @@ export function documentFromInbox(file: InboxFile): DriveDocument | null {
     title: file.name,
     driveUrl: file.driveUrl || "",
     driveId: file.driveId,
-    folderId: null,
+    folderId: file.folderId ?? null,
     type: file.classification.type,
     workstreamSlug: file.classification.workstreamSlug,
     status: file.classification.status,
@@ -55,6 +55,7 @@ export function mapInboxRow(row: {
   source: string;
   drive_url: string | null;
   drive_id: string | null;
+  folder_id?: string | null;
   drive_modified_at?: string | null;
   received_at: string;
   classified: boolean;
@@ -69,6 +70,7 @@ export function mapInboxRow(row: {
     source: row.source === "drive" ? "drive" : "manual",
     driveUrl: row.drive_url || null,
     driveId: row.drive_id,
+    folderId: row.folder_id ?? null,
     driveModifiedAt: row.drive_modified_at || null,
     receivedAt: row.received_at,
     classified: row.classified,

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { folderUrl } from "@/lib/constants";
 import { canSeePriceAndThesis } from "@/lib/visibility";
 import { semaphoreLabelFor, semaphoreShortFor, TARGET_COPY, viewChrome } from "@/lib/mode-meta";
 import { blockersFrom, type PillarView } from "@/lib/data/pillar-view";
@@ -9,10 +8,10 @@ import type { DealBundle, MeetingMode, Semaphore } from "@/lib/types";
 import { ThemePanel, ThemeRail } from "./theme-rail";
 import { Term } from "@/components/ui/term";
 import { WithTerms } from "@/components/ui/with-terms";
-import { DriveLink } from "@/components/ui/drive-link";
 import { Timeline } from "./timeline";
 import { ThesisPrice } from "./thesis-price";
-import { CapTable, DataRoomFinder, MetricsGrid, NotesList } from "./lists";
+import { CapTable, MetricsGrid, NotesList } from "./lists";
+import { DocTree } from "./doc-tree";
 import { MeetingTabs } from "./meeting-tabs";
 import { NoteComposer } from "./note-composer";
 import { PendingTable } from "./pending-table";
@@ -197,13 +196,8 @@ export function DealView({
       {showDrive && (
         <section id="documentos" className="war-block">
           <h2 className="war-label">Data room</h2>
-          <p className="mt-1 text-sm">
-            <DriveLink href={deal.driveFolderId ? folderUrl(deal.driveFolderId) : ""} kind="folder">
-              {deal.driveFolderLabel}
-            </DriveLink>
-          </p>
-          <div className="mt-4">
-            <DataRoomFinder items={bundle.documents} roomId={deal.driveFolderId} roomLabel={deal.driveFolderLabel} />
+          <div className="mt-3">
+            <DocTree items={bundle.documents} roomId={deal.driveFolderId} />
           </div>
         </section>
       )}
