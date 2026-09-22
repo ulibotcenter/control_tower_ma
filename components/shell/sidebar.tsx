@@ -192,6 +192,12 @@ function DealNav({
         <Link href="/" className={`side-link${path === "/" ? " is-on" : ""}`}>
           Início
         </Link>
+        <Link
+          href={`${prefix}/timeline`}
+          className={`side-link${isOn(path, `${prefix}/timeline`) ? " is-on" : ""}`}
+        >
+          Timeline
+        </Link>
       </nav>
       <nav className="side-pillars" aria-label="Pilares do processo">
         {deal.pillars.map((p) => {

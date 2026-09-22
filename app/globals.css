@@ -859,6 +859,106 @@ html:has(.shell[data-work="1"]) {
   box-shadow: inset 0 2px 0 var(--logo);
 }
 
+/*
+ * Eixo dos pilares. Uma coluna, um nó. A tinta é o semáforo já calculado,
+ * só mais baixa: sálvia, cinza-azul, terracota clara, gelo. Não é o alerta.
+ */
+.pillar-axis {
+  display: flex;
+  flex-direction: column;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pillar-axis-stop {
+  position: relative;
+  padding: 0 0 var(--space-4) var(--space-3);
+  border-left: 1px solid var(--line);
+}
+
+.pillar-axis-stop:last-child {
+  padding-bottom: 0;
+  border-left-color: transparent;
+}
+
+.pillar-axis-node {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: fit-content;
+  max-width: calc(100% + var(--space-3) + 0.875rem);
+  margin-left: calc(-1 * var(--space-3) - 0.875rem);
+  padding: 0.15rem var(--space-2) 0.15rem 0;
+  border-radius: var(--radius);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.pillar-axis-node:hover {
+  color: var(--ink);
+}
+
+.pillar-axis-mark {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  place-items: center;
+  border-radius: 999px;
+  font-family: var(--font-ibm), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.pillar-axis-name {
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+}
+
+.pillar-axis-node.is-green {
+  background: #e4efe8;
+}
+.pillar-axis-node.is-green .pillar-axis-mark {
+  background: #d3e4d9;
+}
+
+.pillar-axis-node.is-amber {
+  background: #e4e8ee;
+}
+.pillar-axis-node.is-amber .pillar-axis-mark {
+  background: #d5dbe3;
+}
+
+.pillar-axis-node.is-red {
+  background: #f6ebe6;
+}
+.pillar-axis-node.is-red .pillar-axis-mark {
+  background: #eddcd4;
+}
+
+.pillar-axis-node.is-gray {
+  background: #f4f7f9;
+}
+.pillar-axis-node.is-gray .pillar-axis-mark {
+  background: #e7eef3;
+}
+
+.pillar-axis-notes {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
+  list-style: disc;
+  color: var(--ink);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.pillar-axis-notes li + li {
+  margin-top: var(--space-1);
+}
+
 .timeline.is-compact .timeline-step.is-now .timeline-window,
 .timeline.is-compact .timeline-step.is-now .timeline-note {
   color: var(--muted);
