@@ -161,6 +161,7 @@ create table inbox_files (
   drive_modified_at timestamptz,
   received_at timestamptz not null default now(),
   classified boolean not null default false,
+  dismissed boolean not null default false,
   deal_id uuid references deals(id) on delete set null,
   type document_type,
   workstream_slug text,

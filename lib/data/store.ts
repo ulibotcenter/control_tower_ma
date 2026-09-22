@@ -43,6 +43,7 @@ import {
   addNoteLocal,
   addOpenPointLocal,
   classifyInboxFileLocal,
+  dismissInboxFilesLocal,
   extraChecklistLocal,
   extraDocumentsLocal,
   getDecisionLocal,
@@ -79,6 +80,7 @@ import {
   addNoteRemote,
   addOpenPointRemote,
   classifyInboxFileRemote,
+  dismissInboxFilesRemote,
   extraChecklistRemote,
   extraDocumentsRemote,
   getDecisionRemote,
@@ -219,6 +221,13 @@ export async function classifyInboxFile(
   if (sb) return classifyInboxFileRemote(sb, id, classification);
   if (forbidLocalStore()) refuseLocalWrite("classifyInboxFile");
   return classifyInboxFileLocal(id, classification);
+}
+
+export async function dismissInboxFiles(ids: string[]): Promise<number> {
+  const sb = remote();
+  if (sb) return dismissInboxFilesRemote(sb, ids);
+  if (forbidLocalStore()) refuseLocalWrite("dismissInboxFiles");
+  return dismissInboxFilesLocal(ids);
 }
 
 export async function extraDocuments() {

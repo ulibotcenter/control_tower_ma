@@ -32,6 +32,10 @@ export function checklistFromInbox(file: InboxFile): ChecklistItem | null {
   };
 }
 
+export function isInboxOpen(file: Pick<InboxFile, "classified" | "dismissed">) {
+  return !file.classified && !file.dismissed;
+}
+
 export function documentFromInbox(file: InboxFile): DriveDocument | null {
   if (!file.classified || !file.classification) return null;
   return {
@@ -82,6 +86,7 @@ export function mapInboxRow(row: {
   drive_modified_at?: string | null;
   received_at: string;
   classified: boolean;
+  dismissed?: boolean | null;
   deal_id: string | null;
   type: string | null;
   workstream_slug: string | null;
@@ -97,6 +102,7 @@ export function mapInboxRow(row: {
     driveModifiedAt: row.drive_modified_at || null,
     receivedAt: row.received_at,
     classified: row.classified,
+    dismissed: row.dismissed === true,
   };
   if (row.classified && row.deal_id && row.type && row.status) {
     file.classification = {

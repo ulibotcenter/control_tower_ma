@@ -22,8 +22,9 @@ import {
   upsertScannedFile,
 } from "@/lib/data/store";
 import { deals, documents } from "@/lib/data/seed";
-import { DRIVE_FOLDERS } from "@/lib/constants";
+import { DRIVE_FOLDERS, inboxAcceptsParent } from "@/lib/constants";
 import { dealIdForDriveFolder, scanFolderDocId } from "@/lib/data/doc-groups";
+import { isInboxOpen } from "@/lib/data/store-map";
 import { driveResourceId } from "@/lib/http";
 import { formatDate } from "@/lib/format";
 import type { DriveDocument, InboxFile } from "@/lib/types";
@@ -65,7 +66,7 @@ function reviewFromInbox(
   folders: Map<string, string>,
 ): DriveReviewItem[] {
   return files
-    .filter((f) => !f.classified && f.source === "drive")
+    .filter((f) => isInboxOpen(f) && f.source === "drive")
     .map((f) => ({
       id: f.id,
       name: f.name,
@@ -206,6 +207,28 @@ async function runSync() {
         } catch (err) {
           console.error("[drive/sync] seed folder", err);
         }
+      }
+      continue;
+    }
+
+    if (!inboxAcceptsParent(file.folderId, parentOf)) {
+      try {
+        const hit = await updateStoredDocumentDrive(file.id, {
+          title: file.name,
+          driveUrl: file.webViewLink,
+          folderId: file.folderId,
+        });
+        if (!hit) {
+          await upsertScannedFile({
+            driveId: file.id,
+            name: file.name,
+            folderId: file.folderId,
+            driveUrl: file.webViewLink,
+            dealId: dealIdForDriveFolder(file.folderId, parentOf, rooms),
+          });
+        }
+      } catch (err) {
+        console.error("[drive/sync] finder only", err);
       }
       continue;
     }

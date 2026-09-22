@@ -14,6 +14,8 @@ export type DealBriefInput = {
 };
 
 const MAX = 6000;
+/** Pedir leitura: no máximo ~40 nomes abertos da bandeja, não a lista inteira. */
+export const AI_INBOX_NAME_CAP = 40;
 
 export const AI_SYSTEM = `Você é o PMO sênior de M&A da Eleva, na sala de AD+R/Loopert e Rádio Health.
 Responda apenas com JSON, em português do Brasil.
@@ -53,7 +55,7 @@ export function buildDealBrief(input: DealBriefInput): string {
     .slice(0, 12)
     .map((task) => line([task.title, task.owner, task.due, task.pillarSlug, task.status]));
   const decisions = input.decisions.slice(0, 5).map((decision) => line([decision.date, decision.whoLabel, clip(decision.decisionTaken, 180)]));
-  const files = input.files.slice(0, 20).map((file) => file.name.trim()).filter(Boolean);
+  const files = input.files.slice(0, AI_INBOX_NAME_CAP).map((file) => file.name.trim()).filter(Boolean);
   const blockers = input.blockers.slice(0, 6).map((lineText) => clip(lineText, 180));
 
   const blocks = [

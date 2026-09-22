@@ -724,12 +724,41 @@ export async function deleteNoteRemote(sb: SupabaseClient, id: string): Promise<
 }
 
 export async function unclassifiedCountRemote(sb: SupabaseClient) {
+  const withDismissed = await sb
+    .from("inbox_files")
+    .select("id", { count: "exact", head: true })
+    .eq("classified", false)
+    .or("dismissed.is.null,dismissed.eq.false");
+  if (!withDismissed.error) return withDismissed.count ?? 0;
+  if (!/dismissed/i.test(withDismissed.error.message)) fail("count inbox", withDismissed.error);
   const { count, error } = await sb
     .from("inbox_files")
     .select("id", { count: "exact", head: true })
     .eq("classified", false);
   if (error) fail("count inbox", error);
   return count ?? 0;
+}
+
+/** Dispensa a lista visível. Sem delete e sem documento/checklist. */
+export async function dismissInboxFilesRemote(sb: SupabaseClient, ids: string[]): Promise<number> {
+  const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
+  if (!unique.length) return 0;
+  let { data, error } = await sb
+    .from("inbox_files")
+    .update({ dismissed: true })
+    .in("id", unique)
+    .eq("classified", false)
+    .select("id");
+  if (error && /dismissed/i.test(error.message)) {
+    ({ data, error } = await sb
+      .from("inbox_files")
+      .update({ classified: true })
+      .in("id", unique)
+      .eq("classified", false)
+      .select("id"));
+  }
+  if (error) fail("dismiss inbox", error);
+  return data?.length ?? 0;
 }
 
 const PROPOSAL_KINDS: AiProposalKind[] = ["opl", "tarefa", "nota", "classificacao", "atencao"];

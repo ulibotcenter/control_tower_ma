@@ -197,6 +197,23 @@ export async function classifyInboxFileLocal(
   return file;
 }
 
+/** Marca a lista visível como dispensada. Não apaga e não cria documento. */
+export async function dismissInboxFilesLocal(ids: string[]): Promise<number> {
+  const s = await load();
+  const want = new Set(ids.filter(Boolean));
+  let count = 0;
+  for (const file of s.inbox) {
+    if (!want.has(file.id) || file.classified || file.dismissed) continue;
+    file.dismissed = true;
+    count += 1;
+  }
+  if (count) {
+    memory = s;
+    await writeStore(s);
+  }
+  return count;
+}
+
 /** Pasta lida na varredura. O id estável não entra na conta do pilar. */
 export async function upsertDriveFolderLocal(input: {
   folderId: string;
@@ -311,7 +328,7 @@ export async function addDecisionLocal(input: Omit<Decision, "id">): Promise<Dec
 
 export async function unclassifiedCountLocal() {
   const s = await load();
-  return s.inbox.filter((f) => !f.classified).length;
+  return s.inbox.filter((f) => !f.classified && !f.dismissed).length;
 }
 
 export async function listOpenPointsLocal(): Promise<OpenPoint[]> {

@@ -3,7 +3,7 @@ import { getDealBundle } from "../data/provider";
 import { workstreams } from "../data/seed";
 import { addAiProposals, listDecisions, listInbox } from "../data/store";
 import type { AiProposal } from "../types";
-import { buildDealBrief } from "./context";
+import { AI_INBOX_NAME_CAP, buildDealBrief } from "./context";
 import { AI_UNCONFIGURED, isOpenRouterConfigured } from "./env";
 import { askOpenRouter } from "./openrouter";
 import { parseModelProposals } from "./proposals";
@@ -28,7 +28,8 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
 
   const [decisions, inbox] = await Promise.all([listDecisions(), listInbox()]);
   const files = inbox
-    .filter((file) => !file.classified)
+    .filter((file) => !file.classified && !file.dismissed)
+    .slice(0, AI_INBOX_NAME_CAP)
     .map((file) => ({ id: file.id, name: file.name }));
   const brief = buildDealBrief({
     name: bundle.deal.name,

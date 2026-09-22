@@ -221,6 +221,8 @@ export interface InboxFile {
   driveModifiedAt?: string | null;
   receivedAt: string;
   classified: boolean;
+  /** Já vi / dispensar: some da lista aberta. Não apaga a linha nem cria documento. */
+  dismissed?: boolean;
   classification?: {
     dealId: string;
     type: DocumentType;

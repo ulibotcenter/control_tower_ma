@@ -24,6 +24,38 @@ export const DRIVE_FOLDERS = {
   atas: { id: "1wwCuJtTW3gHQpdiWKz4JDAnaePSGUvKT", name: "Ata" },
 } as const;
 
+/** Data room oficial: arquivo daqui não cai na bandeja “a classificar”. */
+export const INBOX_OFFICIAL_FOLDERS = [
+  DRIVE_FOLDERS.loopert,
+  DRIVE_FOLDERS.health,
+  DRIVE_FOLDERS.atas,
+  DRIVE_FOLDERS.transcricoes,
+  DRIVE_FOLDERS.audio,
+  DRIVE_FOLDERS.relatorios,
+  DRIVE_FOLDERS.apresentacoes,
+  DRIVE_FOLDERS.opl,
+] as const;
+
+export const INBOX_OFFICIAL_FOLDER_IDS = new Set<string>(INBOX_OFFICIAL_FOLDERS.map((folder) => folder.id));
+
+/** Bandeja só se o pai for raiz solta, “Outros” (fora do data room) ou sem pasta. */
+export function inboxAcceptsParent(
+  folderId: string | null | undefined,
+  parentOf: Map<string, string | null>,
+): boolean {
+  if (!folderId) return true;
+  if (folderId === DRIVE_FOLDERS.root.id) return true;
+  let cursor: string | null = folderId;
+  const seen = new Set<string>();
+  while (cursor && !seen.has(cursor)) {
+    seen.add(cursor);
+    if (INBOX_OFFICIAL_FOLDER_IDS.has(cursor)) return false;
+    if (cursor === DRIVE_FOLDERS.root.id) return true;
+    cursor = parentOf.get(cursor) ?? null;
+  }
+  return true;
+}
+
 /** Nunca indexar nem linkar. */
 export const DRIVE_DO_NOT_INDEX = {
   id: "12xWppq_hQ7tYFuM4hBBlK7ZN8UdkP-Dq",

@@ -5,9 +5,11 @@ import { listInbox } from "@/lib/data/store";
 import { DOC_STATUS_LABEL, DOC_TYPE_LABEL, folderUrl, DRIVE_FOLDERS } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import Link from "next/link";
+import { DismissInboxButton } from "@/components/inbox/dismiss-all";
 import { InboxForm } from "@/components/inbox/inbox-form";
 import { DriveSyncButton } from "@/components/shell/drive-sync-button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { isInboxOpen } from "@/lib/data/store-map";
 import { deals } from "@/lib/data/seed";
 import { focusSlugFromQuery } from "@/components/shell/focus-deal";
 
@@ -20,8 +22,8 @@ export default async function InboxPage({
   const focus = focusSlugFromQuery(deal);
   const files = await listInbox();
   const drive = getDriveStatus();
-  const open = files.filter((f) => !f.classified);
-  const done = files.filter((f) => f.classified);
+  const open = files.filter(isInboxOpen);
+  const done = files.filter((f) => f.classified && f.classification);
 
   return (
     <AppShell focusSlug={focus}>
@@ -63,7 +65,10 @@ export default async function InboxPage({
       <InboxForm />
 
       <section className="mt-10">
-        <h2 className="serif text-2xl text-navy">A classificar ({open.length})</h2>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 className="serif text-2xl text-navy">A classificar ({open.length})</h2>
+          <DismissInboxButton ids={open.map((file) => file.id)} />
+        </div>
         {open.length === 0 ? (
           <div className="mt-3">
             <EmptyState
