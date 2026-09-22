@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/app-shell";
 import { loadDealFrame } from "@/lib/deal-frame";
-import { applyDeckText, DECK_FILE_ID, DECK_SOURCE } from "@/lib/data/rh-deck";
+import { DECK_SOURCE, loopertDeckCards } from "@/lib/data/rh-deck";
 import { findRhMeetingName, seedPersonCards } from "@/lib/data/rh-people";
-import { exportSlidesPlain } from "@/lib/drive";
 import { viewChrome } from "@/lib/mode-meta";
 
 export default async function RhPage({
@@ -17,11 +16,7 @@ export default async function RhPage({
 
   const { bundle } = frame;
   const cap = bundle.capTable;
-  let cards = seedPersonCards(bundle.people);
-  if (bundle.deal.slug === "loopert" && cards.length > 0) {
-    const deck = await exportSlidesPlain(DECK_FILE_ID);
-    if (deck.ok) cards = applyDeckText(cards, deck.text);
-  }
+  const cards = bundle.deal.slug === "loopert" ? loopertDeckCards() : seedPersonCards(bundle.people);
   const fromDeck = cards.some((card) => card.source === DECK_SOURCE);
   const meeting = findRhMeetingName(bundle.documents.map((doc) => doc.title));
 

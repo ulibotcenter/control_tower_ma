@@ -4,6 +4,36 @@ import type { RhPersonCard } from "./rh-people";
 export const DECK_FILE_ID = "15IjNus__YweAKBgl7dlue4O_pWymHnrQ";
 export const DECK_SOURCE = "Apresentação Completa";
 
+/**
+ * Lista fechada da Eleva para o RH da Loopert. Não vem de exportação.
+ * Anos não foram dados. Campo ausente é “—”.
+ */
+const LOOPERT_DECK_ROWS: readonly (readonly [string, string, string, string])[] = [
+  ["João Konflanz", "CEO / administrador único", "Mandatório no deal; sponsor do alvo", "N/A (sócio)"],
+  ["Jorge Fernandes", "Sócio; infra / banco (pontual)", "Conselheiro técnico; PMI = consultor, não quadro fixo", "N/A (sócio)"],
+  ["Carlo Huinka", "Sócio", "Cap table 20%; sem função operacional no deck", "N/A (sócio)"],
+  ["Lucas Caresia", "CTO / produto (sócio 15%)", "Key-man; retenção 36 meses no pack Pacta; centraliza código", "N/A (sócio)"],
+  ["Isis Beatris de Souza Pereira", "Tech lead / dev (PJ)", "Essencial; backup do Lucas; ramificar conhecimento", "R$ 6.000"],
+  ["Eduardo Augusto Mascarenhas", "Infra TI (PJ)", "Essencial 24/7; 50% Radio Health — definir quem paga", "R$ 6.000 (metade Radio Health)"],
+  ["Suélen Castilho da Roza Konflanz", "Financeiro / admin / RH (CLT)", "Crítica hoje; conflito (esposa do João); PMI em aberto", "R$ 4.539"],
+  ["Aline Caroline Silveira de Oliveira", "SDR (CLT)", "Demitida jul/2026; AD+R deve contratar; home office", "R$ 3.400"],
+  ["Christian George Bernard Roch Junior", "Estagiário vendas/CS", "Efetivar; estágio até dez/2026", "Bolsa R$ 2.800"],
+  ["Jorge Nelson de Souza Junior (Juninho)", "Suporte (CLT)", "Baixa aderência; reavaliar no PMI", "R$ 700"],
+  ["João Delgado", "Dev app (CLT)", "Desligar; app absorvido por Lucas/Isis; custo 50% Heggtech", "R$ 2.289"],
+  ["Matheus Bruni (Bruno)", "CTO Radio Health (não é Loopert)", "Candidato a par do Lucas; depende TARGA/Jardel", "—"],
+];
+
+export function loopertDeckCards(): RhPersonCard[] {
+  return LOOPERT_DECK_ROWS.map(([name, role, importance, salary]) => ({
+    name,
+    role,
+    years: "—",
+    importance,
+    salary,
+    source: DECK_SOURCE,
+  }));
+}
+
 const EMPTY = "—";
 
 function fold(value: string) {
