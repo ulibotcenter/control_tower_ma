@@ -3,6 +3,21 @@ import type { RhPersonCard } from "./rh-people";
 /** Arquivo Drive: Apresentacao Completa - M&A. */
 export const DECK_FILE_ID = "15IjNus__YweAKBgl7dlue4O_pWymHnrQ";
 export const DECK_SOURCE = "Apresentação Completa";
+/** Fonte exibida nas 12 fichas. Não é o rótulo antigo da apresentação. */
+export const RH_CARD_SOURCE = "Reunião de Pessoal com a Loopert";
+
+export const RH_CARD_FIELDS = ["role", "years", "importance", "salary", "source"] as const;
+export type RhCardField = (typeof RH_CARD_FIELDS)[number];
+
+export type RhCardEdit = {
+  personName: string;
+  field: RhCardField;
+  value: string;
+};
+
+export function isRhCardField(value: string): value is RhCardField {
+  return (RH_CARD_FIELDS as readonly string[]).includes(value);
+}
 
 /**
  * Lista fechada da Eleva para o RH da Loopert. Não vem de exportação.
@@ -30,8 +45,27 @@ export function loopertDeckCards(): RhPersonCard[] {
     years: "—",
     importance,
     salary,
-    source: DECK_SOURCE,
+    source: RH_CARD_SOURCE,
   }));
+}
+
+export function loopertPersonNames(): readonly string[] {
+  return LOOPERT_DECK_ROWS.map(([name]) => name);
+}
+
+/** Override gravado por cima da lista. Sem linha, o default fica. */
+export function applyRhEdits(cards: RhPersonCard[], edits: readonly RhCardEdit[]): RhPersonCard[] {
+  if (!edits.length) return cards;
+  return cards.map((card) => {
+    const mine = edits.filter((edit) => edit.personName === card.name);
+    if (!mine.length) return card;
+    const next = { ...card };
+    for (const edit of mine) {
+      if (!isRhCardField(edit.field)) continue;
+      next[edit.field] = edit.value;
+    }
+    return next;
+  });
 }
 
 const EMPTY = "—";

@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/app-shell";
 import { loadDealFrame } from "@/lib/deal-frame";
-import { DECK_SOURCE, loopertDeckCards } from "@/lib/data/rh-deck";
+import { RhCards } from "@/components/deal/rh-cards";
+import { applyRhEdits, loopertDeckCards } from "@/lib/data/rh-deck";
 import { findRhMeetingName, seedPersonCards } from "@/lib/data/rh-people";
+import { listRhCardEdits } from "@/lib/data/store";
 import { viewChrome } from "@/lib/mode-meta";
 
 export default async function RhPage({
@@ -16,8 +18,10 @@ export default async function RhPage({
 
   const { bundle } = frame;
   const cap = bundle.capTable;
-  const cards = bundle.deal.slug === "loopert" ? loopertDeckCards() : seedPersonCards(bundle.people);
-  const fromDeck = cards.some((card) => card.source === DECK_SOURCE);
+  const loopert = bundle.deal.slug === "loopert";
+  const cards = loopert
+    ? applyRhEdits(loopertDeckCards(), await listRhCardEdits())
+    : seedPersonCards(bundle.people);
   const meeting = findRhMeetingName(bundle.documents.map((doc) => doc.title));
 
   return (
@@ -54,38 +58,8 @@ export default async function RhPage({
 
       <section className="mt-8" aria-label="Pessoas">
         <h2 className="serif text-xl text-navy">Pessoas</h2>
-        {cards.length > 0 ? (
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {cards.map((card) => (
-              <li key={`${card.source}-${card.name}`} className="paper px-4 py-3 text-sm">
-                <p className="font-semibold text-navy">{card.name}</p>
-                <dl className="mt-2 space-y-1 text-[13px]">
-                  <div className="flex gap-2">
-                    <dt className="text-muted">Função</dt>
-                    <dd>{card.role}</dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="text-muted">Anos de empresa</dt>
-                    <dd>{card.years}</dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="text-muted">Importância (atual / PMI)</dt>
-                    <dd>{card.importance}</dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="text-muted">Salário</dt>
-                    <dd>{card.salary}</dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="text-muted">Fonte</dt>
-                    <dd>{card.source}</dd>
-                  </div>
-                </dl>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        {meeting || fromDeck ? null : <p className="mt-3 text-sm text-muted">Reunião de RH ainda sem texto indexado</p>}
+        <RhCards cards={cards} canEdit={frame.mode === "operate"} />
+        {cards.length > 0 || meeting ? null : <p className="mt-3 text-sm text-muted">Reunião de RH ainda sem texto indexado</p>}
       </section>
     </AppShell>
   );

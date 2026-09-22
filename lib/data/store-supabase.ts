@@ -28,7 +28,8 @@ import { folderUrl } from "../constants";
 import { sanitizeDriveUrl } from "../http";
 import { SCAN_FOLDER_NOTE, scanFileDocId, scanFolderDocId } from "./doc-groups";
 import { isUuid } from "./room-input";
-import { deals, decisions as seedDecisions } from "./seed";
+import { isRhCardField, type RhCardEdit } from "./rh-deck";
+import { LOOPERT_ID, deals, decisions as seedDecisions } from "./seed";
 import { laterStamp } from "../ai/corpus";
 import { mapActionRow, mapChecklistRow, mapDecisionRow, mapDocumentRow, mapInboxRow, mapNoteRow, mapOpenPointRow, packShadow } from "./store-map";
 
@@ -908,4 +909,34 @@ export async function setAiProposalStatusRemote(
     .maybeSingle();
   if (error) fail("update ai proposal", error);
   return data ? mapAiProposal(data) : null;
+}
+
+export async function listRhEditsRemote(sb: SupabaseClient): Promise<RhCardEdit[]> {
+  const { data, error } = await sb
+    .from("rh_person_edits")
+    .select("person_name, field, value")
+    .eq("deal_id", LOOPERT_ID);
+  if (error) fail("list rh edits", error);
+  return (data ?? []).flatMap((row) => {
+    const personName = String((row as { person_name?: string }).person_name ?? "");
+    const field = String((row as { field?: string }).field ?? "");
+    const value = String((row as { value?: string }).value ?? "");
+    if (!personName || !isRhCardField(field)) return [];
+    return [{ personName, field, value }];
+  });
+}
+
+export async function upsertRhEditRemote(sb: SupabaseClient, edit: RhCardEdit): Promise<RhCardEdit> {
+  const { error } = await sb.from("rh_person_edits").upsert(
+    {
+      deal_id: LOOPERT_ID,
+      person_name: edit.personName,
+      field: edit.field,
+      value: edit.value,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "deal_id,person_name,field" },
+  );
+  if (error) fail("upsert rh edit", error);
+  return edit;
 }

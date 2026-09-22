@@ -22,6 +22,7 @@ import { sanitizeDriveUrl } from "../http";
 import { decisions as seedDecisions, inboxSeed } from "./seed";
 import { SCAN_FOLDER_NOTE, scanFileDocId, scanFolderDocId } from "./doc-groups";
 import { laterStamp } from "../ai/corpus";
+import type { RhCardEdit } from "./rh-deck";
 import { checklistFromInbox, documentFromInbox } from "./store-map";
 
 type Store = {
@@ -39,6 +40,8 @@ type Store = {
   proposals: AiProposal[];
   /** Delta do Pedir leitura, por drive_id. */
   fileReads: FileReadStamp[];
+  /** Campo editado de uma ficha de RH. A lista fechada continua o default. */
+  rhEdits: RhCardEdit[];
 };
 
 const defaultStore = (): Store => ({
@@ -52,6 +55,7 @@ const defaultStore = (): Store => ({
   driveSyncedAt: null,
   proposals: [],
   fileReads: [],
+  rhEdits: [],
 });
 
 const filePath = path.join(process.cwd(), ".data", "store.json");
@@ -82,6 +86,7 @@ async function load(): Promise<Store> {
       driveSyncedAt: parsed.driveSyncedAt ?? null,
       proposals: parsed.proposals ?? [],
       fileReads: parsed.fileReads ?? [],
+      rhEdits: parsed.rhEdits ?? [],
     };
     return memory;
   } catch {
@@ -457,6 +462,23 @@ export async function deleteActionLocal(id: string): Promise<boolean> {
   memory = s;
   await writeStore(s);
   return true;
+}
+
+export async function listRhEditsLocal(): Promise<RhCardEdit[]> {
+  const s = await load();
+  return [...(s.rhEdits ?? [])];
+}
+
+export async function upsertRhEditLocal(edit: RhCardEdit): Promise<RhCardEdit> {
+  const s = await load();
+  const list = s.rhEdits ?? [];
+  const index = list.findIndex((row) => row.personName === edit.personName && row.field === edit.field);
+  if (index >= 0) list[index] = edit;
+  else list.push(edit);
+  s.rhEdits = list;
+  memory = s;
+  await writeStore(s);
+  return edit;
 }
 
 export async function listExtraNotesLocal(): Promise<Note[]> {

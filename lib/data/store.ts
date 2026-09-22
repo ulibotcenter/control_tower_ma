@@ -7,7 +7,7 @@
  *
  * Coleções aqui (já migráveis / já migradas):
  *   inbox_files, decisions, documents extras, checklist extras,
- *   open_points, actions novas, notes novas, ai_proposals.
+ *   open_points, actions novas, notes novas, ai_proposals, rh_person_edits.
  *
  * Actions do corte continuam no seed até a primeira gravação: aí viram linha
  * (origin_id) e a cópia só-leitura sai da lista. Notes do corte seguem no seed.
@@ -30,6 +30,7 @@ import type {
   Note,
   OpenPoint,
 } from "../types";
+import type { RhCardEdit } from "./rh-deck";
 import { forbidLocalStore, isSupabaseConfigured } from "../config";
 import { createSupabaseAdmin } from "../supabase/server";
 import { decisions as seedDecisions } from "./seed";
@@ -71,6 +72,8 @@ import {
   setAiProposalStatusLocal,
   listFileReadsLocal,
   markFileReadsLocal,
+  listRhEditsLocal,
+  upsertRhEditLocal,
 } from "./store-local";
 import {
   addActionRemote,
@@ -108,6 +111,8 @@ import {
   setAiProposalStatusRemote,
   listFileReadsRemote,
   markFileReadsRemote,
+  listRhEditsRemote,
+  upsertRhEditRemote,
 } from "./store-supabase";
 
 function remote() {
@@ -461,6 +466,20 @@ export async function markFileReads(rows: { driveId: string; driveModifiedAt?: s
   }
   if (forbidLocalStore()) return;
   await markFileReadsLocal(rows);
+}
+
+export async function listRhCardEdits(): Promise<RhCardEdit[]> {
+  const sb = remote();
+  if (sb) return safeRead("listRhCardEdits", () => listRhEditsRemote(sb), []);
+  if (forbidLocalStore()) return [];
+  return listRhEditsLocal();
+}
+
+export async function saveRhCardEdit(edit: RhCardEdit): Promise<RhCardEdit> {
+  const sb = remote();
+  if (sb) return upsertRhEditRemote(sb, edit);
+  if (forbidLocalStore()) refuseLocalWrite("saveRhCardEdit");
+  return upsertRhEditLocal(edit);
 }
 
 export async function setAiProposalStatus(id: string, status: AiProposalStatus): Promise<AiProposal | null> {
