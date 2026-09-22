@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/app-shell";
 import { loadDealFrame } from "@/lib/deal-frame";
+import { applyDeckText, DECK_FILE_ID, DECK_SOURCE } from "@/lib/data/rh-deck";
 import { findRhMeetingName, seedPersonCards } from "@/lib/data/rh-people";
+import { exportSlidesPlain } from "@/lib/drive";
 import { viewChrome } from "@/lib/mode-meta";
 
 export default async function RhPage({
@@ -15,7 +17,12 @@ export default async function RhPage({
 
   const { bundle } = frame;
   const cap = bundle.capTable;
-  const cards = seedPersonCards(bundle.people);
+  let cards = seedPersonCards(bundle.people);
+  if (bundle.deal.slug === "loopert" && cards.length > 0) {
+    const deck = await exportSlidesPlain(DECK_FILE_ID);
+    if (deck.ok) cards = applyDeckText(cards, deck.text);
+  }
+  const fromDeck = cards.some((card) => card.source === DECK_SOURCE);
   const meeting = findRhMeetingName(bundle.documents.map((doc) => doc.title));
 
   return (
@@ -83,7 +90,7 @@ export default async function RhPage({
             ))}
           </ul>
         ) : null}
-        {meeting ? null : <p className="mt-3 text-sm text-muted">Reunião de RH ainda sem texto indexado</p>}
+        {meeting || fromDeck ? null : <p className="mt-3 text-sm text-muted">Reunião de RH ainda sem texto indexado</p>}
       </section>
     </AppShell>
   );

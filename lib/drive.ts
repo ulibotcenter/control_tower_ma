@@ -475,3 +475,109 @@ export async function exportDriveText(file: { id: string; name: string; mimeType
     return null;
   }
 }
+
+export type SlidesText =
+  | { ok: true; text: string }
+  | { ok: false; message: string };
+
+/** Frase curta da API. Não devolve o token. */
+async function apiPhrase(res: Response): Promise<string> {
+  const body = await res.text();
+  try {
+    const json = JSON.parse(body) as { error?: { message?: string } | string };
+    if (typeof json.error === "string" && json.error.trim()) return json.error.trim();
+    if (json.error && typeof json.error === "object" && json.error.message?.trim()) return json.error.message.trim();
+  } catch {
+    /* corpo não é JSON */
+  }
+  const line = body.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return line.slice(0, 240) || `export ${res.status}`;
+}
+
+type SlideTextEl = {
+  shape?: { text?: { textElements?: Array<{ textRun?: { content?: string } }> } };
+};
+
+function slideElementText(elements: SlideTextEl[] | undefined): string {
+  const parts: string[] = [];
+  for (const el of elements ?? []) {
+    for (const run of el.shape?.text?.textElements ?? []) {
+      if (run.textRun?.content) parts.push(run.textRun.content);
+    }
+  }
+  return parts.join("");
+}
+
+/** Notas do apresentador, só se o text/plain não vier. Áudio não entra. */
+async function speakerNotesText(token: string, fileId: string): Promise<SlidesText> {
+  const url = new URL(`https://slides.googleapis.com/v1/presentations/${encodeURIComponent(fileId)}`);
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(20_000),
+    cache: "no-store",
+  });
+  if (!res.ok) return { ok: false, message: await apiPhrase(res) };
+  const doc = (await res.json()) as {
+    slides?: Array<{
+      pageElements?: SlideTextEl[];
+      slideProperties?: { notesPage?: { pageElements?: SlideTextEl[] } };
+    }>;
+  };
+  const chunks: string[] = [];
+  for (const slide of doc.slides ?? []) {
+    const body = slideElementText(slide.pageElements);
+    const notes = slideElementText(slide.slideProperties?.notesPage?.pageElements);
+    if (body.trim()) chunks.push(body);
+    if (notes.trim()) chunks.push(notes);
+  }
+  const text = chunks.join("\n\n").trim();
+  if (!text) return { ok: false, message: "apresentação sem texto" };
+  return { ok: true, text: text.slice(0, 400_000) };
+}
+
+/**
+ * Slides → text/plain. Se a exportação falhar ou vier vazia, tenta as notas.
+ * Sem credencial, devolve a frase e não inventa corpo.
+ */
+export async function exportSlidesPlain(fileId: string): Promise<SlidesText> {
+  if (!isDriveConfigured()) return { ok: false, message: "Drive sem credencial." };
+  try {
+    const token = await accessToken();
+    const metaUrl = new URL(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}`);
+    metaUrl.searchParams.set("fields", "mimeType,name");
+    const metaRes = await fetch(metaUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(20_000),
+      cache: "no-store",
+    });
+    if (!metaRes.ok) return { ok: false, message: await apiPhrase(metaRes) };
+    const meta = (await metaRes.json()) as { mimeType?: string; name?: string };
+    const mime = meta.mimeType || "";
+    const name = meta.name || "";
+    if (readingKind(name, mime) === "audio" || mime.startsWith("audio/")) {
+      return { ok: false, message: "áudio não é lido" };
+    }
+    const url = new URL(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/export`);
+    url.searchParams.set("mimeType", "text/plain");
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(20_000),
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      const phrase = await apiPhrase(res);
+      const notes = await speakerNotesText(token, fileId);
+      if (notes.ok) return notes;
+      return { ok: false, message: phrase };
+    }
+    const raw = await res.text();
+    if (!raw.trim() || /^\s*</.test(raw)) {
+      const notes = await speakerNotesText(token, fileId);
+      if (notes.ok) return notes;
+      return { ok: false, message: notes.message };
+    }
+    return { ok: true, text: raw.slice(0, 400_000) };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "falha" };
+  }
+}
