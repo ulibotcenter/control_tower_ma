@@ -10,7 +10,7 @@ const FIELDS: readonly { field: RhCardField; label: string }[] = [
   { field: "years", label: "Anos de empresa" },
   { field: "importance", label: "Importância (atual / PMI)" },
   { field: "salary", label: "Salário" },
-  { field: "source", label: "Fonte" },
+  { field: "source", label: "Expectativa pós-aquisição" },
 ];
 
 function Field({
