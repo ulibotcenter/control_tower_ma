@@ -3146,7 +3146,8 @@ td.ops-meta-cell {
 }
 
 .ia-actions,
-.ia-row {
+.ia-row,
+.ia-deal {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;

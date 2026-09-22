@@ -5,7 +5,8 @@ import { denyUnlessOperate } from "@/lib/room-write";
 import { AI_UNCONFIGURED } from "@/lib/ai/env";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+/** Três ondas sequenciais, cada uma com folga para uma retentativa. */
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   const denied = await denyUnlessOperate();
@@ -29,13 +30,24 @@ export async function POST(req: Request) {
     if (result.message === "Deal desconhecido.") {
       return NextResponse.json({ configured: true, message: result.message, proposals: [] }, { status: 404 });
     }
-    const emptyOnPurpose = !result.message || result.message === "Nenhuma proposta a partir deste contexto.";
-    if (result.proposals.length === 0 && !emptyOnPurpose) {
-      return NextResponse.json({ configured: true, message: result.message, proposals: [] }, { status: 502 });
+    if (result.failed) {
+      return NextResponse.json(
+        {
+          configured: true,
+          failed: true,
+          message: result.message,
+          toast: result.toast,
+          waves: result.waves,
+          proposals: result.proposals,
+        },
+        { status: 502 },
+      );
     }
     return NextResponse.json({
       configured: true,
-      message: result.message,
+      message: result.toast,
+      toast: result.toast,
+      waves: result.waves,
       proposals: result.proposals,
     });
   } catch (err) {

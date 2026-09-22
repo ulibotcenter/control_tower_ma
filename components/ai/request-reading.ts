@@ -17,18 +17,19 @@ export async function requestAiReading(dealSlug: string): Promise<ReadingResult>
   } catch {
     return { configured: true, count: 0, error: "Falha de rede." };
   }
-  let data: { configured?: boolean; message?: string; proposals?: unknown; error?: string } = {};
+  let data: { configured?: boolean; message?: string; toast?: string; proposals?: unknown; error?: string } = {};
   try {
     data = (await res.json()) as typeof data;
   } catch {
     data = {};
   }
   const count = Array.isArray(data.proposals) ? data.proposals.length : 0;
+  const line = data.toast || data.message;
   if (data.configured === false) {
-    return { configured: false, message: data.message || "IA não configurada", count: 0 };
+    return { configured: false, message: line || "IA não configurada", count: 0 };
   }
   if (!res.ok) {
-    return { configured: true, count: 0, error: data.message || "Falha na leitura." };
+    return { configured: true, count, error: line || "Falha na leitura." };
   }
-  return { configured: true, message: data.message, count };
+  return { configured: true, message: line, count };
 }

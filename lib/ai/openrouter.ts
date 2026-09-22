@@ -10,14 +10,20 @@ function safeMessage(message: string) {
   return message.replace(/sk-or-[a-z0-9-]+/gi, "[redacted]").slice(0, 240);
 }
 
-async function complete(model: string, brief: string, jsonMode: boolean): Promise<Completion> {
+async function complete(
+  model: string,
+  brief: string,
+  jsonMode: boolean,
+  system: string,
+  maxTokens: number,
+): Promise<Completion> {
   const key = openRouterKey();
   const body: Record<string, unknown> = {
     model,
     temperature: 0.2,
-    max_tokens: 1200,
+    max_tokens: maxTokens,
     messages: [
-      { role: "system", content: AI_SYSTEM },
+      { role: "system", content: system },
       { role: "user", content: brief },
     ],
   };
@@ -89,18 +95,40 @@ async function listedSonnet() {
   }
 }
 
-/** Chamada só no servidor. Se o modelo padrão não existir, usa o Sonnet estável da lista. */
-export async function askOpenRouter(brief: string): Promise<Completion> {
+function emptyJsonBody(result: Completion) {
+  return (
+    !result.ok &&
+    result.status === 502 &&
+    (result.message === "A IA não devolveu texto." || result.message === "OpenRouter 502")
+  );
+}
+
+/** json_object falhou (400) ou voltou vazio (502): tenta de novo sem o formato. */
+function dropJsonMode(result: Completion) {
+  return !result.ok && (result.status === 400 || emptyJsonBody(result));
+}
+
+async function askModel(model: string, brief: string, system: string, maxTokens: number) {
+  let result = await complete(model, brief, true, system, maxTokens);
+  if (dropJsonMode(result)) result = await complete(model, brief, false, system, maxTokens);
+  return result;
+}
+
+export type OpenRouterAsk = {
+  system?: string;
+  maxTokens?: number;
+};
+
+/** Chamada só no servidor. Cada onda pede JSON com max_tokens 4000. */
+export async function askOpenRouter(brief: string, ask: OpenRouterAsk = {}): Promise<Completion> {
   const preferred = openRouterModel();
-  let result = await complete(preferred, brief, true);
-  if (!result.ok && result.status === 400) result = await complete(preferred, brief, false);
+  const system = ask.system?.trim() || AI_SYSTEM;
+  const maxTokens = ask.maxTokens ?? 4000;
+  let result = await askModel(preferred, brief, system, maxTokens);
   const missing = !result.ok && (result.status === 404 || /model/i.test(result.message));
   if (missing && preferred === DEFAULT_OPENROUTER_MODEL) {
     const fallback = await listedSonnet();
-    if (fallback && fallback !== preferred) {
-      result = await complete(fallback, brief, true);
-      if (!result.ok && result.status === 400) result = await complete(fallback, brief, false);
-    }
+    if (fallback && fallback !== preferred) result = await askModel(fallback, brief, system, maxTokens);
   }
   return result;
 }

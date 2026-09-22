@@ -1,4 +1,5 @@
 import { isPillarSlug } from "../pillars";
+import { AI_PROPOSAL_CAP } from "./context";
 import type {
   AiProposalKind,
   AiProposalPayload,
@@ -22,6 +23,8 @@ export type ProposalCheck = {
   dealId: string;
   files: { id: string; name: string }[];
   workstreamSlugs: string[];
+  /** Teto da onda. O parser não completa buraco. */
+  limit?: number;
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -181,7 +184,7 @@ export function parseModelProposals(raw: string, check: ProposalCheck): Proposal
     const draft = one(row, check);
     if (!draft) continue;
     out.push(draft);
-    if (out.length >= 6) break;
+    if (out.length >= (check.limit ?? AI_PROPOSAL_CAP)) break;
   }
   return out;
 }

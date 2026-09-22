@@ -150,10 +150,11 @@ async function readAfterSync(slugs: string[], router: { refresh: () => void }) {
     }
     if (ai.error) {
       toast(ai.error, "err");
+      if (ai.count) router.refresh();
       return;
     }
     any = any || ai.count > 0;
-    toast(ai.count ? `${ai.count} propostas para revisar.` : ai.message || "Nenhuma proposta.", ai.count ? "ok" : "warn");
+    toast(ai.message || "Nenhuma proposta.", ai.count ? "ok" : "warn");
   }
   if (any) router.refresh();
 }
