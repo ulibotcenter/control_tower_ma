@@ -1,3 +1,5 @@
+import { fileUrl } from "../constants";
+import { INBOX_TREE_PREFIX } from "./doc-groups";
 import type {
   ActionItem,
   ChecklistItem,
@@ -33,7 +35,7 @@ export function checklistFromInbox(file: InboxFile): ChecklistItem | null {
 export function documentFromInbox(file: InboxFile): DriveDocument | null {
   if (!file.classified || !file.classification) return null;
   return {
-    id: `inbox-${file.id}`,
+    id: `${INBOX_TREE_PREFIX}${file.id}`,
     dealId: file.classification.dealId,
     title: file.name,
     driveUrl: file.driveUrl || "",
@@ -44,6 +46,27 @@ export function documentFromInbox(file: InboxFile): DriveDocument | null {
     status: file.classification.status,
     classified: true,
     note: "Classificado na bandeja. Arquivo classificado ≠ item concluído.",
+    visibility: "advisors",
+    sensitivities: [],
+  };
+}
+
+/** Arquivo novo da varredura: entra no finder com a pasta-pai, ainda a classificar. */
+export function treeDocFromInbox(file: InboxFile): DriveDocument {
+  const classified = documentFromInbox(file);
+  if (classified) return classified;
+  return {
+    id: `${INBOX_TREE_PREFIX}${file.id}`,
+    dealId: file.classification?.dealId ?? null,
+    title: file.name,
+    driveUrl: file.driveUrl || (file.driveId ? fileUrl(file.driveId) : ""),
+    driveId: file.driveId,
+    folderId: file.folderId ?? null,
+    type: "outro",
+    workstreamSlug: null,
+    status: "a_classificar",
+    classified: false,
+    note: "Veio da varredura. Ainda na bandeja.",
     visibility: "advisors",
     sensitivities: [],
   };

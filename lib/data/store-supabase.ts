@@ -25,7 +25,7 @@ import type {
 } from "../types";
 import { folderUrl } from "../constants";
 import { sanitizeDriveUrl } from "../http";
-import { scanFolderDocId } from "./doc-groups";
+import { SCAN_FOLDER_NOTE, scanFolderDocId } from "./doc-groups";
 import { isUuid } from "./room-input";
 import { deals, decisions as seedDecisions } from "./seed";
 import { mapActionRow, mapChecklistRow, mapDecisionRow, mapDocumentRow, mapInboxRow, mapNoteRow, mapOpenPointRow, packShadow } from "./store-map";
@@ -231,41 +231,65 @@ export async function classifyInboxFileRemote(
 
 export async function upsertDriveFolderRemote(
   sb: SupabaseClient,
-  input: { folderId: string; name: string; parentId: string | null; dealId: string },
+  input: { folderId: string; name: string; parentId: string | null; dealId: string | null },
 ): Promise<void> {
   const id = scanFolderDocId(input.folderId);
   const parentId = input.parentId && input.parentId !== input.folderId ? input.parentId : input.folderId;
-  const row = {
-    id,
+  const url = folderUrl(input.folderId);
+  const payload = {
     deal_id: input.dealId,
     title: input.name.trim(),
-    drive_url: folderUrl(input.folderId),
+    drive_url: url,
     drive_id: null,
     folder_id: parentId,
     type: "outro",
     workstream_slug: null,
     status: "vigente",
     classified: true,
-    note: null,
+    note: SCAN_FOLDER_NOTE,
     visibility: "advisors",
     sensitivities: [],
   };
-  const { data: existing, error: readErr } = await sb.from("documents").select("id").eq("id", id).limit(1);
+
+  const { data: byId, error: readErr } = await sb.from("documents").select("id").eq("id", id).limit(1);
   if (readErr) fail("lookup drive folder", readErr);
-  if (existing && existing.length) {
+  const { data: byUrl, error: urlErr } = await sb
+    .from("documents")
+    .select("id")
+    .eq("drive_url", url)
+    .is("drive_id", null)
+    .eq("note", SCAN_FOLDER_NOTE)
+    .limit(1);
+  if (urlErr) fail("lookup drive folder url", urlErr);
+  const existingId = byId?.[0]?.id ?? byUrl?.[0]?.id;
+  if (existingId) {
     const { error } = await sb
       .from("documents")
       .update({
-        title: row.title,
-        drive_url: row.drive_url,
+        title: payload.title,
+        drive_url: payload.drive_url,
         folder_id: parentId,
         deal_id: input.dealId,
+        note: SCAN_FOLDER_NOTE,
       })
-      .eq("id", id);
+      .eq("id", existingId);
     if (error) fail("update drive folder", error);
     return;
   }
-  const { error } = await sb.from("documents").insert(row);
+
+  let { error } = await sb.from("documents").insert({ id, ...payload });
+  if (error && /folder_id/i.test(error.message)) {
+    const retry = { id, ...payload } as Record<string, unknown>;
+    delete retry.folder_id;
+    ({ error } = await sb.from("documents").insert(retry));
+  }
+  if (error && /invalid input syntax for type uuid|uuid/i.test(error.message)) {
+    ({ error } = await sb.from("documents").insert({ id: randomUUID(), ...payload }));
+  }
+  if (error && /deal_id/i.test(error.message) && payload.deal_id == null) {
+    console.error("[drive/sync] folder sem deal_id", input.folderId, error.message);
+    return;
+  }
   if (error) fail("insert drive folder", error);
 }
 

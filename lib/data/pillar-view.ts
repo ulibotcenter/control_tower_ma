@@ -16,7 +16,7 @@ import {
   type DdSubgroup,
   type PillarSlug,
 } from "../pillars";
-import { isScanFolderDoc } from "./doc-groups";
+import { isPendingInboxDoc, isScanFolderDoc } from "./doc-groups";
 import type {
   ActionItem,
   ChecklistItem,
@@ -68,7 +68,9 @@ export function getPillarViews(bundle: DealBundle): PillarView[] {
     const checklist = bundle.checklist.filter((c) => pillarOf(c) === pilar.slug);
     const risks = bundle.risks.filter((r) => pillarOf(r) === pilar.slug);
     const actions = bundle.actions.filter((a) => pillarOf(a) === pilar.slug);
-    const documents = bundle.documents.filter((d) => !isScanFolderDoc(d) && pillarOf(d) === pilar.slug);
+    const documents = bundle.documents.filter(
+      (d) => !isScanFolderDoc(d) && !isPendingInboxDoc(d) && pillarOf(d) === pilar.slug,
+    );
     const milestones = bundle.milestones.filter((m) => pillarOfMilestone(m.slug) === pilar.slug);
     const c = contar(checklist, risks, actions, documents);
 

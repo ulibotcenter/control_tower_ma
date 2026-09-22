@@ -17,7 +17,7 @@ import { CORTE } from "../constants";
 import { isDriveConfigured, isResendConfigured, isSupabaseConfigured } from "../config";
 import { collectActivity, visibleActivity } from "../activity";
 import { collectAttention } from "../attention";
-import type { ActionItem, ActivityEvent, AttentionItem, DealBundle, MeetingMode, OpenPoint, ProgramView } from "../types";
+import type { ActionItem, ActivityEvent, AttentionItem, DealBundle, DriveDocument, MeetingMode, OpenPoint, ProgramView } from "../types";
 import { canSeeDecisions, canSeeInbox, filterVisible } from "../visibility";
 import {
   actions,
@@ -47,6 +47,9 @@ import {
   unclassifiedCount,
 } from "./store";
 import { DATA_ORIGIN } from "./sources";
+import { dealIdForDriveFolder, isScanFolderDoc, scanParentMap } from "./doc-groups";
+import { treeDocFromInbox } from "./store-map";
+import { driveResourceId } from "../http";
 
 export { DATA_ORIGIN };
 
@@ -141,22 +144,39 @@ function actionsForDeal(dealId: string, storedActions: ActionItem[], storedPoint
 export async function getDealBundle(slug: string, mode: MeetingMode): Promise<DealBundle | null> {
   const deal = getDealBySlug(slug);
   if (!deal) return null;
-  const [storedDocs, storedChecks, storedActions, storedNotes, storedPoints] = await Promise.all([
+  const [storedDocs, storedChecks, storedActions, storedNotes, storedPoints, inbox] = await Promise.all([
     extraDocuments(),
     extraChecklist(),
     listExtraActions(),
     listExtraNotes(),
     listOpenPoints(),
+    canSeeInbox(mode) ? listInbox() : Promise.resolve([]),
   ]);
+
+  const rooms = deals.map((item) => ({ id: item.id, driveFolderId: item.driveFolderId }));
+  const parentOf = scanParentMap(storedDocs);
+  const belongsToDeal = (doc: DriveDocument) => {
+    if (doc.dealId === deal.id) return true;
+    if (doc.dealId && doc.dealId !== deal.id) return false;
+    const self = isScanFolderDoc(doc) ? driveResourceId(doc.driveUrl) : null;
+    const owner = dealIdForDriveFolder(self || doc.folderId, parentOf, rooms);
+    return owner === deal.id || owner === null;
+  };
 
   return {
     deal,
     workstreams: workstreams.filter((w) => w.dealId === deal.id),
     milestones: milestones.filter((m) => m.dealId === deal.id),
-    documents: filterVisible(mode, [
-      ...documents.filter((d) => d.dealId === deal.id),
-      ...storedDocs.filter((d) => d.dealId === deal.id),
-    ]),
+    documents: filterVisible(
+      mode,
+      mergeById(
+        inbox.map(treeDocFromInbox).filter(belongsToDeal),
+        mergeById(
+          storedDocs.filter(belongsToDeal),
+          documents.filter((d) => d.dealId === deal.id),
+        ),
+      ),
+    ),
     risks: filterVisible(
       mode,
       risks.filter((r) => r.dealId === deal.id),

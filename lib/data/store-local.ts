@@ -19,7 +19,7 @@ import type {
 import { folderUrl } from "../constants";
 import { sanitizeDriveUrl } from "../http";
 import { decisions as seedDecisions, inboxSeed } from "./seed";
-import { scanFolderDocId } from "./doc-groups";
+import { SCAN_FOLDER_NOTE, scanFolderDocId } from "./doc-groups";
 import { checklistFromInbox, documentFromInbox } from "./store-map";
 
 type Store = {
@@ -202,7 +202,7 @@ export async function upsertDriveFolderLocal(input: {
   folderId: string;
   name: string;
   parentId: string | null;
-  dealId: string;
+  dealId: string | null;
 }): Promise<void> {
   const s = await load();
   const id = scanFolderDocId(input.folderId);
@@ -213,6 +213,7 @@ export async function upsertDriveFolderLocal(input: {
     existing.driveUrl = folderUrl(input.folderId);
     existing.folderId = parentId;
     existing.dealId = input.dealId;
+    existing.note = SCAN_FOLDER_NOTE;
   } else {
     s.documents.unshift({
       id,
@@ -225,6 +226,7 @@ export async function upsertDriveFolderLocal(input: {
       workstreamSlug: null,
       status: "vigente",
       classified: true,
+      note: SCAN_FOLDER_NOTE,
       visibility: "advisors",
       sensitivities: [],
     });

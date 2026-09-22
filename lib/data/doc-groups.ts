@@ -8,13 +8,20 @@ const PROGRAM_FOLDER_IDS = new Set<string>(Object.values(DRIVE_FOLDERS).map((fol
 
 /** Pasta gravada pela varredura. Não é documento de pilar. */
 export const SCAN_FOLDER_PREFIX = "scan-folder-";
+export const SCAN_FOLDER_NOTE = "Pasta lida na varredura.";
+export const INBOX_TREE_PREFIX = "inbox-";
 
 export function scanFolderDocId(folderId: string) {
   return `${SCAN_FOLDER_PREFIX}${folderId}`;
 }
 
-export function isScanFolderDoc(doc: { id: string }) {
-  return doc.id.startsWith(SCAN_FOLDER_PREFIX);
+export function isScanFolderDoc(doc: { id: string; note?: string | null }) {
+  return doc.id.startsWith(SCAN_FOLDER_PREFIX) || doc.note === SCAN_FOLDER_NOTE;
+}
+
+/** Arquivo novo da varredura, ainda na bandeja. Entra no finder; não conta no pilar. */
+export function isPendingInboxDoc(doc: { id: string; classified?: boolean }) {
+  return doc.id.startsWith(INBOX_TREE_PREFIX) && doc.classified === false;
 }
 
 /**
@@ -104,8 +111,8 @@ type FolderAcc = {
 };
 
 /**
- * Árvore do que o corte e a varredura já guardam (folderId, pasta-pai, nome, driveId).
- * Não cria as pastas 1…13 a partir do nome do arquivo.
+ * Árvore do que a varredura e a bandeja já viram sob a raiz (folderId, pasta-pai, nome).
+ * Não inventa pasta vazia a partir das chaves antigas do seed.
  * Pasta sem pai conhecido e que não é pasta do programa fica dentro da pasta oficial do deal.
  */
 export function buildDocTree(items: DriveDocument[], roomId: string | null): DocTreeNode[] {
@@ -122,7 +129,10 @@ export function buildDocTree(items: DriveDocument[], roomId: string | null): Doc
     });
   }
 
-  if (roomId) ensure(roomId);
+  const hasRoomEvidence =
+    Boolean(roomId) &&
+    items.some((doc) => doc.folderId === roomId || urlFolderId(doc) === roomId);
+  if (hasRoomEvidence && roomId) ensure(roomId);
   for (const doc of items) {
     if (doc.folderId) ensure(doc.folderId);
     const self = urlFolderId(doc);
@@ -239,7 +249,7 @@ export function isProgramFolderCard(doc: DriveDocument): boolean {
 
 /** Documento já classificado neste pilar. Sem frente e sem pilar explícito fica de fora. */
 export function docClassifiedToPillar(doc: DriveDocument, pillar: PillarSlug): boolean {
-  if (isScanFolderDoc(doc)) return false;
+  if (isScanFolderDoc(doc) || isPendingInboxDoc(doc)) return false;
   if (isPillarSlug(doc.pillarSlug)) return doc.pillarSlug === pillar;
   if (!doc.workstreamSlug) return false;
   return pillarOf(doc) === pillar;
@@ -254,6 +264,12 @@ export const FINDER_PIN_LABEL: Record<FinderPin, string> = {
   pessoas: "Pessoas",
 };
 
+/** Pin Atas = pasta Ata + Transcricoes + Audio_in. */
+const ATA_FOLDER_IDS = new Set<string>([
+  DRIVE_FOLDERS.atas.id,
+  DRIVE_FOLDERS.transcricoes.id,
+  DRIVE_FOLDERS.audio.id,
+]);
 const ATA_KEYS = ["transcricoes", "audio_in", "ata", "reuniao"] as const;
 const PEOPLE_KEYS = ["socio", "cap", "pessoas", "societario", "folha"] as const;
 
@@ -274,7 +290,7 @@ function hasPinWord(hay: string, needle: string) {
   return false;
 }
 
-/** Pasta ou nome: Atas = Transcricoes / Audio_in / ata / reunião; Pessoas = sócio / cap / pessoas / societário / folha. */
+/** Pasta ou nome: Atas = Ata / Transcricoes / Audio_in / ata / reunião; Pessoas = sócio / cap / pessoas / societário / folha. */
 export function nameMatchesPin(name: string, pin: FinderPin): boolean {
   const text = foldName(name);
   const keys = pin === FINDER_PIN_ATAS ? ATA_KEYS : PEOPLE_KEYS;
@@ -282,7 +298,35 @@ export function nameMatchesPin(name: string, pin: FinderPin): boolean {
 }
 
 export function nodeMatchesPin(node: DocTreeNode, pin: FinderPin): boolean {
+  if (pin === FINDER_PIN_ATAS && ATA_FOLDER_IDS.has(node.id)) return true;
   return nameMatchesPin(node.name, pin);
+}
+
+export function scanParentMap(items: DriveDocument[]): Map<string, string | null> {
+  const parentOf = new Map<string, string | null>();
+  for (const doc of items) {
+    if (!isScanFolderDoc(doc)) continue;
+    const self = urlFolderId(doc);
+    if (!self) continue;
+    parentOf.set(self, doc.folderId && doc.folderId !== self ? doc.folderId : null);
+  }
+  return parentOf;
+}
+
+export function dealIdForDriveFolder(
+  folderId: string | null,
+  parentOf: Map<string, string | null>,
+  rooms: readonly { id: string; driveFolderId: string }[],
+): string | null {
+  let cursor = folderId;
+  const seen = new Set<string>();
+  while (cursor && !seen.has(cursor)) {
+    seen.add(cursor);
+    const hit = rooms.find((room) => room.driveFolderId === cursor);
+    if (hit) return hit.id;
+    cursor = parentOf.get(cursor) ?? null;
+  }
+  return null;
 }
 
 export function treeHasPin(nodes: DocTreeNode[], pin: FinderPin): boolean {

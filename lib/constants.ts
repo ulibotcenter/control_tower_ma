@@ -21,6 +21,7 @@ export const DRIVE_FOLDERS = {
   opl: { id: "1USrCFKi4l_BeamXURb8y-fkWN01Muc_t", name: "Open Point List" },
   relatorios: { id: "14mC-02UdXKihrYzMlGb3LzhGUxDRQ3Q5", name: "Relatorios" },
   transcricoes: { id: "14-obV-U7Pf87UC8gqGY5H4ow0aeuEpHI", name: "Transcricoes" },
+  atas: { id: "1wwCuJtTW3gHQpdiWKz4JDAnaePSGUvKT", name: "Ata" },
 } as const;
 
 /** Nunca indexar nem linkar. */

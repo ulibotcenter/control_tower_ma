@@ -14,7 +14,7 @@ import {
   upsertDriveFolder,
 } from "@/lib/data/store";
 import { deals, documents } from "@/lib/data/seed";
-import { scanFolderDocId } from "@/lib/data/doc-groups";
+import { dealIdForDriveFolder, scanFolderDocId } from "@/lib/data/doc-groups";
 import { driveResourceId } from "@/lib/http";
 import { formatDate } from "@/lib/format";
 import type { DriveDocument, InboxFile } from "@/lib/types";
@@ -179,7 +179,9 @@ async function runSync() {
         driveModifiedAt: file.modifiedAt || null,
         source: "drive",
       });
+      const alreadyHad = inbox.some((item) => item.id === row.id);
       inboxByDrive.set(file.id, row);
+      if (alreadyHad) continue;
       created += 1;
       added.push({
         id: row.id,
@@ -219,6 +221,7 @@ async function runSync() {
   }
 
   const parentOf = new Map(listed.folders.map((folder) => [folder.id, folder.parentId]));
+  const rooms = deals.map((deal) => ({ id: deal.id, driveFolderId: deal.driveFolderId }));
   const knownFolderUrl = (folderId: string) => `/folders/${folderId}`;
   for (const folder of listed.folders) {
     const url = knownFolderUrl(folder.id);
@@ -226,16 +229,7 @@ async function runSync() {
       documents.some((doc) => !doc.driveId && doc.driveUrl.includes(url)) ||
       extras.some((doc) => !doc.driveId && doc.id !== scanFolderDocId(folder.id) && doc.driveUrl.includes(url));
     if (already) continue;
-    let dealId: string | null = null;
-    let cursor: string | null = folder.id;
-    const seenFolder = new Set<string>();
-    while (cursor && !seenFolder.has(cursor)) {
-      seenFolder.add(cursor);
-      dealId = deals.find((deal) => deal.driveFolderId === cursor)?.id ?? null;
-      if (dealId) break;
-      cursor = parentOf.get(cursor) ?? null;
-    }
-    if (!dealId) continue;
+    const dealId = dealIdForDriveFolder(folder.id, parentOf, rooms);
     try {
       await upsertDriveFolder({
         folderId: folder.id,

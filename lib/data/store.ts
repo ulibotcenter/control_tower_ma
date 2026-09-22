@@ -183,7 +183,7 @@ export async function upsertDriveFolder(input: {
   folderId: string;
   name: string;
   parentId: string | null;
-  dealId: string;
+  dealId: string | null;
 }): Promise<void> {
   const sb = remote();
   if (sb) return upsertDriveFolderRemote(sb, input);
