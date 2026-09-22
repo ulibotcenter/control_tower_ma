@@ -17,3 +17,24 @@ export function varreduraFailToast(phrase: string, counts: WaveCounts) {
   const clean = phrase.replace(/\s+/g, " ").trim();
   return `${clean} · ${varreduraToast(counts)}`;
 }
+
+/**
+ * Vermelho só se A, B e C falharem.
+ * Se alguma onda segurou, o toast normal. Frase de B entra quando essa onda falhou.
+ */
+export function scanToast(input: {
+  read: number;
+  seen: number;
+  allFailed: boolean;
+  failPhrase: string;
+  bPhrase: string;
+  counts: WaveCounts;
+}) {
+  const delta = leituraToast(input.read, input.seen);
+  if (input.allFailed) {
+    const phrase = input.failPhrase.replace(/\s+/g, " ").trim() || "A IA não devolveu texto.";
+    return { failed: true as const, toast: `${varreduraFailToast(phrase, input.counts)} · ${delta}` };
+  }
+  const b = input.bPhrase.replace(/\s+/g, " ").trim();
+  return { failed: false as const, toast: b ? `${delta} · B falhou: ${b}` : delta };
+}

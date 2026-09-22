@@ -5,7 +5,7 @@ import { addAiProposals, listAiProposals, listDecisions, listFileReads, listInbo
 import { exportDriveText, listAtaTranscriptFiles } from "../drive";
 import { formatDate } from "../format";
 import type { AiProposal, DealBundle, Decision } from "../types";
-import { isUnread, laterStamp, planReading } from "./corpus";
+import { AI_TEXT_FILES, isUnread, laterStamp, planReading } from "./corpus";
 import { AI_UNCONFIGURED, isOpenRouterConfigured } from "./env";
 import {
   AI_PROPOSAL_CAP,
@@ -14,7 +14,6 @@ import {
   AI_SYSTEM_C_HEALTH,
   AI_SYSTEM_C_LOOPERT,
   buildGapBrief,
-  buildRadioCloseBrief,
   buildStatusBrief,
   slot,
   todayLabel,
@@ -25,7 +24,7 @@ import { isNearAny } from "./near";
 import { askOpenRouter } from "./openrouter";
 import { parseModelProposals, type ProposalDraft } from "./proposals";
 import { gapFolderLabel, selectGapNames, type GapName } from "./scope";
-import { leituraToast, varreduraFailToast, type WaveCounts } from "./toast-line";
+import { scanToast, type WaveCounts } from "./toast-line";
 
 export type ReadOutcome = {
   configured: boolean;
@@ -110,7 +109,16 @@ function stillDue(names: GapName[], lastReadAt: Map<string, string>, modifiedAt:
   });
 }
 
-async function readNewTexts(inboxLast: Map<string, string>) {
+type PendingText = {
+  driveId: string;
+  name: string;
+  body: string;
+  modifiedAt: string | null;
+  exported: boolean;
+};
+
+/** Até 4 corpos. Não carimba: last_read_at só depois que a chamada B devolve texto. */
+async function loadNewTexts(inboxLast: Map<string, string>) {
   const stamps = await listFileReads();
   const lastReadAt = new Map(inboxLast);
   for (const row of stamps) {
@@ -119,23 +127,22 @@ async function readNewTexts(inboxLast: Map<string, string>) {
   }
   const listed = await listAtaTranscriptFiles();
   if (!listed.ok) {
-    return { texts: [] as { name: string; body: string }[], read: 0, seen: stamps.length, lastReadAt, modifiedAt: new Map<string, string>() };
+    return { files: [] as PendingText[], seen: stamps.length, lastReadAt, modifiedAt: new Map<string, string>() };
   }
   const plan = planReading(listed.files, lastReadAt);
   const modifiedAt = new Map(listed.files.map((file) => [file.id, file.modifiedAt]));
-  const texts: { name: string; body: string }[] = [];
-  const stamped: { driveId: string; driveModifiedAt: string | null }[] = [];
-  for (const file of plan.batch) {
+  const files: PendingText[] = [];
+  for (const file of plan.batch.slice(0, AI_TEXT_FILES)) {
     const body = await exportDriveText(file);
-    if (body) {
-      texts.push({ name: file.name, body });
-      stamped.push({ driveId: file.id, driveModifiedAt: file.modifiedAt || null });
-    } else {
-      texts.push({ name: file.name, body: "não deu para ler o corpo" });
-    }
+    files.push({
+      driveId: file.id,
+      name: file.name,
+      body: body || "não deu para ler o corpo",
+      modifiedAt: file.modifiedAt || null,
+      exported: Boolean(body),
+    });
   }
-  if (stamped.length) await markFileReads(stamped);
-  return { texts, read: stamped.length, seen: plan.seen, lastReadAt, modifiedAt };
+  return { files, seen: plan.seen, lastReadAt, modifiedAt };
 }
 
 function freshDrafts(drafts: ProposalDraft[], prior: string[]) {
@@ -151,8 +158,9 @@ function freshDrafts(drafts: ProposalDraft[], prior: string[]) {
 }
 
 /**
- * Três ondas na mesma fila. Onda vazia segue. Falha da API para e devolve o que já gravou.
- * Não publica fato e não lê PDF nem áudio.
+ * A, depois B (um arquivo por chamada, até 4) e só então C.
+ * Onda vazia segue. Chamada vazia de B segue para o próximo arquivo.
+ * Vermelho só se A, B e C falharem. Não publica fato e não lê PDF nem áudio.
  */
 export async function readDealProposals(slug: string): Promise<ReadOutcome> {
   if (!isOpenRouterConfigured()) {
@@ -161,6 +169,8 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
 
   const bundle = await getDealBundle(slug, "operate");
   if (!bundle) return { configured: true, message: "Deal desconhecido.", proposals: [] };
+  const dealId = bundle.deal.id;
+  const dealSlug = bundle.deal.slug;
 
   const [decisions, inbox, pending] = await Promise.all([
     listDecisions(),
@@ -175,8 +185,7 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
   for (const file of inbox) {
     if (file.driveId && file.lastReadAt) inboxLast.set(file.driveId, file.lastReadAt);
   }
-  const corpus = await readNewTexts(inboxLast);
-  const deltaLine = leituraToast(corpus.read, corpus.seen);
+  const corpus = await loadNewTexts(inboxLast);
   const namesB = stillDue(
     selectGapNames({
     dealId: bundle.deal.id,
@@ -206,81 +215,120 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
         corpus.modifiedAt,
       );
   const status = statusBrief(bundle, decisions);
-  const gapB = gapBrief(bundle, namesB, gapFolderLabel(bundle.deal.slug, "B"), corpus.texts);
-  const waves: { id: keyof WaveCounts; system: string; brief: string; files: GapName[] }[] = [
-    { id: "A", system: AI_SYSTEM_A, brief: status, files: [] },
-    { id: "B", system: AI_SYSTEM_B, brief: gapB, files: namesB },
-    radio
-      ? {
-          id: "C",
-          system: AI_SYSTEM_C_HEALTH,
-          brief: buildRadioCloseBrief(status, gapB),
-          files: namesB,
-        }
-      : {
-          id: "C",
-          system: AI_SYSTEM_C_LOOPERT,
-          brief: gapBrief(
-            bundle,
-            namesC,
-            gapFolderLabel(bundle.deal.slug, "C"),
-            [],
-            "Nomes de Relatorios e Open Point List que não entraram na lista de Ata, Transcricoes e Doctos.",
-          ),
-          files: namesC,
-        },
-  ];
   const fronts = bundle.workstreams.map((item) => item.slug);
+  const foldersB = gapFolderLabel(bundle.deal.slug, "B");
+  let read = 0;
+  let failPhrase = "";
 
-  for (const wave of waves) {
-    const brief = withPending(wave.brief, prior);
-    const answer = await askOpenRouter(brief, { system: wave.system, maxTokens: WAVE_TOKENS });
+  async function askWave(
+    id: keyof WaveCounts,
+    system: string,
+    briefText: string,
+    files: GapName[],
+    stamp?: { driveId: string; driveModifiedAt: string | null },
+  ): Promise<{ ok: true } | { ok: false; message: string }> {
+    const brief = withPending(briefText, prior);
+    const answer = await askOpenRouter(brief, { system, maxTokens: WAVE_TOKENS });
     if (!answer.ok) {
-      console.error("[ai] leitura falhou", { slug, wave: wave.id, status: answer.status });
-      return {
-        configured: true,
-        failed: true,
-        message: answer.message,
-        proposals: saved,
-        waves: counts,
-        toast: `${varreduraFailToast(answer.message, counts)} · ${deltaLine}`,
-      };
+      console.error("[ai] leitura falhou", { slug, wave: id, status: answer.status });
+      return { ok: false, message: answer.message };
     }
+    if (stamp?.driveId) {
+      await markFileReads([{ driveId: stamp.driveId, driveModifiedAt: stamp.driveModifiedAt }]);
+      read += 1;
+    }
+    const room = AI_PROPOSAL_CAP - counts[id];
+    if (room <= 0) return { ok: true };
     const drafts = freshDrafts(
       parseModelProposals(answer.content, {
         brief,
-        dealId: bundle.deal.id,
-        files: wave.files.filter((file) => file.inboxId).map((file) => ({ id: file.inboxId, name: file.name })),
+        dealId,
+        files: files.filter((file) => file.inboxId).map((file) => ({ id: file.inboxId, name: file.name })),
         workstreamSlugs: fronts,
-        limit: AI_PROPOSAL_CAP,
+        limit: room,
       }),
       prior,
-    );
-    if (!drafts.length) continue;
+    ).slice(0, room);
+    if (!drafts.length) return { ok: true };
     try {
       const rows = await addAiProposals(
         drafts.map((draft) => ({
-          dealSlug: bundle.deal.slug,
+          dealSlug,
           kind: draft.kind,
-          payload: draft.kind === "classificacao" ? { ...draft.payload, dealId: bundle.deal.id } : draft.payload,
+          payload: draft.kind === "classificacao" ? { ...draft.payload, dealId } : draft.payload,
         })),
       );
-      counts[wave.id] = rows.length;
+      counts[id] += rows.length;
       saved.push(...rows);
       prior.push(...rows.map((row) => [row.payload.text, row.payload.title].filter(Boolean).join(" ")));
+      return { ok: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : "Falha ao gravar a fila";
-      console.error("[ai] fila falhou", { slug, wave: wave.id });
-      return {
-        configured: true,
-        failed: true,
-        message,
-        proposals: saved,
-        waves: counts,
-        toast: `${varreduraFailToast(message, counts)} · ${deltaLine}`,
-      };
+      console.error("[ai] fila falhou", { slug, wave: id });
+      return { ok: false, message };
     }
   }
 
-  return { configured: true, message: deltaLine, proposals: saved, waves: counts, toast: deltaLine };
+  const waveA = await askWave("A", AI_SYSTEM_A, status, []);
+  if (!waveA.ok) failPhrase = waveA.message;
+
+  let bOk = 0;
+  let bPhrase = "";
+  const batch = corpus.files.slice(0, AI_TEXT_FILES);
+  if (!batch.length) {
+    const hit = await askWave(
+      "B",
+      AI_SYSTEM_B,
+      gapBrief(bundle, namesB, foldersB, [], "Sem texto novo de ata ou transcrição nesta leitura."),
+      namesB,
+    );
+    if (hit.ok) bOk += 1;
+    else bPhrase = hit.message;
+  } else {
+    for (const file of batch) {
+      const hit = await askWave(
+        "B",
+        AI_SYSTEM_B,
+        gapBrief(bundle, namesB, foldersB, [{ name: file.name, body: file.body }], "Um arquivo nesta chamada."),
+        namesB,
+        file.exported ? { driveId: file.driveId, driveModifiedAt: file.modifiedAt } : undefined,
+      );
+      if (hit.ok) bOk += 1;
+      else if (!bPhrase) bPhrase = hit.message;
+    }
+  }
+  if (!failPhrase && bPhrase) failPhrase = bPhrase;
+
+  const waveC = await askWave(
+    "C",
+    radio ? AI_SYSTEM_C_HEALTH : AI_SYSTEM_C_LOOPERT,
+    gapBrief(
+      bundle,
+      namesC,
+      gapFolderLabel(bundle.deal.slug, "C"),
+      [],
+      radio
+        ? "Sem corpo de ata. Só os nomes deste recorte e a OPL."
+        : "Nomes de Relatorios e Open Point List. Sem corpo de ata.",
+    ),
+    namesC,
+  );
+  if (!waveC.ok && !failPhrase) failPhrase = waveC.message;
+
+  const outcome = scanToast({
+    read,
+    seen: corpus.seen,
+    allFailed: !waveA.ok && bOk === 0 && !waveC.ok,
+    failPhrase,
+    bPhrase,
+    counts,
+  });
+  return {
+    configured: true,
+    failed: outcome.failed,
+    message: outcome.failed ? failPhrase : outcome.toast,
+    proposals: saved,
+    waves: counts,
+    toast: outcome.toast,
+  };
 }

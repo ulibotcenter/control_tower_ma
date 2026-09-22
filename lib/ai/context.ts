@@ -30,21 +30,20 @@ Procure só isto: prazo já vencido (a data é anterior a hoje), responsável va
 Não proponha lacuna de arquivo nesta onda.`;
 
 export const AI_SYSTEM_B = `${RULES}
-Onda B — lacuna entre arquivo e OPL, com o texto das atas e transcrições novas.
-Cada nome em Arquivos existe na pasta. O bloco Textos novos é o corpo (não só o nome): o que a ata decidiu e a OPL não tem.
+Onda B — uma ata ou transcrição por chamada, com o corpo desse arquivo e a OPL.
+O bloco Textos novos é um único arquivo: o que a ata decidiu e a OPL não tem.
 Se a OPL não cobre o arquivo, kind "atencao" e texto "verificar X no Drive", em que X é um nome da lista.
 "não deu para ler o corpo" significa que o export falhou: use só o nome.
 Não invente nome. Não cite áudio. Não repita arquivo que já tem ponto.`;
 
 export const AI_SYSTEM_C_HEALTH = `${RULES}
-Onda C — o mesmo trabalho das ondas A e B, juntos, neste bundle da Rádio Health.
-Status: prazo vencido, responsável vazio, duplicata, semáforo que não combina com a OPL.
+Onda C — só nomes e a OPL deste recorte da Rádio Health. Não há corpo de ata.
 Lacuna: arquivo listado sem ponto na OPL, kind "atencao", texto "verificar X no Drive".
-Não repita o que já está na fila.`;
+Não repita o que já está na fila. Não cite áudio.`;
 
 export const AI_SYSTEM_C_LOOPERT = `${RULES}
 Onda C — só nomes de Relatorios e Open Point List que a lista de Ata, Transcricoes e Doctos não levou.
-Se o arquivo existe e a OPL não o cobre, kind "atencao" e texto "verificar X no Drive", com X na lista desta onda.
+Não há corpo de ata. Se o arquivo existe e a OPL não o cobre, kind "atencao" e texto "verificar X no Drive", com X na lista desta onda.
 Não traga de novo Ata, Transcricoes nem Doctos.`;
 
 /** Fallback se uma chamada não mandar o sistema da onda. */

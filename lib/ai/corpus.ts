@@ -1,7 +1,7 @@
 /** O que a leitura pode abrir. Áudio nunca entra no contexto. */
 
 export const AI_TEXT_FILES = 4;
-export const AI_TEXT_CHARS = 8000;
+export const AI_TEXT_CHARS = 4000;
 
 const AUDIO_NAME = /\.(m4a|mp3|wav|aac|ogg|flac|wma)$/i;
 const VIDEO_NAME = /\.(mp4|mov|mkv|webm|avi)$/i;
