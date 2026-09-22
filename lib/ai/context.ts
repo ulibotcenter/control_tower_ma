@@ -30,11 +30,11 @@ Procure só isto: prazo já vencido (a data é anterior a hoje), responsável va
 Não proponha lacuna de arquivo nesta onda.`;
 
 export const AI_SYSTEM_B = `${RULES}
-Onda B — uma ata ou transcrição por chamada, com o corpo desse arquivo e a OPL.
-O bloco Textos novos é um único arquivo: o que a ata decidiu e a OPL não tem.
-Se a OPL não cobre o arquivo, kind "atencao" e texto "verificar X no Drive", em que X é um nome da lista.
+Onda B — uma ata neste clique, corpo curto, e a OPL.
+Responda em texto. Se couber, JSON de propostas. Não cite áudio.
+Se a OPL não cobre o arquivo, kind "atencao" e o título é o nome do arquivo.
 "não deu para ler o corpo" significa que o export falhou: use só o nome.
-Não invente nome. Não cite áudio. Não repita arquivo que já tem ponto.`;
+Não invente nome. Não repita arquivo que já tem ponto.`;
 
 export const AI_SYSTEM_C_HEALTH = `${RULES}
 Onda C — só nomes e a OPL deste recorte da Rádio Health. Não há corpo de ata.

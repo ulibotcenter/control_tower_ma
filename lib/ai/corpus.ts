@@ -2,6 +2,8 @@
 
 export const AI_TEXT_FILES = 4;
 export const AI_TEXT_CHARS = 4000;
+/** Uma ata por clique na onda B. */
+export const AI_B_CHARS = 1500;
 
 const AUDIO_NAME = /\.(m4a|mp3|wav|aac|ogg|flac|wma)$/i;
 const VIDEO_NAME = /\.(mp4|mov|mkv|webm|avi)$/i;
@@ -65,6 +67,20 @@ export type ReadingFile = {
   modifiedAt: string;
 };
 
+/** A mais nova sem last_read_at. Áudio e PDF não entram. */
+export function newestUnstamped(files: ReadingFile[], lastReadAt: Map<string, string>) {
+  const readable = files.filter((file) => {
+    const kind = readingKind(file.name, file.mimeType);
+    return kind === "text" || kind === "docx";
+  });
+  const fresh = readable.filter((file) => !lastReadAt.get(file.id));
+  fresh.sort((a, b) => {
+    const delta = timeOf(b.modifiedAt) - timeOf(a.modifiedAt);
+    return delta || a.name.localeCompare(b.name, "pt");
+  });
+  return { file: fresh[0] ?? null, seen: readable.length - fresh.length };
+}
+
 export function planReading(files: ReadingFile[], lastReadAt: Map<string, string>) {
   const readable = files.filter((file) => {
     const kind = readingKind(file.name, file.mimeType);
@@ -87,8 +103,8 @@ function timeOf(iso: string) {
   return Number.isNaN(value) ? 0 : value;
 }
 
-export function clipReading(text: string) {
+export function clipReading(text: string, max = AI_TEXT_CHARS) {
   const clean = text.replace(/\u0000/g, "").replace(/\r\n/g, "\n").trim();
-  if (clean.length <= AI_TEXT_CHARS) return clean;
-  return `${clean.slice(0, AI_TEXT_CHARS - 1)}…`;
+  if (clean.length <= max) return clean;
+  return `${clean.slice(0, max - 1)}…`;
 }

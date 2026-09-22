@@ -5,7 +5,7 @@ import { addAiProposals, listAiProposals, listDecisions, listFileReads, listInbo
 import { exportDriveText, listAtaTranscriptFiles } from "../drive";
 import { formatDate } from "../format";
 import type { AiProposal, DealBundle, Decision } from "../types";
-import { AI_TEXT_FILES, isUnread, laterStamp, planReading } from "./corpus";
+import { AI_B_CHARS, clipReading, isUnread, laterStamp, newestUnstamped } from "./corpus";
 import { AI_UNCONFIGURED, isOpenRouterConfigured } from "./env";
 import {
   AI_PROPOSAL_CAP,
@@ -22,9 +22,9 @@ import {
 } from "./context";
 import { isNearAny } from "./near";
 import { askOpenRouter } from "./openrouter";
-import { parseModelProposals, type ProposalDraft } from "./proposals";
+import { extractJson, parseModelProposals, type ProposalDraft } from "./proposals";
 import { gapFolderLabel, selectGapNames, type GapName } from "./scope";
-import { scanToast, type WaveCounts } from "./toast-line";
+import { bClickToast, leituraToast, varreduraFailToast, type WaveCounts } from "./toast-line";
 
 export type ReadOutcome = {
   configured: boolean;
@@ -129,16 +129,16 @@ async function loadNewTexts(inboxLast: Map<string, string>) {
   if (!listed.ok) {
     return { files: [] as PendingText[], seen: stamps.length, lastReadAt, modifiedAt: new Map<string, string>() };
   }
-  const plan = planReading(listed.files, lastReadAt);
+  const plan = newestUnstamped(listed.files, lastReadAt);
   const modifiedAt = new Map(listed.files.map((file) => [file.id, file.modifiedAt]));
   const files: PendingText[] = [];
-  for (const file of plan.batch.slice(0, AI_TEXT_FILES)) {
-    const body = await exportDriveText(file);
+  if (plan.file) {
+    const body = await exportDriveText(plan.file);
     files.push({
-      driveId: file.id,
-      name: file.name,
-      body: body || "não deu para ler o corpo",
-      modifiedAt: file.modifiedAt || null,
+      driveId: plan.file.id,
+      name: plan.file.name,
+      body: body ? clipReading(body, AI_B_CHARS) : "não deu para ler o corpo",
+      modifiedAt: plan.file.modifiedAt || null,
       exported: Boolean(body),
     });
   }
@@ -226,9 +226,11 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
     briefText: string,
     files: GapName[],
     stamp?: { driveId: string; driveModifiedAt: string | null },
-  ): Promise<{ ok: true } | { ok: false; message: string }> {
+    json = true,
+    store = true,
+  ): Promise<{ ok: true; content: string } | { ok: false; message: string }> {
     const brief = withPending(briefText, prior);
-    const answer = await askOpenRouter(brief, { system, maxTokens: WAVE_TOKENS });
+    const answer = await askOpenRouter(brief, { system, maxTokens: WAVE_TOKENS, json });
     if (!answer.ok) {
       console.error("[ai] leitura falhou", { slug, wave: id, status: answer.status });
       return { ok: false, message: answer.message };
@@ -237,8 +239,9 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
       await markFileReads([{ driveId: stamp.driveId, driveModifiedAt: stamp.driveModifiedAt }]);
       read += 1;
     }
+    if (!store) return { ok: true, content: answer.content };
     const room = AI_PROPOSAL_CAP - counts[id];
-    if (room <= 0) return { ok: true };
+    if (room <= 0) return { ok: true, content: answer.content };
     const drafts = freshDrafts(
       parseModelProposals(answer.content, {
         brief,
@@ -249,7 +252,7 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
       }),
       prior,
     ).slice(0, room);
-    if (!drafts.length) return { ok: true };
+    if (!drafts.length) return { ok: true, content: answer.content };
     try {
       const rows = await addAiProposals(
         drafts.map((draft) => ({
@@ -261,7 +264,7 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
       counts[id] += rows.length;
       saved.push(...rows);
       prior.push(...rows.map((row) => [row.payload.text, row.payload.title].filter(Boolean).join(" ")));
-      return { ok: true };
+      return { ok: true, content: answer.content };
     } catch (err) {
       const message = err instanceof Error ? err.message : "Falha ao gravar a fila";
       console.error("[ai] fila falhou", { slug, wave: id });
@@ -272,29 +275,65 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
   const waveA = await askWave("A", AI_SYSTEM_A, status, []);
   if (!waveA.ok) failPhrase = waveA.message;
 
-  let bOk = 0;
+  let bOk = false;
   let bPhrase = "";
-  const batch = corpus.files.slice(0, AI_TEXT_FILES);
-  if (!batch.length) {
+  const fileB = corpus.files[0] ?? null;
+  if (fileB) {
+    const briefB = gapBrief(
+      bundle,
+      namesB.filter((item) => item.name === fileB.name),
+      foldersB,
+      [{ name: fileB.name, body: fileB.body }],
+      "Uma ata neste clique.",
+    );
+    const linked = namesB.filter((item) => item.name === fileB.name);
     const hit = await askWave(
       "B",
       AI_SYSTEM_B,
-      gapBrief(bundle, namesB, foldersB, [], "Sem texto novo de ata ou transcrição nesta leitura."),
-      namesB,
+      briefB,
+      linked,
+      fileB.exported ? { driveId: fileB.driveId, driveModifiedAt: fileB.modifiedAt } : undefined,
+      false,
+      false,
     );
-    if (hit.ok) bOk += 1;
-    else bPhrase = hit.message;
-  } else {
-    for (const file of batch) {
-      const hit = await askWave(
-        "B",
-        AI_SYSTEM_B,
-        gapBrief(bundle, namesB, foldersB, [{ name: file.name, body: file.body }], "Um arquivo nesta chamada."),
-        namesB,
-        file.exported ? { driveId: file.driveId, driveModifiedAt: file.modifiedAt } : undefined,
-      );
-      if (hit.ok) bOk += 1;
-      else if (!bPhrase) bPhrase = hit.message;
+    if (!hit.ok) {
+      bPhrase = hit.message;
+    } else {
+      bOk = true;
+      const room = AI_PROPOSAL_CAP - counts.B;
+      const json = extractJson(hit.content);
+      const fromModel =
+        json && typeof json === "object"
+          ? parseModelProposals(hit.content, {
+              brief: briefB,
+              dealId,
+              files: linked.filter((item) => item.inboxId).map((item) => ({ id: item.inboxId, name: item.name })),
+              workstreamSlugs: fronts,
+              limit: room,
+            })
+          : [];
+      const drafts = (
+        json && typeof json === "object"
+          ? fromModel
+          : [{ kind: "atencao" as const, payload: { text: fileB.name, title: fileB.name } }]
+      ).slice(0, Math.max(0, room));
+      if (drafts.length && counts.B < AI_PROPOSAL_CAP) {
+        try {
+          const rows = await addAiProposals(
+            drafts.map((draft) => ({
+              dealSlug,
+              kind: draft.kind,
+              payload: draft.kind === "classificacao" ? { ...draft.payload, dealId } : draft.payload,
+            })),
+          );
+          counts.B += rows.length;
+          saved.push(...rows);
+          prior.push(...rows.map((row) => [row.payload.text, row.payload.title].filter(Boolean).join(" ")));
+        } catch (err) {
+          bOk = false;
+          bPhrase = err instanceof Error ? err.message : "Falha ao gravar a fila";
+        }
+      }
     }
   }
   if (!failPhrase && bPhrase) failPhrase = bPhrase;
@@ -315,20 +354,19 @@ export async function readDealProposals(slug: string): Promise<ReadOutcome> {
   );
   if (!waveC.ok && !failPhrase) failPhrase = waveC.message;
 
-  const outcome = scanToast({
-    read,
-    seen: corpus.seen,
-    allFailed: !waveA.ok && bOk === 0 && !waveC.ok,
-    failPhrase,
-    bPhrase,
-    counts,
-  });
+  const allFailed = !waveA.ok && !waveC.ok && (!fileB || !bOk);
+  const bLine = fileB ? bClickToast(bOk ? fileB.name : "", bOk ? "" : bPhrase || failPhrase) : "";
+  const toast =
+    bLine ||
+    (allFailed
+      ? varreduraFailToast(failPhrase || "A IA não devolveu texto.", counts)
+      : leituraToast(read, corpus.seen));
   return {
     configured: true,
-    failed: outcome.failed,
-    message: outcome.failed ? failPhrase : outcome.toast,
+    failed: allFailed,
+    message: allFailed ? failPhrase || toast : toast,
     proposals: saved,
     waves: counts,
-    toast: outcome.toast,
+    toast,
   };
 }

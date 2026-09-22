@@ -108,7 +108,8 @@ function dropJsonMode(result: Completion) {
   return !result.ok && (result.status === 400 || emptyJsonBody(result));
 }
 
-async function askModel(model: string, brief: string, system: string, maxTokens: number) {
+async function askModel(model: string, brief: string, system: string, maxTokens: number, jsonMode: boolean) {
+  if (!jsonMode) return complete(model, brief, false, system, maxTokens);
   let result = await complete(model, brief, true, system, maxTokens);
   if (dropJsonMode(result)) result = await complete(model, brief, false, system, maxTokens);
   return result;
@@ -117,18 +118,21 @@ async function askModel(model: string, brief: string, system: string, maxTokens:
 export type OpenRouterAsk = {
   system?: string;
   maxTokens?: number;
+  /** Onda B manda texto. A e C seguem com json_object. */
+  json?: boolean;
 };
 
-/** Chamada só no servidor. Cada onda pede JSON com max_tokens 4000. */
+/** Chamada só no servidor. max_tokens 4000. json_object fica de fora quando json é false. */
 export async function askOpenRouter(brief: string, ask: OpenRouterAsk = {}): Promise<Completion> {
   const preferred = openRouterModel();
   const system = ask.system?.trim() || AI_SYSTEM;
   const maxTokens = ask.maxTokens ?? 4000;
-  let result = await askModel(preferred, brief, system, maxTokens);
+  const jsonMode = ask.json !== false;
+  let result = await askModel(preferred, brief, system, maxTokens, jsonMode);
   const missing = !result.ok && (result.status === 404 || /model/i.test(result.message));
   if (missing && preferred === DEFAULT_OPENROUTER_MODEL) {
     const fallback = await listedSonnet();
-    if (fallback && fallback !== preferred) result = await askModel(fallback, brief, system, maxTokens);
+    if (fallback && fallback !== preferred) result = await askModel(fallback, brief, system, maxTokens, jsonMode);
   }
   return result;
 }

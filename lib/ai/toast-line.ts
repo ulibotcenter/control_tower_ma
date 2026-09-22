@@ -18,6 +18,14 @@ export function varreduraFailToast(phrase: string, counts: WaveCounts) {
   return `${clean} · ${varreduraToast(counts)}`;
 }
 
+/** Onda B deste clique: o arquivo que entrou, ou a frase da falha. */
+export function bClickToast(name: string, failPhrase = "") {
+  const fail = failPhrase.replace(/\s+/g, " ").trim();
+  if (fail) return `B falhou: ${fail}`;
+  const file = name.replace(/\s+/g, " ").trim();
+  return file ? `B: ${file}` : "";
+}
+
 /**
  * Vermelho só se A, B e C falharem.
  * Se alguma onda segurou, o toast normal. Frase de B entra quando essa onda falhou.
