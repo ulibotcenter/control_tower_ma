@@ -47,6 +47,8 @@ import {
   updateActionLocal,
   updateNoteLocal,
   updateOpenPointLocal,
+  getDriveSyncedAtLocal,
+  setDriveSyncedAtLocal,
 } from "./store-local";
 import {
   addActionRemote,
@@ -337,4 +339,13 @@ export async function unclassifiedCount() {
   if (sb) return safeRead("unclassifiedCount", () => unclassifiedCountRemote(sb), 0);
   if (forbidLocalStore()) return 0;
   return unclassifiedCountLocal();
+}
+
+/** Hora da última varredura ok. Mora no store local; sem coluna no schema. */
+export async function getDriveSyncedAt(): Promise<string | null> {
+  return safeRead("getDriveSyncedAt", () => getDriveSyncedAtLocal(), null);
+}
+
+export async function setDriveSyncedAt(iso: string): Promise<string> {
+  return setDriveSyncedAtLocal(iso);
 }

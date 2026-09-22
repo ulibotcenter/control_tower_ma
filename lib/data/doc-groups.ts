@@ -1,4 +1,4 @@
-import { DRIVE_FOLDERS, WS_LABEL, workstreamLabel } from "../constants";
+import { DRIVE_FOLDERS, DOC_STATUS_LABEL, DOC_TYPE_LABEL, WS_LABEL, workstreamLabel } from "../constants";
 import { driveResourceId } from "../http";
 import { isPillarSlug, pillarOf, type PillarSlug } from "../pillars";
 import type { DriveDocument } from "../types";
@@ -131,16 +131,21 @@ const SECTION_FOLDER: Record<number, string> = {
 
 const PROGRAM_FOLDER_IDS = new Set<string>(Object.values(DRIVE_FOLDERS).map((folder) => folder.id));
 
-export type RoomFile = { id: string; title: string; href: string };
+export type RoomFile = {
+  id: string;
+  title: string;
+  /** Link do arquivo. Null = sem âncora morta. */
+  href: string | null;
+  /** Rótulo curto da última coluna (status ou tipo). */
+  mark: string;
+};
 
 export type RoomGroup = {
   key: string;
   label: string;
   order: number;
-  /** Atalho da pasta do grupo, quando a pasta existe e não há linha interna. */
+  /** Atalho da pasta do grupo — uma vez no cabeçalho, não em cada linha. */
   folderHref: string | null;
-  /** Conjuntos que são pasta de verdade. O rótulo não finge ser arquivo. */
-  folders: RoomFile[];
   files: RoomFile[];
 };
 
@@ -155,10 +160,15 @@ export function sectionMajor(name: string): number | null {
 
 function linkKind(doc: DriveDocument): "file" | "folder" | "none" {
   const href = doc.driveUrl || "";
-  if (!driveResourceId(href)) return "none";
   if (href.includes("/folders/")) return "folder";
-  if (doc.driveId) return "file";
+  if (doc.driveId || href.includes("/file/") || driveResourceId(href)) return "file";
   return "none";
+}
+
+function shortMark(doc: DriveDocument): string {
+  if (doc.status && DOC_STATUS_LABEL[doc.status]) return DOC_STATUS_LABEL[doc.status];
+  if (doc.type && DOC_TYPE_LABEL[doc.type]) return DOC_TYPE_LABEL[doc.type];
+  return "—";
 }
 
 function inDataRoom(doc: DriveDocument, roomId: string): boolean {
@@ -175,6 +185,7 @@ function folderLabel(doc: DriveDocument): string {
 /**
  * Finder do Doctos Loopert / HeathData: grupos numerados e arquivos que o
  * seed ou a bandeja já classificou. Sem arquivo inventado.
+ * “Abrir pasta” só no cabeçalho do grupo. Linha = arquivo (ou nome sem link).
  */
 export function dataRoomGroups(items: DriveDocument[], room: { id: string; label: string }): RoomGroup[] {
   const groups = new Map<string, RoomGroup>();
@@ -189,24 +200,34 @@ export function dataRoomGroups(items: DriveDocument[], room: { id: string; label
   function group(key: string, label: string, order: number): RoomGroup {
     const found = groups.get(key);
     if (found) return found;
-    const created: RoomGroup = { key, label, order, folderHref: null, folders: [], files: [] };
+    const created: RoomGroup = { key, label, order, folderHref: null, files: [] };
     groups.set(key, created);
     return created;
   }
 
+  function placeFile(doc: DriveDocument, href: string | null) {
+    const section = sectionMajor(doc.title);
+    const target = section
+      ? group(`sec-${section}`, SECTION_FOLDER[section] ?? `${section}.`, section)
+      : doc.folderId && doc.folderId !== room.id
+        ? group(`child-${doc.folderId}`, folderName.get(doc.folderId) ?? "Pasta", 800)
+        : group("room", room.label, 900);
+    target.files.push({ id: doc.id, title: doc.title, href, mark: shortMark(doc) });
+  }
+
   for (const doc of inRoom) {
     const kind = linkKind(doc);
-    if (kind === "none") continue;
     const section = sectionMajor(doc.title);
     const isRoomPointer = kind === "folder" && doc.folderId === room.id && !section;
 
     if (kind === "file") {
-      const target = section
-        ? group(`sec-${section}`, SECTION_FOLDER[section] ?? `${section}.`, section)
-        : doc.folderId && doc.folderId !== room.id
-          ? group(`child-${doc.folderId}`, folderName.get(doc.folderId) ?? "Pasta", 800)
-          : group("room", room.label, 900);
-      target.files.push({ id: doc.id, title: doc.title, href: doc.driveUrl });
+      placeFile(doc, doc.driveUrl);
+      continue;
+    }
+
+    if (kind === "none") {
+      // Nome sem âncora: o seed/inbox tem a linha, mas sem id de arquivo.
+      placeFile(doc, null);
       continue;
     }
 
@@ -218,22 +239,20 @@ export function dataRoomGroups(items: DriveDocument[], room: { id: string; label
 
     if (section) {
       const target = group(`sec-${section}`, SECTION_FOLDER[section] ?? `${section}.`, section);
-      target.folders.push({ id: doc.id, title: doc.title, href: doc.driveUrl });
+      if (!target.folderHref) target.folderHref = doc.driveUrl;
       continue;
     }
 
     const target = group(`folder-${doc.id}`, folderLabel(doc), 700);
-    target.folderHref = doc.driveUrl;
+    if (!target.folderHref) target.folderHref = doc.driveUrl;
   }
 
   return [...groups.values()]
     .map((entry) => ({
       ...entry,
       files: entry.files.slice().sort((a, b) => compareDocNames(a.title, b.title)),
-      folders: entry.folders.slice().sort((a, b) => compareDocNames(a.title, b.title)),
-      folderHref: entry.folders.length > 0 ? null : entry.folderHref,
     }))
-    .filter((entry) => entry.files.length > 0 || entry.folders.length > 0 || Boolean(entry.folderHref))
+    .filter((entry) => entry.files.length > 0 || Boolean(entry.folderHref))
     .filter((entry) => entry.key !== "room" || entry.files.length > 0)
     .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label, "pt", { sensitivity: "base" }));
 }

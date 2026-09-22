@@ -1,13 +1,12 @@
 import type { ReactNode } from "react";
 import type { CapRow, DriveDocument, MeetingMode, Metric, Note } from "@/lib/types";
 import { TARGET_COPY } from "@/lib/mode-meta";
-import { DOC_STATUS_LABEL, DOC_TYPE_LABEL } from "@/lib/constants";
+import { DOC_STATUS_LABEL, DOC_TYPE_LABEL, folderUrl } from "@/lib/constants";
 import { dataRoomGroups, docClassifiedToPillar, groupDocuments, isProgramFolderCard } from "@/lib/data/doc-groups";
 import { driveResourceId } from "@/lib/http";
 import type { PillarSlug } from "@/lib/pillars";
 import { DriveLink } from "@/components/ui/drive-link";
 import { EmptyState } from "@/components/ui/empty-state";
-import { StatusBadge, documentTone } from "@/components/ui/status-badge";
 import { WithTerms } from "@/components/ui/with-terms";
 import { NoteRowMenu } from "./room-bar";
 
@@ -44,34 +43,88 @@ export function MetricsGrid({ items, mode }: { items: Metric[]; mode: MeetingMod
   );
 }
 
+function docShortMark(doc: DriveDocument): string {
+  if (doc.status && DOC_STATUS_LABEL[doc.status]) return DOC_STATUS_LABEL[doc.status];
+  if (doc.type && DOC_TYPE_LABEL[doc.type]) return DOC_TYPE_LABEL[doc.type];
+  return "—";
+}
+
+function docFileHref(doc: DriveDocument): string | null {
+  const href = doc.driveUrl || "";
+  if (!driveResourceId(href)) return null;
+  if (href.includes("/folders/")) return null;
+  if (doc.driveId || href.includes("/file/")) return href;
+  return href;
+}
+
+function DocTitleCell({ title, href }: { title: string; href: string | null }) {
+  if (href) {
+    return (
+      <DriveLink href={href}>
+        <span className="ops-strong ops-truncate" title={title}>
+          {title}
+        </span>
+      </DriveLink>
+    );
+  }
+  return (
+    <>
+      <span className="ops-strong ops-truncate" title={title}>
+        {title}
+      </span>
+      <span className="ops-missing">sem link</span>
+    </>
+  );
+}
+
 export function DocsList({ items }: { items: DriveDocument[] }) {
   if (!items.length) {
     return <EmptyState compact title="Nenhum documento" />;
   }
-  const groups = groupDocuments(items);
+  const groups = groupDocuments(items)
+    .map((group) => ({
+      ...group,
+      fronts: group.fronts
+        .map((front) => ({
+          ...front,
+          items: front.items.filter((d) => !d.driveUrl.includes("/folders/") || Boolean(d.driveId)),
+        }))
+        .filter((front) => front.items.length > 0),
+    }))
+    .filter((group) => group.fronts.length > 0 || Boolean(group.folderId));
+  if (!groups.length) {
+    return <EmptyState compact title="Nenhum documento" />;
+  }
   return (
     <div className="doc-folders">
-      {groups.map((group) => (
-        <section key={group.folderId ?? "sem-pasta"} className="doc-folder">
-          <h3 className="doc-folder-name">{group.folderName}</h3>
-          <div className="ops-scroll">
-            <table className="data-table ops-table">
-              <thead>
-                <tr>
-                  <th scope="col">Documento</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Drive</th>
-                </tr>
-              </thead>
-              <tbody>
-                {group.fronts.map((front) => (
-                  <FrontRows key={front.slug ?? "geral"} front={front} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ))}
+      {groups.map((group) => {
+        const folderHref = group.folderId ? folderUrl(group.folderId) : null;
+        return (
+          <section key={group.folderId ?? "sem-pasta"} className="doc-folder">
+            <div className="doc-finder-head">
+              <h3 className="doc-folder-name">{group.folderName}</h3>
+              {folderHref ? <DriveLink href={folderHref} kind="folder" /> : null}
+            </div>
+            {group.fronts.length > 0 ? (
+              <div className="ops-scroll">
+                <table className="data-table ops-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Documento</th>
+                      <th scope="col">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.fronts.map((front) => (
+                      <FrontRows key={front.slug ?? "geral"} front={front} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </section>
+        );
+      })}
     </div>
   );
 }
@@ -81,11 +134,12 @@ function FrontRows({
 }: {
   front: { slug: string | null; label: string | null; items: DriveDocument[] };
 }) {
+  if (!front.items.length) return null;
   return (
     <>
       {front.label ? (
         <tr className="doc-front">
-          <th scope="colgroup" colSpan={3}>
+          <th scope="colgroup" colSpan={2}>
             {front.label}
           </th>
         </tr>
@@ -93,25 +147,10 @@ function FrontRows({
       {front.items.map((d) => (
         <tr key={d.id}>
           <td>
-            <span className="ops-strong">
-              <WithTerms text={d.title} />
-            </span>
-            <span className="ops-meta">{DOC_TYPE_LABEL[d.type]}</span>
-            {d.note ? (
-              <span className="ops-meta">
-                <WithTerms text={d.note} />
-              </span>
-            ) : null}
+            <DocTitleCell title={d.title} href={docFileHref(d)} />
           </td>
-          <td>
-            {DOC_STATUS_LABEL[d.status] ? (
-              <StatusBadge tone={documentTone(d.status)}>{DOC_STATUS_LABEL[d.status]}</StatusBadge>
-            ) : (
-              <span className="ops-missing">—</span>
-            )}
-          </td>
-          <td className="ops-drive">
-            <DriveLink href={d.driveUrl}>Abrir</DriveLink>
+          <td className="ops-meta-cell">
+            <span className="ops-short-mark">{docShortMark(d)}</span>
           </td>
         </tr>
       ))}
@@ -138,20 +177,29 @@ export function DataRoomFinder({
             <h3 className="doc-folder-name">{group.label}</h3>
             {group.folderHref ? <DriveLink href={group.folderHref} kind="folder" /> : null}
           </div>
-          {group.folders.length > 0 || group.files.length > 0 ? (
-            <ul className="doc-finder-files">
-              {group.folders.map((folder) => (
-                <li key={folder.id}>
-                  <span>{folder.title}</span>
-                  <DriveLink href={folder.href} kind="folder" />
-                </li>
-              ))}
-              {group.files.map((file) => (
-                <li key={file.id}>
-                  <DriveLink href={file.href}>{file.title}</DriveLink>
-                </li>
-              ))}
-            </ul>
+          {group.files.length > 0 ? (
+            <div className="ops-scroll">
+              <table className="data-table ops-table doc-finder-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Documento</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.files.map((file) => (
+                    <tr key={file.id}>
+                      <td>
+                        <DocTitleCell title={file.title} href={file.href} />
+                      </td>
+                      <td className="ops-meta-cell">
+                        <span className="ops-short-mark">{file.mark}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : null}
         </section>
       ))}
@@ -182,21 +230,12 @@ export function PillarDocList({ items }: { items: DriveDocument[] }) {
             return (
               <tr key={doc.id}>
                 <td>
-                  <span className="ops-strong">
+                  <span className="ops-strong ops-truncate" title={doc.title}>
                     <WithTerms text={doc.title} />
                   </span>
-                  {doc.note ? (
-                    <span className="ops-meta">
-                      <WithTerms text={doc.note} />
-                    </span>
-                  ) : null}
                 </td>
-                <td>
-                  {DOC_STATUS_LABEL[doc.status] ? (
-                    <StatusBadge tone={documentTone(doc.status)}>{DOC_STATUS_LABEL[doc.status]}</StatusBadge>
-                  ) : (
-                    <span className="ops-missing">—</span>
-                  )}
+                <td className="ops-meta-cell">
+                  <span className="ops-short-mark">{docShortMark(doc)}</span>
                 </td>
                 <td className="ops-drive">
                   {href ? (
@@ -206,7 +245,7 @@ export function PillarDocList({ items }: { items: DriveDocument[] }) {
                       <DriveLink href={href}>Abrir</DriveLink>
                     )
                   ) : (
-                    <span className="ops-missing">—</span>
+                    <span className="ops-missing">sem link</span>
                   )}
                 </td>
               </tr>

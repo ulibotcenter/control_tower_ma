@@ -3,7 +3,15 @@ import { getSession } from "@/lib/auth";
 import { getMode } from "@/lib/mode";
 import { canSeeInbox } from "@/lib/visibility";
 import { formatDriveSyncSummary, getDriveStatus, scanDriveTree, type DriveListedFile } from "@/lib/drive";
-import { addInboxFile, extraDocuments, listInbox, updateInboxDrive, updateStoredDocumentDrive } from "@/lib/data/store";
+import {
+  addInboxFile,
+  extraDocuments,
+  getDriveSyncedAt,
+  listInbox,
+  setDriveSyncedAt,
+  updateInboxDrive,
+  updateStoredDocumentDrive,
+} from "@/lib/data/store";
 import { documents } from "@/lib/data/seed";
 import { driveResourceId } from "@/lib/http";
 import { formatDate } from "@/lib/format";
@@ -100,6 +108,7 @@ async function runSync() {
       folderIssues: listed.folderIssues,
       seedDrift: [] as { driveId: string; name: string; driveName: string }[],
       files: emptyReview,
+      syncedAt: await getDriveSyncedAt(),
     };
   }
 
@@ -202,6 +211,8 @@ async function runSync() {
     }
   }
 
+  const syncedAt = await setDriveSyncedAt(new Date().toISOString());
+
   return {
     configured: true,
     ok: true,
@@ -220,6 +231,7 @@ async function runSync() {
     folderIssues: listed.folderIssues,
     seedDrift,
     files: added,
+    syncedAt,
   };
 }
 

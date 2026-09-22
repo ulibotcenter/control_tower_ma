@@ -25,6 +25,8 @@ type Store = {
   openPoints: OpenPoint[];
   actions: ActionItem[];
   notes: Note[];
+  /** Última varredura do Drive que devolveu ok. ISO. */
+  driveSyncedAt: string | null;
 };
 
 const defaultStore = (): Store => ({
@@ -35,6 +37,7 @@ const defaultStore = (): Store => ({
   openPoints: [],
   actions: [],
   notes: [],
+  driveSyncedAt: null,
 });
 
 const filePath = path.join(process.cwd(), ".data", "store.json");
@@ -62,6 +65,7 @@ async function load(): Promise<Store> {
       openPoints: parsed.openPoints ?? [],
       actions: parsed.actions ?? [],
       notes: parsed.notes ?? [],
+      driveSyncedAt: parsed.driveSyncedAt ?? null,
     };
     return memory;
   } catch {
@@ -378,4 +382,17 @@ export async function deleteNoteLocal(id: string): Promise<boolean> {
   memory = s;
   await writeStore(s);
   return true;
+}
+
+export async function getDriveSyncedAtLocal(): Promise<string | null> {
+  const s = await load();
+  return s.driveSyncedAt;
+}
+
+export async function setDriveSyncedAtLocal(iso: string): Promise<string> {
+  const s = await load();
+  s.driveSyncedAt = iso;
+  memory = s;
+  await writeStore(s);
+  return iso;
 }

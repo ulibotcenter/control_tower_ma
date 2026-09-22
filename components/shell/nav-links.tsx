@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { MeetingMode, Semaphore } from "@/lib/types";
 import { DriveSyncButton } from "./drive-sync-button";
+import { DriveSyncStamp } from "./drive-sync-stamp";
 import { focusSlugFromQuery, hrefWithDeal, isFocusRoute } from "./focus-deal";
 import { canSeeInbox } from "@/lib/visibility";
 
@@ -80,9 +81,11 @@ export function DealPick({
 export function WorkNav({
   mode,
   inboxCount,
+  driveSyncedAt = null,
 }: {
   mode: MeetingMode;
   inboxCount: number;
+  driveSyncedAt?: string | null;
 }) {
   const path = usePathname();
   const params = useSearchParams();
@@ -114,6 +117,7 @@ export function WorkNav({
           </Link>
         ))}
         <DriveSyncButton variant="work" />
+        <DriveSyncStamp syncedAt={driveSyncedAt} className="drive-sync-stamp work-sync-stamp" />
       </nav>
     </div>
   );

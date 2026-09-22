@@ -26,11 +26,30 @@ export function PresentDeck({
   const milestone = target ? deal.nextMilestoneTarget : deal.nextMilestone;
   const hereSlug = pillarOfDealPhase(deal.phase);
   const travas = blockersFrom(bundle.risks, bundle.checklist, 3, bundle.actions);
+  const showTimeline = bundle.milestones.length > 0;
   const showNumbers = bundle.metrics.length > 0;
   const showDocs = bundle.documents.length > 0;
 
+  const index = [
+    { href: "#visao", label: "Capa" },
+    { href: "#travas", label: "Trava" },
+    { href: "#pilares", label: "Pilares" },
+    ...(showTimeline ? [{ href: "#onde", label: "Linha do tempo" }] : []),
+    ...(showNumbers ? [{ href: "#indicadores", label: "Números" }] : []),
+    ...(showDocs ? [{ href: "#documentos", label: "Documentos" }] : []),
+    { href: "#perguntas", label: "Perguntas" },
+  ];
+
   return (
     <article className="present-deck">
+      <nav className="deck-index no-print" aria-label="Índice do deck">
+        {index.map((item) => (
+          <a key={item.href} href={item.href}>
+            {item.label}
+          </a>
+        ))}
+      </nav>
+
       <section id="visao" className="deck-slide">
         <h1 className="deck-title">{deal.name}</h1>
         <p className="deck-city">{deal.city}</p>
@@ -106,7 +125,7 @@ export function PresentDeck({
         </ol>
       </section>
 
-      {bundle.milestones.length > 0 && (
+      {showTimeline && (
         <section id="onde" className="deck-slide">
           <h2 className="deck-heading">Onde estamos</h2>
           <Timeline items={bundle.milestones} mode={mode} compact />

@@ -1204,6 +1204,33 @@ td.ops-meta-cell {
   color: var(--muted);
 }
 
+.ops-truncate {
+  display: block;
+  max-width: 36rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ops-short-mark {
+  display: inline-block;
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.doc-finder-table th:last-child,
+.doc-finder-table td:last-child,
+.doc-folders .ops-table th:last-child,
+.doc-folders .ops-table td:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
 .doc-folders {
   display: flex;
   flex-direction: column;
@@ -1734,6 +1761,24 @@ td.ops-meta-cell {
 .work-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.drive-sync-stamp {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.work-sync-stamp {
+  margin-left: 0.5rem;
+  padding: 0 0.35rem;
+}
+
+.cover-sync-stamp {
+  margin-top: 0.45rem;
 }
 
 .shell-body {
@@ -2677,9 +2722,41 @@ td.ops-meta-cell {
 }
 
 .present-deck {
+  position: relative;
   font-size: 1.125rem;
   line-height: 1.45;
   color: var(--ink);
+}
+
+.deck-index {
+  position: fixed;
+  left: max(0.5rem, env(safe-area-inset-left));
+  top: 50%;
+  z-index: 35;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  transform: translateY(-50%);
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.deck-index a {
+  color: var(--muted);
+  text-decoration: none;
+  opacity: 0.85;
+}
+
+.deck-index a:hover {
+  color: var(--ink);
+  opacity: 1;
+}
+
+@media (max-width: 900px) {
+  .deck-index {
+    left: 0.25rem;
+    font-size: 12px;
+  }
 }
 
 .deck-slide {

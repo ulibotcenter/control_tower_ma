@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { getSessionPayload } from "@/lib/auth";
 import { lockedDeal } from "@/lib/meeting";
 import { getPresent } from "@/lib/present";
-import { unclassifiedCount } from "@/lib/data/store";
+import { unclassifiedCount, getDriveSyncedAt } from "@/lib/data/store";
 import { getDealBundle, getDealOptions } from "@/lib/data/provider";
 import { getPillarViews } from "@/lib/data/pillar-view";
 import { pillarOfDealPhase } from "@/lib/pillars";
@@ -61,6 +61,8 @@ export async function AppShell({
       console.error("[shell] unclassifiedCount falhou", err);
     }
   }
+  const driveSyncedAt =
+    !present && canSeeInbox(mode) ? await getDriveSyncedAt().catch(() => null) : null;
   // Recortado no servidor: o nome da outra operação não pode nem viajar no
   // payload da página que está sendo projetada para o alvo.
   const dealOptions = getDealOptions({ onlyDeal });
@@ -107,7 +109,7 @@ export async function AppShell({
             showToggle={!present}
             toggleLabel={dealNav ? "Abrir pilares" : "Abrir navegação"}
           />
-          {showWork && <WorkNav mode={mode} inboxCount={inboxCount} />}
+          {showWork && <WorkNav mode={mode} inboxCount={inboxCount} driveSyncedAt={driveSyncedAt} />}
         </div>
         {mode !== "target" && <Onboarding openOnMount={showTour} />}
         {/*

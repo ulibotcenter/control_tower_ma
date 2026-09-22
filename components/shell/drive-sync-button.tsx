@@ -12,6 +12,26 @@ export type DriveReviewItem = {
 };
 
 export const DRIVE_REVIEW_EVENT = "ct-drive-review";
+export const DRIVE_SYNCED_EVENT = "ct-drive-synced";
+export const DRIVE_SYNCED_KEY = "ct-drive-synced-at";
+
+export function readStoredDriveSyncedAt(): string | null {
+  try {
+    const raw = localStorage.getItem(DRIVE_SYNCED_KEY);
+    return raw && !Number.isNaN(Date.parse(raw)) ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
+function rememberSyncedAt(iso: string) {
+  try {
+    localStorage.setItem(DRIVE_SYNCED_KEY, iso);
+  } catch {
+    /* private mode */
+  }
+  window.dispatchEvent(new CustomEvent(DRIVE_SYNCED_EVENT, { detail: { syncedAt: iso } }));
+}
 
 export function DriveSyncButton({ variant = "nav" }: { variant?: "nav" | "page" | "work" }) {
   const [busy, setBusy] = useState(false);
@@ -29,6 +49,7 @@ export function DriveSyncButton({ variant = "nav" }: { variant?: "nav" | "page" 
         missing?: unknown[];
         folderIssues?: { status?: number }[];
         error?: string;
+        syncedAt?: string | null;
       };
       if (!res.ok) {
         toast(data.error === "unauthorized" ? "Sessão expirada." : "Falha ao atualizar o Drive.", "err");
@@ -44,6 +65,7 @@ export function DriveSyncButton({ variant = "nav" }: { variant?: "nav" | "page" 
       }
       const attention = (data.folderIssues?.length ?? 0) > 0 || (data.missing?.length ?? 0) > 0;
       toast(data.message || "Drive atualizado", attention ? "warn" : "ok");
+      if (data.syncedAt) rememberSyncedAt(data.syncedAt);
       const files = data.files ?? [];
       if (files.length) {
         window.dispatchEvent(new CustomEvent(DRIVE_REVIEW_EVENT, { detail: { files } }));
