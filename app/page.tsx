@@ -6,14 +6,10 @@ import { DealCard } from "@/components/home/deal-card";
 import { ActivityFeed } from "@/components/home/activity-feed";
 import { WithTerms } from "@/components/ui/with-terms";
 import { focusSlugFromQuery } from "@/components/shell/focus-deal";
-import { blockersFrom, getPillarViews } from "@/lib/data/pillar-view";
-import { getActivity, getAttentionItems, getDealBundle, getProgram } from "@/lib/data/provider";
+import { getActivity, getAttentionItems, getProgram } from "@/lib/data/provider";
 import { MODE_META, TARGET_COPY, viewChrome } from "@/lib/mode-meta";
 import { getLockedDeal, getMode } from "@/lib/mode";
-import { pillarOfDealPhase } from "@/lib/pillars";
 import { getPresent } from "@/lib/present";
-import type { DealBundle } from "@/lib/types";
-import { canSeeDecisions } from "@/lib/visibility";
 import { Freshness } from "@/components/ui/freshness";
 import { DriveSyncStamp } from "@/components/shell/drive-sync-stamp";
 import { getDriveSyncedAt, listAiProposals } from "@/lib/data/store";
@@ -32,33 +28,6 @@ export default async function HomePage({
   const target = mode === "target";
   // Trilho só em Operar. No Alvo e na apresentação a capa é leitura.
   const showRail = mode === "operate" && !present;
-  const showDrive = mode !== "target" && !present;
-  const showDecisions = canSeeDecisions(mode) !== "hidden" && !present;
-
-  // A faixa sai de getPillarViews (ordem e nomes do corte, não uma lista na capa).
-  // Em aberto = ações não concluídas + checagens abertas + riscos vermelhos.
-  const cards = await Promise.all(
-    program.deals.map(async (deal) => {
-      const bundle = await getDealBundle(deal.slug, mode);
-      const pillars = bundle ? getPillarViews(bundle) : [];
-      const blockers = bundle ? blockersFrom(bundle.risks, bundle.checklist, 3, bundle.actions) : [];
-      const counts = bundle ? contarEmAberto(bundle) : null;
-      const trava =
-        blockers.length > 0
-          ? blockers.map((item) => ({ id: item.id, line: item.line }))
-          : deal.topReds.map((line, index) => ({ id: `${deal.id}-red-${index}`, line }));
-      return {
-        deal,
-        pillars,
-        trava,
-        redCount: counts?.redRisks ?? deal.redCount,
-        emAberto: counts ? counts.emAberto : null,
-        openActions: counts ? counts.openActions : null,
-        openChecks: counts ? counts.openChecks : null,
-        hereSlug: pillarOfDealPhase(deal.phase),
-      };
-    }),
-  );
 
   const slugOf = new Map(program.deals.map((deal) => [deal.id, deal.slug]));
   const attention = showRail ? getAttentionItems(mode, { onlyDeal }) : [];
@@ -68,8 +37,8 @@ export default async function HomePage({
     href: hrefOnCover(item.href, item.dealId ? (slugOf.get(item.dealId) ?? null) : null),
   }));
 
-  const several = cards.length > 1;
-  const gridClass = `cover-grid${several ? " has-lead" : ""}${present ? " is-deck" : ""}`;
+  const several = program.deals.length > 1;
+  const gridClass = `cover-grid${several ? " is-pair" : ""}${present ? " is-deck" : ""}`;
   const driveSyncedAt = showRail ? await getDriveSyncedAt().catch(() => null) : null;
   const proposals = showRail ? await listAiProposals({ status: "pendente" }).catch(() => []) : [];
 
@@ -95,41 +64,9 @@ export default async function HomePage({
       <div className={`mt-8 grid gap-8 ${showRail ? "xl:grid-cols-[minmax(0,1fr)_20rem]" : ""}`}>
         <div className="min-w-0">
           <div className={gridClass}>
-            {several && cards[0] ? (
-              <>
-                <DealCard
-                  key={cards[0].deal.id}
-                  {...cards[0]}
-                  mode={mode}
-                  weight="lead"
-                  showDrive={showDrive}
-                  showDecisions={showDecisions}
-                />
-                <div className="cover-rest">
-                  {cards.slice(1).map((card) => (
-                    <DealCard
-                      key={card.deal.id}
-                      {...card}
-                      mode={mode}
-                      weight="second"
-                      showDrive={showDrive}
-                      showDecisions={showDecisions}
-                    />
-                  ))}
-                </div>
-              </>
-            ) : (
-              cards.map((card) => (
-                <DealCard
-                  key={card.deal.id}
-                  {...card}
-                  mode={mode}
-                  weight="only"
-                  showDrive={showDrive}
-                  showDecisions={showDecisions}
-                />
-              ))
-            )}
+            {program.deals.map((deal) => (
+              <DealCard key={deal.id} deal={deal} mode={mode} />
+            ))}
           </div>
 
           {chrome.showOperateAside && (
@@ -154,15 +91,6 @@ export default async function HomePage({
       ) : null}
     </AppShell>
   );
-}
-
-function contarEmAberto(bundle: DealBundle) {
-  const openActions = bundle.actions.filter((item) => item.status === "open" || item.status === "late").length;
-  const openChecks = bundle.checklist.filter(
-    (item) => item.status === "aberto" || item.status === "em_andamento",
-  ).length;
-  const redRisks = bundle.risks.filter((item) => item.severity === "red").length;
-  return { openActions, openChecks, redRisks, emAberto: openActions + openChecks + redRisks };
 }
 
 function inboxPhrase(n: number) {

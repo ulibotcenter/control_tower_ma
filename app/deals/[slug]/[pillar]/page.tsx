@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/app-shell";
-import { ChecklistTable } from "@/components/deal/checklist-table";
-import { PillarDocList, pillarDocuments } from "@/components/deal/lists";
-import { ActionBoard } from "@/components/deal/action-board";
+import { pillarDocuments } from "@/components/deal/lists";
 import { PendingTable } from "@/components/deal/pending-table";
 import { RoomProvider, RoomStrip } from "@/components/deal/room-bar";
 import { RisksBoard } from "@/components/deal/risks-board";
@@ -18,7 +16,7 @@ import {
 } from "@/lib/data/pillar-view";
 import { formatDate } from "@/lib/format";
 import { isDealAllowed } from "@/lib/meeting";
-import { semaphoreLabelFor, TARGET_COPY } from "@/lib/mode-meta";
+import { semaphoreLabelFor } from "@/lib/mode-meta";
 import { WithTerms } from "@/components/ui/with-terms";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getMeeting } from "@/lib/mode";
@@ -76,16 +74,14 @@ export default async function PillarPage({
   const checklist = filterBySubgroup(view.checklist, sub);
   const risks = filterBySubgroup(view.risks, sub);
   const actions = filterBySubgroup(view.actions, sub);
-  const documents = filterBySubgroup(classifiedDocs, sub);
   const travas = blockersFrom(risks, checklist, 3, actions);
   const proximo = firstOpenAction(actions);
-  const pendencias = checklist.filter((c) => c.status !== "concluido");
   const target = mode === "target";
   const present = await getPresent();
   const canWrite = mode === "operate" && !present;
   const openPoints = bundle.openPoints.filter((point) => point.pillarSlug === pillar);
   const bloqueado = travas.length > 0;
-  const unfiledShown = [...view.checklist, ...view.risks, ...view.actions, ...classifiedDocs].filter(isUnfiled).length;
+  const unfiledShown = [...view.risks, ...view.actions].filter(isUnfiled).length;
 
   return (
     <AppShell
@@ -199,43 +195,14 @@ export default async function PillarPage({
         />
       </section>
 
-      <div className="pillar-bands">
-        <section className="pillar-band pillar-band-block">
-          {risks.length === 0 && pendencias.length === 0 ? (
-            <>
-              <h2 className="pillar-band-title">{target ? "Pontos em aberto" : "Riscos"}</h2>
-              <EmptyState compact title="Nada em aberto neste pilar" />
-            </>
-          ) : (
-            <>
-              {risks.length > 0 && (
-                <>
-                  <h2 className="pillar-band-title">{target ? "Pontos em aberto" : "Riscos"}</h2>
-                  <RisksBoard items={risks} mode={mode} />
-                </>
-              )}
-              {pendencias.length > 0 && (
-                <>
-                  <h2 className={`pillar-band-title${risks.length > 0 ? " is-follow" : ""}`}>
-                    {target ? TARGET_COPY.documentsTitle : "Pendências"}
-                  </h2>
-                  <ChecklistTable items={pendencias} />
-                </>
-              )}
-            </>
-          )}
-        </section>
-
-        <section className="pillar-band pillar-band-action">
-          <h2 className="pillar-band-title">Ações</h2>
-          <ActionBoard items={actions} canEdit={canWrite} />
-        </section>
-
-        <section id="documentos" className="pillar-band pillar-band-docs">
-          <h2 className="pillar-band-title">Documentos</h2>
-          <PillarDocList items={documents} />
-        </section>
-      </div>
+      <section className="pillar-band pillar-band-block">
+        <h2 className="pillar-band-title">{target ? "Pontos em aberto" : "Riscos"}</h2>
+        {risks.length === 0 ? (
+          <EmptyState compact title="Nada em aberto neste pilar" />
+        ) : (
+          <RisksBoard items={risks} mode={mode} />
+        )}
+      </section>
 
       {unfiledShown > 0 && !sub && (
         <p className="pillar-aside">

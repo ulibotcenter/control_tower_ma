@@ -4,7 +4,7 @@ import { parseDealSlug } from "@/lib/meeting";
  * Rotas em que o deal em foco não está no caminho.
  * A URL carrega `?deal=loopert`. Sem a query, a sidebar volta à navegação de produto.
  */
-export const FOCUS_ROUTES = ["/decisions", "/inbox", "/export/pack", "/glossary"] as const;
+export const FOCUS_ROUTES = ["/decisions", "/inbox", "/export/pack", "/glossary", "/ia"] as const;
 
 export function isFocusRoute(path: string) {
   return FOCUS_ROUTES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));

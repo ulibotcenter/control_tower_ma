@@ -79,11 +79,13 @@ export function SideNav({
   mode,
   deals,
   inboxCount,
+  iaCount = 0,
 }: {
   deal: ShellDealNav | null;
   mode: MeetingMode;
   deals: { slug: string; name: string; health: Semaphore }[];
   inboxCount: number;
+  iaCount?: number;
 }) {
   const path = usePathname();
   const { open, setOpen } = useSidebar();
@@ -124,7 +126,7 @@ export function SideNav({
             </button>
           </div>
           {deal ? (
-            <DealNav deal={deal} mode={mode} path={path} />
+            <DealNav deal={deal} mode={mode} path={path} iaCount={iaCount} />
           ) : (
             <ProductNav path={path} mode={mode} deals={deals} inboxCount={inboxCount} />
           )}
@@ -138,10 +140,12 @@ function DealNav({
   deal,
   mode,
   path,
+  iaCount,
 }: {
   deal: ShellDealNav;
   mode: MeetingMode;
   path: string;
+  iaCount: number;
 }) {
   const prefix = `/deals/${deal.slug}`;
   const onDeal = path === prefix || path.startsWith(`${prefix}/`);
@@ -150,10 +154,16 @@ function DealNav({
   // Fora da URL do deal, “aqui” não marca um pilar: quem está aceso é Decisões.
   const here = reading ?? (onDeal ? deal.phasePillar : null);
   const docsHref = `${prefix}#documentos`;
+  const iaHref = `/ia?deal=${deal.slug}`;
 
   return (
     <>
       <p className="side-deal">{deal.name}</p>
+      <nav className="side-product" aria-label="Início">
+        <Link href="/" className={`side-link${path === "/" ? " is-on" : ""}`}>
+          Início
+        </Link>
+      </nav>
       <nav className="side-pillars" aria-label="Pilares do processo">
         {deal.pillars.map((p) => {
           const current = here === p.slug;
@@ -176,6 +186,12 @@ function DealNav({
         })}
       </nav>
       <nav className="side-more" aria-label="Neste deal">
+        {mode === "operate" && (
+          <Link href={iaHref} className={isOn(path, "/ia") ? "is-on" : undefined}>
+            IA
+            {iaCount > 0 && <span className="side-badge">{iaCount}</span>}
+          </Link>
+        )}
         {canSeeDecisions(mode) !== "hidden" && (
           <Link
             href={`/decisions?deal=${deal.slug}`}
@@ -205,7 +221,7 @@ function ProductNav({
   return (
     <nav className="side-product" aria-label="Programa">
       <Link href="/" className={`side-link${isOn(path, "/") ? " is-on" : ""}`}>
-        Programa
+        Início
       </Link>
       {deals.map((d) => (
         <Link

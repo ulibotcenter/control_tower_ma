@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { getSessionPayload } from "@/lib/auth";
 import { lockedDeal } from "@/lib/meeting";
 import { getPresent } from "@/lib/present";
-import { unclassifiedCount, getDriveSyncedAt } from "@/lib/data/store";
+import { unclassifiedCount, getDriveSyncedAt, listAiProposals } from "@/lib/data/store";
 import { getDealBundle, getDealOptions } from "@/lib/data/provider";
 import { getPillarViews } from "@/lib/data/pillar-view";
 import { pillarOfDealPhase } from "@/lib/pillars";
@@ -83,6 +83,11 @@ export async function AppShell({
   if (!dealNav && focused && dealOptions.some((d) => d.slug === focused)) {
     dealNav = await shellNavFor(focused, mode);
   }
+  let iaCount = 0;
+  if (dealNav && mode === "operate" && !present) {
+    const pending = await listAiProposals({ status: "pendente", dealSlug: dealNav.slug }).catch(() => []);
+    iaCount = pending.length;
+  }
 
   return (
     <SidebarProvider>
@@ -134,6 +139,7 @@ export async function AppShell({
               mode={mode}
               deals={dealOptions}
               inboxCount={inboxCount}
+              iaCount={iaCount}
             />
           )}
           <main

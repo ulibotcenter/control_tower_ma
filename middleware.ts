@@ -71,7 +71,12 @@ export async function middleware(req: NextRequest) {
 
   const { mode, targetDeal } = session.meeting;
   if (mode === "target") {
-    if (pathname.startsWith("/inbox") || pathname.startsWith("/decisions") || pathname.startsWith("/export")) {
+    if (
+      pathname.startsWith("/inbox") ||
+      pathname.startsWith("/decisions") ||
+      pathname.startsWith("/export") ||
+      pathname.startsWith("/ia")
+    ) {
       return NextResponse.redirect(new URL("/", req.url));
     }
     // Reunião travada num alvo: o outro deal não existe nesta sessão.
@@ -79,7 +84,10 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL(`/deals/${targetDeal}`, req.url));
     }
   }
-  if (mode === "advisors" && (pathname.startsWith("/inbox") || pathname.startsWith("/export"))) {
+  if (
+    mode === "advisors" &&
+    (pathname.startsWith("/inbox") || pathname.startsWith("/export") || pathname.startsWith("/ia"))
+  ) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
