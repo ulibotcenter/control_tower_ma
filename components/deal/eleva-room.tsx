@@ -1,8 +1,10 @@
 import { Term } from "@/components/ui/term";
 import { Freshness } from "@/components/ui/freshness";
 import { WithTerms } from "@/components/ui/with-terms";
+import { atasEleva } from "@/lib/data/atas-eleva";
 import { viewChrome } from "@/lib/mode-meta";
 import type { DealBundle, MeetingMode } from "@/lib/types";
+import { AtasElevaList } from "./atas-eleva-list";
 import { CapTable } from "./lists";
 import { ThesisPrice } from "./thesis-price";
 
@@ -26,7 +28,8 @@ export function ElevaRoom({
   const showThesis = (chrome.showThesis && bundle.thesis.length > 0) || (chrome.showThesis && bundle.prices.length > 0);
   const showCap = chrome.showCap && bundle.capTable.length > 0;
   const showPeople = chrome.showPeople && bundle.people.length > 0;
-  if (!showThesis && !showCap && !showPeople) return null;
+  const atas = atasEleva(bundle.documents, deal.driveFolderId);
+  if (!showThesis && !showCap && !showPeople && atas.length === 0) return null;
 
   return (
     <section id="tese" className="eleva-room mb-4">
@@ -42,6 +45,8 @@ export function ElevaRoom({
           <ThesisPrice thesis={bundle.thesis} prices={bundle.prices} hidden={false} />
         </div>
       )}
+
+      <AtasElevaList items={bundle.documents} roomId={deal.driveFolderId} />
 
       {showCap && (
         <div className="mt-10">
