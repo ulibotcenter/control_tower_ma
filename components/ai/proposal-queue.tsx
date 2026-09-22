@@ -292,7 +292,7 @@ export function ProposalQueue({
 
 function editHref(proposal: AiProposal) {
   if (proposal.kind === "opl" || proposal.kind === "tarefa" || proposal.kind === "nota") {
-    return `/deals/${proposal.dealSlug}?proposta=${encodeURIComponent(proposal.id)}#opl`;
+    return `/deals/${proposal.dealSlug}/opl?proposta=${encodeURIComponent(proposal.id)}`;
   }
   if (proposal.kind === "classificacao" && proposal.payload.inboxId) {
     const params = new URLSearchParams({ deal: proposal.dealSlug, proposta: proposal.id });

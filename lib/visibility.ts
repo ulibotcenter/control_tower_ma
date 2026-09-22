@@ -60,3 +60,18 @@ export function canSeePriceAndThesis(mode: MeetingMode) {
 export function canSeeProtectionNotes(mode: MeetingMode) {
   return mode === "operate";
 }
+
+/** Fila de leitura. Operar. Alvo e Assessores não têm o item. */
+export function canSeeIa(mode: MeetingMode) {
+  return mode === "operate";
+}
+
+/** Placeholder de RH. Operar e Assessores. O Alvo não vê o item. */
+export function canSeeRh(mode: MeetingMode) {
+  return mode === "operate" || mode === "advisors";
+}
+
+/** Sala Eleva (tese, preço, cap, pessoas). Só Operar. */
+export function canSeeInternalReading(mode: MeetingMode) {
+  return mode === "operate";
+}

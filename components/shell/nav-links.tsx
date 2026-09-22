@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import type { MeetingMode, Semaphore } from "@/lib/types";
 import { DriveSyncButton } from "./drive-sync-button";
 import { DriveSyncStamp } from "./drive-sync-stamp";
-import { focusSlugFromQuery, hrefWithDeal, isFocusRoute } from "./focus-deal";
+import { dealHouseHref, focusSlugFromQuery, hrefWithDeal, isFocusRoute } from "./focus-deal";
 import { canSeeInbox } from "@/lib/visibility";
 
 function isActive(path: string, href: string) {
@@ -51,7 +51,9 @@ export function DealPick({
   return (
     <div className="deal-pick" role="tablist" aria-label="Operações">
       {visible.map((deal) => {
-        const href = stay ? hrefWithDeal(path, deal.slug, params.toString()) : `/deals/${deal.slug}`;
+        const href = stay
+          ? hrefWithDeal(path, deal.slug, params.toString())
+          : (dealHouseHref(path, deal.slug) ?? `/deals/${deal.slug}`);
         const active = path.startsWith("/deals/")
           ? isActive(path, `/deals/${deal.slug}`)
           : focused === deal.slug;

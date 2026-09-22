@@ -1,21 +1,10 @@
-import Link from "next/link";
-import { canSeePriceAndThesis } from "@/lib/visibility";
-import { semaphoreLabelFor, semaphoreShortFor, TARGET_COPY, viewChrome } from "@/lib/mode-meta";
-import { blockersFrom, type PillarView } from "@/lib/data/pillar-view";
-import { pillarOfDealPhase } from "@/lib/pillars";
+import { semaphoreLabelFor, TARGET_COPY, viewChrome } from "@/lib/mode-meta";
+import type { PillarView } from "@/lib/data/pillar-view";
 import type { TemaSlug } from "@/lib/data/temas";
-import type { AiRoomSeed, DealBundle, MeetingMode, Semaphore } from "@/lib/types";
+import type { DealBundle, MeetingMode, Semaphore } from "@/lib/types";
 import { ThemePanel, ThemeRail } from "./theme-rail";
-import { Term } from "@/components/ui/term";
 import { WithTerms } from "@/components/ui/with-terms";
 import { Timeline } from "./timeline";
-import { ThesisPrice } from "./thesis-price";
-import { CapTable, MetricsGrid, NotesList } from "./lists";
-import { DocTree } from "./doc-tree";
-import { MeetingTabs } from "./meeting-tabs";
-import { NoteComposer } from "./note-composer";
-import { PendingTable } from "./pending-table";
-import { RoomProvider, RoomStrip } from "./room-bar";
 import { Freshness } from "@/components/ui/freshness";
 import { PresentDeck } from "./present-deck";
 
@@ -25,14 +14,12 @@ export function DealView({
   mode,
   present = false,
   tema = null,
-  seed = null,
 }: {
   bundle: DealBundle;
   pillars: PillarView[];
   mode: MeetingMode;
   present?: boolean;
   tema?: TemaSlug | null;
-  seed?: AiRoomSeed | null;
 }) {
   if (present) {
     return <PresentDeck bundle={bundle} pillars={pillars} mode={mode} />;
@@ -40,22 +27,9 @@ export function DealView({
 
   const { deal } = bundle;
   const chrome = viewChrome(mode, false);
-  const hideThesis = !canSeePriceAndThesis(mode);
   const frozen = deal.status === "standby";
   const review = deal.slug !== "loopert";
   const target = mode === "target";
-
-  // Sala da Eleva: leitura interna, separada do que é fato formal da operação.
-  // O que cada modo pode ver não muda aqui — só onde isso fica na página.
-  const showThesis = !hideThesis && (bundle.thesis.length > 0 || bundle.prices.length > 0);
-  const showCap = chrome.showCap && bundle.capTable.length > 0;
-  const showPeople = chrome.showPeople && bundle.people.length > 0;
-  const canWrite = mode === "operate";
-  const showElevaRoom = !target && (showThesis || showCap || showPeople);
-  const showDrive = !target;
-  const travas = blockersFrom(bundle.risks, bundle.checklist, 3, bundle.actions);
-  const hereSlug = pillarOfDealPhase(deal.phase);
-  const abrir = pillars.find((p) => p.slug === hereSlug) ?? pillars[0] ?? null;
 
   return (
     <article>
@@ -106,42 +80,11 @@ export function DealView({
             </dd>
           </div>
         </dl>
-
-        <div className={`war-trava paper${travas.length > 0 ? " trava-band" : ""}`}>
-          <p className={travas.length > 0 ? "trava-kicker" : "war-trava-calm"}>O que trava</p>
-          {travas.length === 0 ? (
-            <p className="war-trava-empty">Nada trava o deal hoje.</p>
-          ) : (
-            <ul>
-              {travas.map((t) => (
-                <li key={t.id}>
-                  <WithTerms text={t.line} interactive={false} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
       </div>
 
       <p className="war-headline">
         <WithTerms text={target ? deal.headlineTarget : deal.headline} />
       </p>
-
-      <section id="indicadores" className="war-block">
-        <h2 className="war-label">Indicadores</h2>
-        <Freshness trust={review ? "review" : "firm"} mode={mode} />
-        <p className="war-note">
-          {target ? (
-            "Só números já formalizados. Dado ausente = a confirmar."
-          ) : (
-            <>
-              Só o que está na história oficial. Dado ausente = a confirmar. Não há{" "}
-              <Term id="loi">LOI</Term> nem <Term id="spa">SPA</Term>.
-            </>
-          )}
-        </p>
-        <MetricsGrid items={bundle.metrics} mode={mode} />
-      </section>
 
       <section className="war-block">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4">
@@ -157,133 +100,8 @@ export function DealView({
         </div>
       </section>
 
-      <section id="pilares" className="war-block war-pillars">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="war-label">Pilares</h2>
-          {abrir && (
-            <Link href={`/deals/${deal.slug}/${abrir.slug}`} className="war-open-pillar">
-              abrir pilar
-              <span className="sr-only"> {abrir.name}</span>
-            </Link>
-          )}
-        </div>
-        <ol className="pillar-strip" aria-label="Pilares do processo">
-          {pillars.map((pilar) => {
-            const here = hereSlug === pilar.slug;
-            const saude = semaphoreShortFor(mode, pilar.health);
-            return (
-              <li key={pilar.slug}>
-                <Link
-                  href={`/deals/${deal.slug}/${pilar.slug}`}
-                  className={`pillar-pip is-${pilar.health}${here ? " is-here" : ""}`}
-                  aria-current={here ? "true" : undefined}
-                  title={`${pilar.order}. ${pilar.name} · ${saude}`}
-                >
-                  <span className="pillar-pip-top">
-                    <span className={`dot dot-${pilar.health}`} aria-hidden />
-                    <span className="pillar-pip-ord">{pilar.order}</span>
-                  </span>
-                  <span className="pillar-pip-name">{pilar.short}</span>
-                  <span className="sr-only">{here ? `${saude}. Estamos aqui.` : saude}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ol>
-      </section>
-
       <ThemeRail bundle={bundle} tema={tema} />
       {tema ? <ThemePanel bundle={bundle} tema={tema} target={target} /> : null}
-
-      {showDrive && (
-        <section id="documentos" className="war-block">
-          <h2 className="war-label">Data room</h2>
-          <div className="mt-3">
-            <DocTree items={bundle.documents} roomId={deal.driveFolderId} mode={mode} />
-          </div>
-        </section>
-      )}
-
-      <RoomProvider dealSlug={deal.slug} seed={canWrite ? seed : null}>
-      <section id="opl" className="war-block war-opl">
-        <MeetingTabs
-          tools={canWrite ? <RoomStrip /> : null}
-          pendencias={
-            <>
-              <h2 className="war-label">Pontos em aberto</h2>
-              <PendingTable points={bundle.openPoints} tasks={bundle.actions} canEdit={canWrite} />
-            </>
-          }
-          anotacoes={
-            bundle.notes.length > 0 || canWrite ? (
-              <NotesList
-                items={bundle.notes}
-                compact
-                canEdit={canWrite}
-                compose={canWrite ? <NoteComposer dealSlug={deal.slug} /> : null}
-              />
-            ) : (
-              <p className="ops-empty">Nenhuma anotação neste deal.</p>
-            )
-          }
-        />
-      </section>
-      </RoomProvider>
-
-      {showElevaRoom && (
-        <section id="tese" className="eleva-room mb-4">
-          <p className="eleva-room-label">Sala Eleva</p>
-          <h2 className="serif mt-1 text-[22px] leading-tight text-navy">Leitura interna</h2>
-          <p className="mt-1 max-w-2xl text-[13px] text-muted">
-            Tese, preço, quadro societário e pessoas. Não é fato formal da operação e não vai para
-            a tela de reunião.
-          </p>
-
-          {showThesis && (
-            <div className="mt-8">
-              <ThesisPrice thesis={bundle.thesis} prices={bundle.prices} hidden={false} />
-            </div>
-          )}
-
-          {showCap && (
-            <div className="mt-10">
-              <h3 className="serif mb-1 text-xl text-navy">
-                {deal.slug === "radio-health" ? (
-                  <>
-                    <Term id="cap">Cap</Term> verbal — a confirmar
-                  </>
-                ) : (
-                  <>
-                    <Term id="cap">Cap</Term> oficial
-                  </>
-                )}
-              </h3>
-              <Freshness trust={deal.slug === "radio-health" ? "review" : "firm"} mode={mode} />
-              <div className="mt-3">
-                <CapTable rows={bundle.capTable} />
-              </div>
-            </div>
-          )}
-
-          {showPeople && (
-            <div className="mt-10">
-              <h3 className="serif mb-3 text-xl text-navy">Pessoas</h3>
-              <ul className="grid gap-2 sm:grid-cols-2">
-                {bundle.people.map((p) => (
-                  <li key={p.name} className="paper px-4 py-3 text-sm">
-                    <span className="font-semibold text-navy">{p.name}</span>
-                    <span className="text-muted"> · {p.role}</span>
-                    <p className="mt-1 text-muted">
-                      <WithTerms text={p.note} />
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-        </section>
-      )}
     </article>
   );
 }

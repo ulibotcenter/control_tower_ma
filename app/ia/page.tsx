@@ -4,6 +4,7 @@ import { focusSlugFromQuery } from "@/components/shell/focus-deal";
 import { isOpenRouterConfigured } from "@/lib/ai/env";
 import { getProgram } from "@/lib/data/provider";
 import { listAiProposals } from "@/lib/data/store";
+import { viewChrome } from "@/lib/mode-meta";
 import { getLockedDeal, getMode } from "@/lib/mode";
 import { getPresent } from "@/lib/present";
 import { redirect } from "next/navigation";
@@ -21,7 +22,7 @@ export default async function IaPage({
   const slug = focusSlugFromQuery(dealQuery);
   const mode = await getMode();
   const present = await getPresent();
-  if (mode !== "operate" || present) {
+  if (!viewChrome(mode, present).showIa) {
     redirect(slug ? `/deals/${slug}` : "/");
   }
   if (!slug) redirect("/#ia");

@@ -6,6 +6,11 @@ import { isIdleExpired, SEEN_COOKIE } from "./lib/session";
 
 const PUBLIC = ["/login", "/api/auth/login", "/api/auth/logout", "/api/alerts/weekly", "/api/alerts/inbox"];
 
+function dealHouseSlug(pathname: string, house: string): string | null {
+  const match = pathname.match(new RegExp(`^/deals/([a-z0-9][a-z0-9-]{0,60})/${house}/?$`));
+  return match?.[1] ?? null;
+}
+
 function clearSession(res: NextResponse) {
   const gone = { path: "/", maxAge: 0 };
   res.cookies.set(SESSION_COOKIE, "", gone);
@@ -83,12 +88,19 @@ export async function middleware(req: NextRequest) {
     if (targetDeal && pathname.startsWith("/deals/") && !isDealPath(pathname, targetDeal)) {
       return NextResponse.redirect(new URL(`/deals/${targetDeal}`, req.url));
     }
+    // RH e Leitura Interna não são URL útil para o Alvo.
+    const hidden = dealHouseSlug(pathname, "leitura") ?? dealHouseSlug(pathname, "rh");
+    if (hidden) return NextResponse.redirect(new URL(`/deals/${hidden}`, req.url));
   }
   if (
     mode === "advisors" &&
     (pathname.startsWith("/inbox") || pathname.startsWith("/export") || pathname.startsWith("/ia"))
   ) {
     return NextResponse.redirect(new URL("/", req.url));
+  }
+  if (mode !== "operate") {
+    const leitura = dealHouseSlug(pathname, "leitura");
+    if (leitura) return NextResponse.redirect(new URL(`/deals/${leitura}`, req.url));
   }
 
   return NextResponse.next();

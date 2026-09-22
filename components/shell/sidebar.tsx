@@ -6,7 +6,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { semaphoreShortFor } from "@/lib/mode-meta";
 import type { PillarSlug } from "@/lib/pillars";
 import type { MeetingMode, Semaphore } from "@/lib/types";
-import { canSeeDecisions, canSeeInbox } from "@/lib/visibility";
+import { canSeeDecisions, canSeeIa, canSeeInbox, canSeeInternalReading, canSeeRh } from "@/lib/visibility";
 import type { ShellDealNav } from "./shell-nav";
 
 type Ctx = { open: boolean; setOpen: (v: boolean) => void };
@@ -151,10 +151,39 @@ function DealNav({
   const onDeal = path === prefix || path.startsWith(`${prefix}/`);
   const segment = onDeal && path.startsWith(`${prefix}/`) ? path.slice(prefix.length + 1).split("/")[0] : "";
   const reading = deal.pillars.some((p) => p.slug === segment) ? (segment as PillarSlug) : null;
-  // Fora da URL do deal, “aqui” não marca um pilar: quem está aceso é Decisões.
-  const here = reading ?? (onDeal ? deal.phasePillar : null);
-  const docsHref = `${prefix}#documentos`;
-  const iaHref = `/ia?deal=${deal.slug}`;
+  // “Aqui” só no pilar aberto, ou na capa do deal. As casas (OPL, docs, …) não acendem pilar.
+  const here = reading ?? (path === prefix ? deal.phasePillar : null);
+
+  const houses: { href: string; label: string; on: boolean; badge?: number }[] = [
+    { href: `${prefix}/opl`, label: "Pontos em aberto (OPL)", on: isOn(path, `${prefix}/opl`) },
+    { href: `${prefix}/documentos`, label: "Documentos", on: isOn(path, `${prefix}/documentos`) },
+    { href: `${prefix}/indicadores`, label: "Indicadores", on: isOn(path, `${prefix}/indicadores`) },
+  ];
+  if (canSeeDecisions(mode) !== "hidden") {
+    houses.push({
+      href: `/decisions?deal=${deal.slug}`,
+      label: "Decisões",
+      on: isOn(path, "/decisions"),
+    });
+  }
+  if (canSeeRh(mode)) {
+    houses.push({ href: `${prefix}/rh`, label: "RH", on: isOn(path, `${prefix}/rh`) });
+  }
+  if (canSeeIa(mode)) {
+    houses.push({
+      href: `/ia?deal=${deal.slug}`,
+      label: "IA",
+      on: isOn(path, "/ia"),
+      badge: iaCount,
+    });
+  }
+  if (canSeeInternalReading(mode)) {
+    houses.push({
+      href: `${prefix}/leitura`,
+      label: "Leitura Interna",
+      on: isOn(path, `${prefix}/leitura`),
+    });
+  }
 
   return (
     <>
@@ -167,50 +196,31 @@ function DealNav({
       <nav className="side-pillars" aria-label="Pilares do processo">
         {deal.pillars.map((p) => {
           const current = here === p.slug;
-          const kids = reading === p.slug;
           return (
-            <div key={p.slug} className="side-pillar-block">
-              <Link
-                href={`${prefix}/${p.slug}`}
-                className={`side-pillar${current ? " is-here" : ""}`}
-                aria-current={reading === p.slug ? "page" : undefined}
-              >
-                <span className="side-num">{p.order}</span>
-                <span className="side-copy">
-                  <span className="side-name">{p.short}</span>
-                  {current && <span className="side-aqui">aqui</span>}
-                </span>
-                <span className={`dot dot-${p.health}`} aria-hidden />
-                <span className="sr-only">{semaphoreShortFor(mode, p.health)}</span>
-              </Link>
-              {kids ? (
-                <nav className="side-pillar-kids" aria-label={`Neste pilar, ${p.short}`}>
-                  <Link href={`${prefix}/${p.slug}#opl`}>OPL</Link>
-                  <Link href={`${prefix}/${p.slug}#riscos`}>Riscos</Link>
-                  <Link href={`${prefix}/${p.slug}#trava`}>O que trava</Link>
-                </nav>
-              ) : null}
-            </div>
+            <Link
+              key={p.slug}
+              href={`${prefix}/${p.slug}`}
+              className={`side-pillar${current ? " is-here" : ""}`}
+              aria-current={reading === p.slug ? "page" : undefined}
+            >
+              <span className="side-num">{p.order}</span>
+              <span className="side-copy">
+                <span className="side-name">{p.short}</span>
+                {current && <span className="side-aqui">aqui</span>}
+              </span>
+              <span className={`dot dot-${p.health}`} aria-hidden />
+              <span className="sr-only">{semaphoreShortFor(mode, p.health)}</span>
+            </Link>
           );
         })}
       </nav>
       <nav className="side-more" aria-label="Neste deal">
-        {mode === "operate" && (
-          <Link href={iaHref} className={isOn(path, "/ia") ? "is-on" : undefined}>
-            IA
-            {iaCount > 0 && <span className="side-badge">{iaCount}</span>}
+        {houses.map((item) => (
+          <Link key={item.href} href={item.href} className={item.on ? "is-on" : undefined}>
+            {item.label}
+            {item.badge ? <span className="side-badge">{item.badge}</span> : null}
           </Link>
-        )}
-        {canSeeDecisions(mode) !== "hidden" && (
-          <Link
-            href={`/decisions?deal=${deal.slug}`}
-            className={isOn(path, "/decisions") ? "is-on" : undefined}
-          >
-            Decisões
-          </Link>
-        )}
-        <Link href={docsHref}>Documentos</Link>
-        <Link href={`${prefix}#opl`}>Pontos em aberto</Link>
+        ))}
       </nav>
     </>
   );

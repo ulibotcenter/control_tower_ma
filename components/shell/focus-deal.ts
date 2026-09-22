@@ -6,6 +6,15 @@ import { parseDealSlug } from "@/lib/meeting";
  */
 export const FOCUS_ROUTES = ["/decisions", "/inbox", "/export/pack", "/glossary", "/ia"] as const;
 
+/** Casas do deal que ficam no caminho, depois do slug. Trocar de operação mantém a casa. */
+const DEAL_HOUSES = ["opl", "documentos", "indicadores", "rh", "leitura"] as const;
+
+export function dealHouseHref(path: string, slug: string): string | null {
+  const match = path.match(/^\/deals\/[^/]+\/([^/]+)$/);
+  if (!match || !(DEAL_HOUSES as readonly string[]).includes(match[1])) return null;
+  return `/deals/${slug}/${match[1]}`;
+}
+
 export function isFocusRoute(path: string) {
   return FOCUS_ROUTES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
