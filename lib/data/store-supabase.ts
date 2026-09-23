@@ -31,7 +31,7 @@ import { isUuid } from "./room-input";
 import { isRhCardField, type RhCardEdit } from "./rh-deck";
 import { LOOPERT_ID, deals, decisions as seedDecisions } from "./seed";
 import { laterStamp } from "../ai/corpus";
-import type { DocTextStamp, DocTextWrite } from "../doc-text";
+import type { DocTextBody, DocTextStamp, DocTextWrite } from "../doc-text";
 import { mapActionRow, mapChecklistRow, mapDecisionRow, mapDocumentRow, mapInboxRow, mapNoteRow, mapOpenPointRow, packShadow } from "./store-map";
 
 function fail(context: string, error: { message: string } | null): never {
@@ -900,6 +900,47 @@ function stampTime(value: unknown): string | null {
   if (typeof value === "string" && value.trim()) return value;
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
   return null;
+}
+
+function docTextTableMissing(message: string) {
+  return /doc_text/i.test(message) && /schema cache|does not exist|could not find the table/i.test(message);
+}
+
+function textCell(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+export async function listDocTextBodiesRemote(sb: SupabaseClient): Promise<DocTextBody[]> {
+  const out: DocTextBody[] = [];
+  const pageSize = 100;
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await sb
+      .from("doc_text")
+      .select("drive_id,name,mime,deal_slug,body,skipped_reason,drive_modified_at")
+      .order("drive_id", { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (error) {
+      if (docTextTableMissing(error.message)) return [];
+      fail("list doc_text bodies", error);
+    }
+    for (const row of data ?? []) {
+      const driveId = textCell(row.drive_id).trim();
+      if (!driveId) continue;
+      const dealSlug = textCell(row.deal_slug).trim();
+      const skipped = textCell(row.skipped_reason).trim();
+      out.push({
+        driveId,
+        name: textCell(row.name),
+        mime: textCell(row.mime),
+        dealSlug: dealSlug || null,
+        body: textCell(row.body),
+        skippedReason: skipped || null,
+        driveModifiedAt: stampTime(row.drive_modified_at),
+      });
+    }
+    if (!data || data.length < pageSize) break;
+  }
+  return out;
 }
 
 export async function listDocTextStampsRemote(sb: SupabaseClient): Promise<DocTextStamp[]> {

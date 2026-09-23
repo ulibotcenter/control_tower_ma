@@ -31,7 +31,7 @@ import type {
   OpenPoint,
 } from "../types";
 import type { RhCardEdit } from "./rh-deck";
-import type { DocTextStamp, DocTextWrite } from "../doc-text";
+import type { DocTextBody, DocTextStamp, DocTextWrite } from "../doc-text";
 import { forbidLocalStore, isSupabaseConfigured } from "../config";
 import { createSupabaseAdmin } from "../supabase/server";
 import { decisions as seedDecisions } from "./seed";
@@ -76,6 +76,7 @@ import {
   listRhEditsLocal,
   upsertRhEditLocal,
   listDocTextStampsLocal,
+  listDocTextBodiesLocal,
   upsertDocTextLocal,
 } from "./store-local";
 import {
@@ -117,6 +118,7 @@ import {
   listRhEditsRemote,
   upsertRhEditRemote,
   listDocTextStampsRemote,
+  listDocTextBodiesRemote,
   upsertDocTextRemote,
 } from "./store-supabase";
 
@@ -492,6 +494,14 @@ export async function listDocTextStamps(): Promise<DocTextStamp[]> {
   if (sb) return listDocTextStampsRemote(sb);
   if (forbidLocalStore()) refuseLocalWrite("listDocTextStamps");
   return listDocTextStampsLocal();
+}
+
+/** Corpos da memória. Tabela ausente ou loja local proibida = vazio, sem inventar texto. */
+export async function listDocTextBodies(): Promise<DocTextBody[]> {
+  const sb = remote();
+  if (sb) return listDocTextBodiesRemote(sb);
+  if (forbidLocalStore()) return [];
+  return listDocTextBodiesLocal();
 }
 
 export async function upsertDocText(row: DocTextWrite): Promise<void> {

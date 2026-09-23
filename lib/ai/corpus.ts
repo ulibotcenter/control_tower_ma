@@ -2,7 +2,7 @@
 
 export const AI_TEXT_FILES = 4;
 export const AI_TEXT_CHARS = 4000;
-/** Uma ata por clique na onda B. */
+/** Cada trecho de doc_text no Pedir leitura. */
 export const AI_B_CHARS = 1500;
 
 const AUDIO_NAME = /\.(m4a|mp3|wav|aac|ogg|flac|wma)$/i;

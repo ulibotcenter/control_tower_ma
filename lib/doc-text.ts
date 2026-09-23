@@ -79,6 +79,17 @@ export type DocTextStamp = {
   driveModifiedAt: string | null;
 };
 
+/** Corpo já ingerido. A leitura não baixa o arquivo de novo. */
+export type DocTextBody = {
+  driveId: string;
+  name: string;
+  mime: string;
+  dealSlug: string | null;
+  body: string;
+  skippedReason: string | null;
+  driveModifiedAt: string | null;
+};
+
 export type DocTextWrite = {
   driveId: string;
   name: string;

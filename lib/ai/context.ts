@@ -12,7 +12,7 @@ Aponte o buraco: o que a ata decidiu e a OPL não tem; prazo morto; responsável
 Proposta acionável: kind, título, responsável se o texto tiver, pilar.
 Se o arquivo é novo desde o último Pedir leitura, priorize-o.
 Português do Brasil. Só JSON de propostas. Você não publica fato. Quem opera aceita, edita ou descarta.
-PDF entra só pelo nome. Não peça o conteúdo de PDF.
+Use os trechos da memória que vierem no contexto. Não peça áudio nem o PDF cru.
 Não classifique arquivo cujo nome não está na lista.
 No máximo ${AI_PROPOSAL_CAP} propostas. Se não houver nada útil, devolva {"propostas":[]}.
 Formato:
@@ -26,24 +26,24 @@ frente é o slug da frente que o contexto listar, quando houver.
 export const AI_SYSTEM_A = `${RULES}
 Onda A — status das próximas semanas.
 Use a OPL, as tarefas abertas ou atrasadas, os riscos, o que trava, o semáforo e as cinco decisões.
+Os trechos da memória, quando vierem, são contexto. A OPL do deal continua a lista de pontos.
 Procure só isto: prazo já vencido (a data é anterior a hoje), responsável vazio, duplicata de ponto ou tarefa, semáforo do deal ou da frente que não combina com a OPL.
 Não proponha lacuna de arquivo nesta onda.`;
 
 export const AI_SYSTEM_B = `${RULES}
-Onda B — uma ata neste clique, corpo curto, e a OPL.
-Responda em texto. Se couber, JSON de propostas. Não cite áudio.
+Onda B — até 5 trechos da memória e a OPL do deal.
+Use o texto de cada trecho. Não diga que o corpo não foi lido se o trecho está no contexto.
 Se a OPL não cobre o arquivo, kind "atencao" e o título é o nome do arquivo.
-"não deu para ler o corpo" significa que o export falhou: use só o nome.
-Não invente nome. Não repita arquivo que já tem ponto.`;
+Não invente nome. Não repita arquivo que já tem ponto. Não cite áudio.`;
 
 export const AI_SYSTEM_C_HEALTH = `${RULES}
-Onda C — só nomes e a OPL deste recorte da Rádio Health. Não há corpo de ata.
+Onda C — nomes e a OPL deste recorte da Rádio Health, com os trechos da memória no contexto.
 Lacuna: arquivo listado sem ponto na OPL, kind "atencao", texto "verificar X no Drive".
 Não repita o que já está na fila. Não cite áudio.`;
 
 export const AI_SYSTEM_C_LOOPERT = `${RULES}
-Onda C — só nomes de Relatorios e Open Point List que a lista de Ata, Transcricoes e Doctos não levou.
-Não há corpo de ata. Se o arquivo existe e a OPL não o cobre, kind "atencao" e texto "verificar X no Drive", com X na lista desta onda.
+Onda C — nomes de Relatorios e Open Point List que a lista de Ata, Transcricoes e Doctos não levou, com os trechos da memória no contexto.
+Se o arquivo existe e a OPL não o cobre, kind "atencao" e texto "verificar X no Drive", com X na lista desta onda.
 Não traga de novo Ata, Transcricoes nem Doctos.`;
 
 /** Fallback se uma chamada não mandar o sistema da onda. */
@@ -59,6 +59,8 @@ export type StatusRow = {
   status: string;
 };
 
+export type GapText = { name: string; body: string };
+
 export type StatusBriefInput = {
   today: string;
   name: string;
@@ -73,9 +75,8 @@ export type StatusBriefInput = {
   tasks: StatusRow[];
   risks: { title: string; severity: string }[];
   decisions: { date: string; who: string; text: string }[];
+  excerpts?: GapText[];
 };
-
-export type GapText = { name: string; body: string };
 
 export type GapBriefInput = {
   today: string;
@@ -118,6 +119,17 @@ function fit(text: string) {
   return text.length <= MAX ? text : `${text.slice(0, MAX - 1)}…`;
 }
 
+function memoryBlock(texts: GapText[] | undefined) {
+  const rows = (texts ?? []).flatMap((item) => {
+    const name = item.name.trim();
+    const body = item.body.trim();
+    if (!name || !body) return [];
+    return [`${name}\n${body}`];
+  });
+  if (!rows.length) return "";
+  return `Memória (trechos):\n\n${rows.join("\n\n")}`;
+}
+
 export function buildStatusBrief(input: StatusBriefInput) {
   const points = input.openPoints
     .slice(0, 36)
@@ -142,23 +154,24 @@ export function buildStatusBrief(input: StatusBriefInput) {
     block("Tarefas abertas ou atrasadas", tasks, "nenhuma."),
     block("Riscos", risks, "nenhum."),
     block("Decisões", decisions, "nenhuma."),
-  ].join("\n\n");
+    memoryBlock(input.excerpts),
+  ]
+    .filter(Boolean)
+    .join("\n\n");
   return fit(text);
 }
 
 export function buildGapBrief(input: GapBriefInput) {
   const names = input.names.slice(0, AI_NAME_CAP).map((name) => clip(name, 180));
   const points = input.openPointTitles.slice(0, 36).map((title) => clip(title, 180));
-  const texts = (input.texts ?? []).map((file) => `${file.name}\n${file.body.trim() || "não deu para ler o corpo"}`);
+  const memory = memoryBlock(input.texts);
   const text = [
     `Hoje: ${input.today}`,
     `Deal: ${input.name} (${input.slug})`,
     `Pastas: ${input.folders}`,
     input.note ? clip(input.note, 240) : "",
-    texts.length
-      ? `Textos novos desde o último Pedir leitura (priorizar):\n\n${texts.join("\n\n")}`
-      : "Sem texto novo de ata ou transcrição nesta leitura.",
-    "PDF só pelo nome. Áudio não entra.",
+    memory || "Sem trecho de memória nesta leitura.",
+    "Sem áudio. Sem PDF cru.",
     block("Arquivos", names, "nenhum."),
     block("Pontos em aberto (título)", points, "nenhum."),
   ]

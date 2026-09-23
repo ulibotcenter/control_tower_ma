@@ -23,7 +23,7 @@ import { decisions as seedDecisions, inboxSeed } from "./seed";
 import { SCAN_FOLDER_NOTE, scanFileDocId, scanFolderDocId } from "./doc-groups";
 import { laterStamp } from "../ai/corpus";
 import type { RhCardEdit } from "./rh-deck";
-import type { DocTextStamp, DocTextWrite } from "../doc-text";
+import type { DocTextBody, DocTextStamp, DocTextWrite } from "../doc-text";
 import { checklistFromInbox, documentFromInbox } from "./store-map";
 
 type Store = {
@@ -627,6 +627,25 @@ export async function listDocTextStampsLocal(): Promise<DocTextStamp[]> {
     const driveId = row?.driveId?.trim();
     if (!driveId) return [];
     return [{ driveId, driveModifiedAt: row.driveModifiedAt ?? null }];
+  });
+}
+
+export async function listDocTextBodiesLocal(): Promise<DocTextBody[]> {
+  const s = await load();
+  return (s.docTexts ?? []).flatMap((row) => {
+    const driveId = row?.driveId?.trim();
+    if (!driveId) return [];
+    return [
+      {
+        driveId,
+        name: row.name ?? "",
+        mime: row.mime ?? "",
+        dealSlug: row.dealSlug ?? null,
+        body: row.body ?? "",
+        skippedReason: row.skippedReason ?? null,
+        driveModifiedAt: row.driveModifiedAt ?? null,
+      },
+    ];
   });
 }
 

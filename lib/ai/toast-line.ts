@@ -22,6 +22,18 @@ export function insertToast(inserted: number, skipped: number) {
   return `Inseridas ${inserted} · puladas já vistas ${skipped}`;
 }
 
+/** doc_text sem corpo utilizável. Não chama o modelo. */
+export const EMPTY_MEMORY_TOAST = "Memória vazia — rode Ingerir";
+
+/** k = trechos que foram no contexto deste clique. */
+export function memoriaTrechos(count: number) {
+  return `memória ${count} trechos`;
+}
+
+export function withMemoriaTrechos(toast: string, count: number) {
+  return `${toast} · ${memoriaTrechos(count)}`;
+}
+
 /** Onda B deste clique: o arquivo que entrou, ou a frase da falha. */
 export function bClickToast(name: string, failPhrase = "") {
   const fail = failPhrase.replace(/\s+/g, " ").trim();
