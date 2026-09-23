@@ -23,6 +23,7 @@ import { decisions as seedDecisions, inboxSeed } from "./seed";
 import { SCAN_FOLDER_NOTE, scanFileDocId, scanFolderDocId } from "./doc-groups";
 import { laterStamp } from "../ai/corpus";
 import type { RhCardEdit } from "./rh-deck";
+import type { DocTextStamp, DocTextWrite } from "../doc-text";
 import { checklistFromInbox, documentFromInbox } from "./store-map";
 
 type Store = {
@@ -42,6 +43,8 @@ type Store = {
   fileReads: FileReadStamp[];
   /** Campo editado de uma ficha de RH. A lista fechada continua o default. */
   rhEdits: RhCardEdit[];
+  /** Memória do data room. O patch SQL é a tabela doc_text. */
+  docTexts: DocTextWrite[];
 };
 
 const defaultStore = (): Store => ({
@@ -56,6 +59,7 @@ const defaultStore = (): Store => ({
   proposals: [],
   fileReads: [],
   rhEdits: [],
+  docTexts: [],
 });
 
 const filePath = path.join(process.cwd(), ".data", "store.json");
@@ -87,6 +91,7 @@ async function load(): Promise<Store> {
       proposals: parsed.proposals ?? [],
       fileReads: parsed.fileReads ?? [],
       rhEdits: parsed.rhEdits ?? [],
+      docTexts: parsed.docTexts ?? [],
     };
     return memory;
   } catch {
@@ -612,6 +617,26 @@ export async function markFileReadsLocal(
     }
   }
   s.fileReads = [...byId.values()];
+  memory = s;
+  await writeStore(s);
+}
+
+export async function listDocTextStampsLocal(): Promise<DocTextStamp[]> {
+  const s = await load();
+  return (s.docTexts ?? []).flatMap((row) => {
+    const driveId = row?.driveId?.trim();
+    if (!driveId) return [];
+    return [{ driveId, driveModifiedAt: row.driveModifiedAt ?? null }];
+  });
+}
+
+export async function upsertDocTextLocal(row: DocTextWrite): Promise<void> {
+  const driveId = row.driveId.trim();
+  if (!driveId) throw new Error("[doc_text] drive_id vazio");
+  const s = await load();
+  const next = (s.docTexts ?? []).filter((item) => item.driveId !== driveId);
+  next.push({ ...row, driveId });
+  s.docTexts = next;
   memory = s;
   await writeStore(s);
 }

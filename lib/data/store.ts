@@ -7,7 +7,7 @@
  *
  * Coleções aqui (já migráveis / já migradas):
  *   inbox_files, decisions, documents extras, checklist extras,
- *   open_points, actions novas, notes novas, ai_proposals, rh_person_edits.
+ *   open_points, actions novas, notes novas, ai_proposals, rh_person_edits, doc_text.
  *
  * Actions do corte continuam no seed até a primeira gravação: aí viram linha
  * (origin_id) e a cópia só-leitura sai da lista. Notes do corte seguem no seed.
@@ -31,6 +31,7 @@ import type {
   OpenPoint,
 } from "../types";
 import type { RhCardEdit } from "./rh-deck";
+import type { DocTextStamp, DocTextWrite } from "../doc-text";
 import { forbidLocalStore, isSupabaseConfigured } from "../config";
 import { createSupabaseAdmin } from "../supabase/server";
 import { decisions as seedDecisions } from "./seed";
@@ -74,6 +75,8 @@ import {
   markFileReadsLocal,
   listRhEditsLocal,
   upsertRhEditLocal,
+  listDocTextStampsLocal,
+  upsertDocTextLocal,
 } from "./store-local";
 import {
   addActionRemote,
@@ -113,6 +116,8 @@ import {
   markFileReadsRemote,
   listRhEditsRemote,
   upsertRhEditRemote,
+  listDocTextStampsRemote,
+  upsertDocTextRemote,
 } from "./store-supabase";
 
 function remote() {
@@ -480,6 +485,20 @@ export async function saveRhCardEdit(edit: RhCardEdit): Promise<RhCardEdit> {
   if (sb) return upsertRhEditRemote(sb, edit);
   if (forbidLocalStore()) refuseLocalWrite("saveRhCardEdit");
   return upsertRhEditLocal(edit);
+}
+
+export async function listDocTextStamps(): Promise<DocTextStamp[]> {
+  const sb = remote();
+  if (sb) return listDocTextStampsRemote(sb);
+  if (forbidLocalStore()) refuseLocalWrite("listDocTextStamps");
+  return listDocTextStampsLocal();
+}
+
+export async function upsertDocText(row: DocTextWrite): Promise<void> {
+  const sb = remote();
+  if (sb) return upsertDocTextRemote(sb, row);
+  if (forbidLocalStore()) refuseLocalWrite("upsertDocText");
+  return upsertDocTextLocal(row);
 }
 
 export async function setAiProposalStatus(id: string, status: AiProposalStatus): Promise<AiProposal | null> {

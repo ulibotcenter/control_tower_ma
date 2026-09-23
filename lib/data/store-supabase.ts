@@ -31,6 +31,7 @@ import { isUuid } from "./room-input";
 import { isRhCardField, type RhCardEdit } from "./rh-deck";
 import { LOOPERT_ID, deals, decisions as seedDecisions } from "./seed";
 import { laterStamp } from "../ai/corpus";
+import type { DocTextStamp, DocTextWrite } from "../doc-text";
 import { mapActionRow, mapChecklistRow, mapDecisionRow, mapDocumentRow, mapInboxRow, mapNoteRow, mapOpenPointRow, packShadow } from "./store-map";
 
 function fail(context: string, error: { message: string } | null): never {
@@ -893,6 +894,53 @@ export async function markFileReadsRemote(
   if (inbox.error && !/last_read_at/i.test(inbox.error.message)) {
     console.error("[ai] last_read_at", inbox.error.message);
   }
+}
+
+function stampTime(value: unknown): string | null {
+  if (typeof value === "string" && value.trim()) return value;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
+  return null;
+}
+
+export async function listDocTextStampsRemote(sb: SupabaseClient): Promise<DocTextStamp[]> {
+  const out: DocTextStamp[] = [];
+  const pageSize = 1000;
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await sb
+      .from("doc_text")
+      .select("drive_id,drive_modified_at")
+      .order("drive_id", { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (error) fail("list doc_text", error);
+    for (const row of data ?? []) {
+      const driveId = typeof row.drive_id === "string" ? row.drive_id.trim() : "";
+      if (!driveId) continue;
+      out.push({ driveId, driveModifiedAt: stampTime(row.drive_modified_at) });
+    }
+    if (!data || data.length < pageSize) break;
+  }
+  return out;
+}
+
+export async function upsertDocTextRemote(sb: SupabaseClient, row: DocTextWrite): Promise<void> {
+  const driveId = row.driveId.trim();
+  if (!driveId) throw new Error("[doc_text] drive_id vazio");
+  const { error } = await sb.from("doc_text").upsert(
+    {
+      drive_id: driveId,
+      name: row.name,
+      mime: row.mime,
+      folder_id: row.folderId,
+      deal_slug: row.dealSlug,
+      body: row.body,
+      chars: row.chars,
+      ingested_at: row.ingestedAt,
+      drive_modified_at: row.driveModifiedAt,
+      skipped_reason: row.skippedReason,
+    },
+    { onConflict: "drive_id" },
+  );
+  if (error) fail("upsert doc_text", error);
 }
 
 export async function setAiProposalStatusRemote(

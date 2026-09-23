@@ -9,6 +9,18 @@ import {
   folderUrl,
 } from "./constants";
 import { isDriveConfigured } from "./config";
+import {
+  DOC_TEXT_EXTRA_FILE_ID,
+  DOC_TEXT_EXTRA_RANK,
+  DOC_TEXT_FOLDERS,
+  DRIVE_NO_CREDENTIAL,
+  bareMime,
+  compareDocText,
+  dealSlugForFolder,
+  docTextSkipKind,
+  isDocTextEligible,
+  type DocTextCandidate,
+} from "./doc-text";
 
 export type DriveStatus = {
   configured: boolean;
@@ -102,7 +114,16 @@ export function getDriveStatus(): DriveStatus {
   };
 }
 
+let driveToken: { value: string; until: number } | null = null;
+
 async function accessToken(): Promise<string> {
+  if (driveToken && driveToken.until > Date.now()) return driveToken.value;
+  const value = await issueAccessToken();
+  driveToken = { value, until: Date.now() + 8 * 60_000 };
+  return value;
+}
+
+async function issueAccessToken(): Promise<string> {
   const saRaw = process.env.GOOGLE_SERVICE_ACCOUNT?.trim();
   if (saRaw) {
     const sa = JSON.parse(saRaw) as { client_email: string; private_key: string };
@@ -579,5 +600,276 @@ export async function exportSlidesPlain(fileId: string): Promise<SlidesText> {
     return { ok: true, text: raw.slice(0, 400_000) };
   } catch (err) {
     return { ok: false, message: err instanceof Error ? err.message : "falha" };
+  }
+}
+
+const DOC_TEXT_BYTE_CAP = 20 * 1024 * 1024;
+
+export type DocTextListResult = {
+  ok: boolean;
+  configured: boolean;
+  message: string;
+  files: DocTextCandidate[];
+  audioSkipped: number;
+  truncated: boolean;
+};
+
+async function fileMeta(token: string, fileId: string): Promise<GFile | null> {
+  const url = new URL(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}`);
+  url.searchParams.set("fields", "id,name,mimeType,modifiedTime,parents,shortcutDetails(targetId,targetMimeType)");
+  url.searchParams.set("supportsAllDrives", "true");
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(20_000),
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  return (await res.json()) as GFile;
+}
+
+async function readCapped(res: Response, cap: number): Promise<Buffer | "too-big"> {
+  const len = Number(res.headers.get("content-length") || "");
+  if (Number.isFinite(len) && len > cap) {
+    await res.body?.cancel().catch(() => undefined);
+    return "too-big";
+  }
+  if (!res.body) {
+    const buf = Buffer.from(await res.arrayBuffer());
+    return buf.length > cap ? "too-big" : buf;
+  }
+  const reader = res.body.getReader();
+  const chunks: Buffer[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > cap) {
+      await reader.cancel().catch(() => undefined);
+      return "too-big";
+    }
+    chunks.push(Buffer.from(value));
+  }
+  return Buffer.concat(chunks);
+}
+
+/** Bytes do arquivo. Google Doc/Slides não passam por aqui. */
+export async function downloadDriveFile(
+  fileId: string,
+  timeoutMs = 25_000,
+): Promise<{ ok: true; bytes: Buffer } | { ok: false; message: string }> {
+  if (!isDriveConfigured()) return { ok: false, message: DRIVE_NO_CREDENTIAL };
+  const id = fileId.trim();
+  if (!id) return { ok: false, message: "id vazio" };
+  try {
+    const token = await accessToken();
+    const url = new URL(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}`);
+    url.searchParams.set("alt", "media");
+    url.searchParams.set("supportsAllDrives", "true");
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(timeoutMs),
+      cache: "no-store",
+    });
+    if (!res.ok) return { ok: false, message: await apiPhrase(res) };
+    const bytes = await readCapped(res, DOC_TEXT_BYTE_CAP);
+    if (bytes === "too-big") return { ok: false, message: "arquivo acima de 20 MB" };
+    if (!bytes.length) return { ok: false, message: "arquivo vazio" };
+    return { ok: true, bytes };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "falha" };
+  }
+}
+
+/** Google Doc ou Slides → text/plain. Sem notas e sem corpo inventado. */
+export async function exportDrivePlainText(
+  fileId: string,
+): Promise<{ ok: true; text: string } | { ok: false; message: string }> {
+  if (!isDriveConfigured()) return { ok: false, message: DRIVE_NO_CREDENTIAL };
+  const id = fileId.trim();
+  if (!id) return { ok: false, message: "id vazio" };
+  try {
+    const token = await accessToken();
+    const url = new URL(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}/export`);
+    url.searchParams.set("mimeType", "text/plain");
+    url.searchParams.set("supportsAllDrives", "true");
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(20_000),
+      cache: "no-store",
+    });
+    if (!res.ok) return { ok: false, message: await apiPhrase(res) };
+    return { ok: true, text: await res.text() };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "falha" };
+  }
+}
+
+/**
+ * Pastas do data room, nesta ordem: Ata, Transcricoes, Apresentacoes,
+ * Doctos Loopert, Doctos HeathData, Relatorios, Open Point List,
+ * e o arquivo 15IjNus__YweAKBgl7dlue4O_pWymHnrQ se estiver fora delas.
+ * Áudio, vídeo, zip, imagem, NF-e e .obsidian não entram na lista.
+ */
+export async function listDocTextFiles(): Promise<DocTextListResult> {
+  if (!isDriveConfigured()) {
+    return {
+      ok: false,
+      configured: false,
+      message: DRIVE_NO_CREDENTIAL,
+      files: [],
+      audioSkipped: 0,
+      truncated: false,
+    };
+  }
+
+  try {
+    const token = await accessToken();
+    const files = new Map<string, DocTextCandidate>();
+    const seenFolder = new Set<string>();
+    const audioSeen = new Set<string>();
+    let audioSkipped = 0;
+    let truncated = false;
+    let foldersRead = 0;
+    let failure = "";
+
+    const rememberFile = (
+      id: string,
+      name: string,
+      mime: string,
+      modifiedAt: string,
+      folderId: string,
+      rank: number,
+      dealSlug: string | null,
+    ) => {
+      if (!id || id === DRIVE_DO_NOT_INDEX.id || name === ".obsidian" || SKIP_NAMES.test(name)) return;
+      const kind = docTextSkipKind(name, mime);
+      if (kind === "audio") {
+        if (!audioSeen.has(id)) {
+          audioSeen.add(id);
+          audioSkipped += 1;
+        }
+        return;
+      }
+      if (kind || !isDocTextEligible(name, mime)) return;
+      if (files.size >= SAFETY_FILES && !files.has(id)) {
+        truncated = true;
+        return;
+      }
+      const candidate: DocTextCandidate = {
+        id,
+        name,
+        mimeType: bareMime(mime),
+        folderId,
+        modifiedAt,
+        rank,
+        dealSlug,
+      };
+      const prev = files.get(id);
+      if (!prev || candidate.rank < prev.rank) files.set(id, candidate);
+    };
+
+    const walk = async (root: { id: string; name: string; rank: number; dealSlug: string | null }) => {
+      const queue = [root];
+      while (queue.length) {
+        const item = queue.shift();
+        if (!item || seenFolder.has(item.id) || truncated) continue;
+        if (item.id === DRIVE_DO_NOT_INDEX.id || item.id === DRIVE_FOLDERS.audio.id || item.name === ".obsidian") continue;
+        if (seenFolder.size >= SAFETY_FOLDERS) {
+          truncated = true;
+          break;
+        }
+        seenFolder.add(item.id);
+        const listed = await listChildren(token, item.id);
+        if (!listed.ok) {
+          if (!failure) failure = `${item.name}: ${listed.message}`.slice(0, 240);
+          continue;
+        }
+        foldersRead += 1;
+        for (const child of listed.files) {
+          if (truncated) break;
+          if (child.id === DRIVE_DO_NOT_INDEX.id || child.name === ".obsidian") continue;
+          let mime = child.mimeType;
+          let id = child.id;
+          const name = child.name || "";
+          if (mime === SHORTCUT_MIME) {
+            const targetId = child.shortcutDetails?.targetId;
+            const targetMime = child.shortcutDetails?.targetMimeType;
+            if (!targetId || targetId === DRIVE_DO_NOT_INDEX.id) continue;
+            if (targetMime === FOLDER_MIME) {
+              if (targetId !== DRIVE_FOLDERS.audio.id && name !== ".obsidian") {
+                queue.push({ id: targetId, name, rank: item.rank, dealSlug: item.dealSlug });
+              }
+              continue;
+            }
+            if (!targetMime) continue;
+            id = targetId;
+            mime = targetMime;
+          }
+          if (mime === FOLDER_MIME) {
+            if (id !== DRIVE_FOLDERS.audio.id && name !== ".obsidian") {
+              queue.push({ id, name, rank: item.rank, dealSlug: item.dealSlug });
+            }
+            continue;
+          }
+          rememberFile(id, name, mime, child.modifiedTime || "", item.id, item.rank, item.dealSlug);
+        }
+      }
+    };
+
+    for (const root of DOC_TEXT_FOLDERS) {
+      if (truncated) break;
+      await walk(root);
+    }
+
+    if (!truncated && !files.has(DOC_TEXT_EXTRA_FILE_ID) && !seenFolder.has(DOC_TEXT_EXTRA_FILE_ID)) {
+      const meta = await fileMeta(token, DOC_TEXT_EXTRA_FILE_ID);
+      if (meta) {
+        let mime = meta.mimeType;
+        let id = meta.id;
+        const name = meta.name || "";
+        if (mime === SHORTCUT_MIME && meta.shortcutDetails?.targetId && meta.shortcutDetails.targetMimeType) {
+          id = meta.shortcutDetails.targetId;
+          mime = meta.shortcutDetails.targetMimeType;
+        }
+        if (mime === FOLDER_MIME) {
+          await walk({ id, name, rank: DOC_TEXT_EXTRA_RANK, dealSlug: null });
+        } else if (!files.has(id)) {
+          const parent = meta.parents?.[0] || "";
+          rememberFile(id, name, mime, meta.modifiedTime || "", parent, DOC_TEXT_EXTRA_RANK, dealSlugForFolder(parent));
+        }
+      }
+    }
+
+    if (foldersRead === 0 && files.size === 0) {
+      return {
+        ok: false,
+        configured: true,
+        message: failure || "Listagem do data room falhou.",
+        files: [],
+        audioSkipped: 0,
+        truncated: false,
+      };
+    }
+
+    if (failure) console.error("[doc_text] pasta", failure);
+    return {
+      ok: true,
+      configured: true,
+      message: "",
+      files: [...files.values()].sort(compareDocText),
+      audioSkipped,
+      truncated,
+    };
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : "falha";
+    return {
+      ok: false,
+      configured: true,
+      message: detail,
+      files: [],
+      audioSkipped: 0,
+      truncated: false,
+    };
   }
 }

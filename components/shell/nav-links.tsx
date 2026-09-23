@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import type { MeetingMode, Semaphore } from "@/lib/types";
 import { DriveSyncButton } from "./drive-sync-button";
 import { DriveSyncStamp } from "./drive-sync-stamp";
+import { IngestDataRoomButton } from "./ingest-data-room-button";
 import { dealHouseHref, focusSlugFromQuery, hrefWithDeal, isFocusRoute } from "./focus-deal";
 import { canSeeInbox } from "@/lib/visibility";
 
@@ -121,6 +122,7 @@ export function WorkNav({
           </Link>
         ))}
         <DriveSyncButton variant="work" readDeals={readDeals} readFocus={focus} />
+        <IngestDataRoomButton />
         <DriveSyncStamp syncedAt={driveSyncedAt} className="drive-sync-stamp work-sync-stamp" />
       </nav>
     </div>
